@@ -1,0 +1,5 @@
+id,current_mileage,current_motohours,avg_daily_mileage,avg_daily_motohours,telegram_token,telegram_chat_id,user_id,car_id
+1,9800,260,20,1.65,,,45570c4f-e22d-4328-9801-d3af7cf82225,12e6017e-8284-47b9-84d0-649cb4d1c612
+1,3450,345,20,1.65,,,7489fb45-c16b-4ac4-9082-815dddea92c0,f34dfe3d-8a6b-4fa2-8e5d-4cbb68589f01
+1,1950,198,20,1.65,,,d7873f7c-dcfb-45f9-834e-060f8f1479ab,6d399075-7f2a-49dd-8eca-979c70864ef0
+1,6000,600,20,1.65,,,f7558956-a26f-4ac5-b20f-39abec20f679,6f456534-ade1-4a1b-a7c7-0a5718042ce2

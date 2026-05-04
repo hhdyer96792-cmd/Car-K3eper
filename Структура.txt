@@ -1,0 +1,46 @@
+/vesta
+├── index.html                     # Основная страница (подключает все скрипты в правильном порядке)
+├── style.css                      # Стили
+├── manifest.json                  # PWA-манифест
+├── service-worker.js              # Service Worker для офлайн-режима и Push
+├── icon-192.png                   # Иконка для уведомлений
+│
+└── src/
+    ├── config/
+    │   ├── constants.js           # Все неизменяемые константы (CLIENT_ID, SCOPES, ключи кэша, имена листов)
+    │   └── defaults.js            # Значения по умолчанию (settings, массивы)
+    │
+    ├── utils/
+    │   ├── dom.js                 # showToast, sanitizeHtml, escapeHtml, initIcons, setSyncStatus
+    │   └── dates.js               # ddmmYYYYtoISO, isoToDDMMYYYY, маски ввода, excelDateToISO, normalizeOperationName
+    │
+    ├── api/
+    │   └── google/
+    │       ├── auth.js            # initGoogleApi, startAuth, refreshAccessToken (авторизация через GSI)
+    │       └── sheets.js          # apiCall, readSheet, writeSheet, appendSheet, safe*, loadSheet, loadHistory, syncAllToSheet, uploadPhoto, getOrCreatePhotoFolder
+    │
+    ├── state/
+    │   └── store.js               # Хранилище всех данных (операции, запчасти, топливо, настройки, кэш, профили)
+    │
+    ├── logic/
+    │   ├── planner.js             # calculatePlan, getPlanPeriodDates, generateMaintenancePlan, getOilMotohoursInterval
+    │   └── statistics.js          # calculateStatistics, groupFuelByMonth, groupCostsByMonth, predictMileageDate, getDrivingMode, calculateExpenseStructure, filterByPeriod
+    │
+    ├── ui/
+    │   ├── components/
+    │   │   ├── modal.js           # createModal (создание модальных окон)
+    │   │   └── charts.js          # Все графики: renderFuelConsumptionChart, renderCostsChart, renderExpensePieChart, renderOilChart, мини-графики дашборда, updateDrivingModeIndicator
+    │   │
+    │   └── pages/
+    │       ├── dashboard.js       # renderDashboard, renderTop5Widget, renderTireWearMini
+    │       ├── maintenance.js     # renderTOTable, renderMaintenancePlan, openServiceModal, openOperationForm, generateShoppingList
+    │       ├── stats.js           # renderStats, renderFuelAnalytics, renderMileagePrediction, updateOwnershipDisplay
+    │       ├── history.js         # populateHistoryOperationFilter, getFilteredHistory, renderHistoryWithFilters, openHistoryEdit, deleteHistoryEntry
+    │       ├── fuel.js            # renderFuelTable, openFuelModal, deleteFuelEntry, startVoiceFuelInput, checkFuelOrderConflicts
+    │       ├── tires.js           # renderTiresTable, renderTireWear, renderTireCalculator, openTireModal, deleteTireEntry, parseTireSize
+    │       ├── parts.js           # renderPartsTable, openPartForm, deletePart, showCatalogMenu, showPriceHistoryChart
+    │       └── settings.js        # saveSettings, populateSettingsFields, sendTelegramMessage, subscribeToPush, openPhotoFolder, shareTable, handleExport, exportToCSV, exportToExcel*, generateServiceReport, forceSync
+    │
+    ├── events.js                  # Обработчики всех событий: делегирование кликов, навигация, тема, прямые слушатели кнопок, фильтры истории, импорт/экспорт, обновление пробега, работа с календарём, голосовой ввод
+    │
+    └── main.js                    # Точка входа: инициализация темы, хранилища, авторизации, обработчиков, Service Worker, переключение на начальную вкладку
