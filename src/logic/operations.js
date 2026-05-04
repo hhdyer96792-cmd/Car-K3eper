@@ -37,7 +37,7 @@ App.logic.addServiceRecord = function(opId, date, mileage, motohours, partsCost,
             App.storage.loadAllData();
         });
     } else {
-        // Старая логика для Google Sheets (оставлена для совместимости, если флаг не Supabase)
+        // Старая логика (не используется)
         if (App.auth.accessToken) {
             return App.storage.saveOperation(op).then(function() {
                 return App.storage.addHistoryRecord({
@@ -94,23 +94,22 @@ App.logic.saveOperation = function(data) {
     var moto = data.moto || '';
     var id = data.id;
 
+    var existing = id ? App.store.operations.find(function(o) { return o.id == id; }) : null;
+
     var opData = {
         category: category,
         name: name,
         intervalKm: parseInt(km) || 0,
         intervalMonths: parseInt(months) || 0,
         intervalMotohours: moto ? parseInt(moto) : null,
-        lastDate: null,
-        lastMileage: 0,
-        lastMotohours: 0
+        lastDate: existing ? existing.lastDate : null,
+        lastMileage: existing ? existing.lastMileage : 0,
+        lastMotohours: existing ? existing.lastMotohours : 0
     };
 
     function updateLocalStore(assignedId) {
-        if (id) {
-            var existingOp = App.store.operations.find(function(o) { return o.id == id; });
-            if (existingOp) {
-                Object.assign(existingOp, opData);
-            }
+        if (existing) {
+            Object.assign(existing, opData);
         } else {
             var newOp = Object.assign({}, opData, { id: assignedId, uuid: assignedId });
             App.store.operations.push(newOp);
@@ -121,12 +120,11 @@ App.logic.saveOperation = function(data) {
     }
 
     if (App.config.USE_SUPABASE) {
-        var existingOp = id ? App.store.operations.find(function(o) { return o.id == id; }) : null;
-        if (existingOp) {
-            opData.id = existingOp.id;
-            opData.uuid = existingOp.uuid;
+        if (existing) {
+            opData.id = existing.id;
+            opData.uuid = existing.uuid;
             return App.supa.saveOperation(opData)
-                .then(function() { updateLocalStore(existingOp.id); })
+                .then(function() { updateLocalStore(existing.id); })
                 .catch(function(err) { console.error(err); App.toast('Ошибка сохранения операции', 'error'); });
         } else {
             return App.supa.saveOperation(opData)
