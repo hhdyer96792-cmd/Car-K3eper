@@ -1,7 +1,7 @@
 {
-  "name": "ТО Lada Vesta",
-  "short_name": "ТО Веста",
-  "start_url": ".",
+  "name": "Car K3eper S&D",
+  "short_name": "Car K3eper",
+  "start_url": "/Car-K3eper/",
   "display": "standalone",
   "background_color": "#f5f7fa",
   "theme_color": "#2c3e50",
