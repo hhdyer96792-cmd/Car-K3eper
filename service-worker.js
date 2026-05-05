@@ -13,22 +13,16 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Этот обработчик срабатывает, когда PWA находится в фоне или закрыто
+// Когда PWA в фоне, при notification-сообщении браузер сам покажет уведомление.
+// Мы только логируем для диагностики.
 messaging.onBackgroundMessage(function(payload) {
     console.log('[SW] Получено фоновое сообщение:', payload);
-    
-    // Заголовок и тело берём из поля notification (если оно есть)
-    const notificationTitle = payload.notification?.title || 'Напоминание о ТО';
-    const notificationOptions = {
-        body: payload.notification?.body || '',
-        icon: '/Car-K3eeper/icon-192.png'  // Абсолютный путь от корня сайта (важно для GitHub Pages)
-    };
-    
-    self.registration.showNotification(notificationTitle, notificationOptions);
 });
 // =====================================================================
 
-// ===== Кэширование статических ресурсов (ваш текущий список) =====
+// ===== Кэширование статических ресурсов (Stale-While-Revalidate) =====
+const CACHE_NAME = 'car-k3eeper-static-v1';
+
 const localFiles = [
     '/Car-K3eeper/',
     '/Car-K3eeper/index.html',
@@ -42,50 +36,45 @@ const localFiles = [
     '/Car-K3eeper/src/main.js'
 ];
 
-// ===== Кэширование статических ресурсов (Cache-First + Update) =====
-const CACHE_NAME = 'car-k3eeper-static-v1';   // меняйте при каждом обновлении списка файлов!
-
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('[SW] Кэширую статические ресурсы');
-      return cache.addAll(localFiles);
-    }).then(() => self.skipWaiting())   // сразу активировать новый воркер
-  );
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(cache => {
+            console.log('[SW] Кэширую статические ресурсы');
+            return cache.addAll(localFiles);
+        }).then(() => self.skipWaiting())
+    );
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      );
-    }).then(() => self.clients.claim())   // перехватывать запросы без перезагрузки
-  );
+    event.waitUntil(
+        caches.keys().then(keys => {
+            return Promise.all(
+                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+            );
+        }).then(() => self.clients.claim())
+    );
 });
 
 self.addEventListener('fetch', event => {
-  const requestURL = new URL(event.request.url);
-  // Кэшируем только локальные файлы из списка
-  if (localFiles.includes(requestURL.pathname)) {
-    event.respondWith(
-      caches.match(event.request).then(cachedResponse => {
-        if (cachedResponse) {
-          // Обновляем кэш в фоне (Stale-While-Revalidate)
-          fetch(event.request).then(networkResponse => {
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse.clone()));
-          });
-          return cachedResponse;
-        }
-        // Если в кэше нет – идём в сеть
-        return fetch(event.request).then(networkResponse => {
-          return caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
-          });
-        });
-      })
-    );
-  }
-  // Все остальные запросы (API, Supabase, Firebase) пропускаем без кэширования
+    const requestURL = new URL(event.request.url);
+    if (localFiles.includes(requestURL.pathname)) {
+        event.respondWith(
+            caches.match(event.request).then(cachedResponse => {
+                if (cachedResponse) {
+                    // Обновляем кэш в фоне
+                    fetch(event.request).then(networkResponse => {
+                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse.clone()));
+                    }).catch(() => {});
+                    return cachedResponse;
+                }
+                return fetch(event.request).then(networkResponse => {
+                    return caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, networkResponse.clone());
+                        return networkResponse;
+                    });
+                });
+            })
+        );
+    }
+    // Остальные запросы (API, Supabase) идут напрямую
 });
