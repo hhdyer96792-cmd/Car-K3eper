@@ -140,7 +140,8 @@ App.supa.loadSettings = function() {
                 avgDailyMotohours: vs.data ? parseFloat(vs.data.avg_daily_motohours) || 1.8 : 1.8,
                 telegramToken: us.data ? us.data.telegram_token || '' : '',
                 telegramChatId: us.data ? us.data.telegram_chat_id || '' : '',
-                notificationMethod: us.data ? us.data.notification_method || 'telegram' : 'telegram'
+                notificationMethod: us.data ? us.data.notification_method || 'telegram' : 'telegram',
+                reminderDays: us.data ? us.data.reminder_days || '7,2' : '7,2'
             };
         });
     });
@@ -286,7 +287,8 @@ App.supa.saveUserSettings = async function(settingsObj) {
         car_id: App.store.activeCarId,
         telegram_token: settingsObj.telegramToken || '',
         telegram_chat_id: settingsObj.telegramChatId || '',
-        notification_method: settingsObj.notificationMethod || 'telegram'
+        notification_method: settingsObj.notificationMethod || 'telegram',
+        reminder_days: settingsObj.reminderDays || '7,2'
     };
     return App.supabase.from('user_settings').upsert(record, { onConflict: 'user_id, car_id' }).select();
 };
@@ -330,14 +332,12 @@ App.supa.createCar = function(name) {
     });
 };
 
-// Переименование автомобиля
-App.supa.renameCar = function(carId, newName) {
-    return App.supabase.from('cars').update({ name: newName }).eq('id', carId).select().single();
-};
-
-// Удаление автомобиля (каскадное удаление настроено в БД)
 App.supa.deleteCar = function(carId) {
     return App.supabase.from('cars').delete().eq('id', carId);
+};
+
+App.supa.renameCar = function(carId, newName) {
+    return App.supabase.from('cars').update({ name: newName }).eq('id', carId).select().single();
 };
 
 App.supa.inviteUserToCar = function(carId, email) {
