@@ -99,7 +99,8 @@ function sendPushAndTelegramReminders() {
     if (pushMessage) {
         App.supabase.auth.getUser().then(function({ data: { user } }) {
             if (!user) return;
-            App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(({ data, error }) => data?.[0] || null)
+            App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data }) {
+                var sub = data && data.length > 0 ? data[0] : null;
                 if (!sub) return;
                 fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/fcm-send', {
                     method: 'POST',
