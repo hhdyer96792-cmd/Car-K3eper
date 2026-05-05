@@ -28,6 +28,9 @@ App.ui.pages.renderCarSelector = function() {
             App.storage.loadAllData().then(function() {
                 if (typeof App.renderAll === 'function') App.renderAll();
             });
+            // синхронизация с сайдбаром
+            var sidebarSelect = document.getElementById('sidebar-car-select');
+            if (sidebarSelect) sidebarSelect.value = carId;
         }
     });
 
@@ -36,6 +39,12 @@ App.ui.pages.renderCarSelector = function() {
         if (!name) return;
         App.supa.createCar(name).then(function(res) {
             var car = res.data;
+            if (!car) {
+                console.warn('createCar вернул пустой ответ, перезагружаем список');
+                return App.store.loadCars().then(function() {
+                    App.ui.pages.renderCarSelector();
+                });
+            }
             App.store.cars.push(car);
             App.store.setActiveCar(car.id);
             App.ui.pages.renderCarSelector();
@@ -53,63 +62,63 @@ App.ui.pages.renderCarSelector = function() {
     });
 
     // Переименование – только владелец
-document.getElementById('rename-car-btn').addEventListener('click', async function() {
-    var carId = App.store.activeCarId;
-    if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
+    document.getElementById('rename-car-btn').addEventListener('click', async function() {
+        var carId = App.store.activeCarId;
+        if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
 
-    var userId = await App.supa.getCurrentUserId();
-    var car = App.store.cars.find(c => c.id == carId);
-    if (!car || car.user_id !== userId) {
-        App.toast('Только владелец может переименовывать автомобиль', 'warning');
-        return;
-    }
+        var userId = await App.supa.getCurrentUserId();
+        var car = App.store.cars.find(c => c.id == carId);
+        if (!car || car.user_id !== userId) {
+            App.toast('Только владелец может переименовывать автомобиль', 'warning');
+            return;
+        }
 
-    var currentName = car.name || '';
-    var newName = prompt('Новое название:', currentName);
-    if (!newName || newName === currentName) return;
-    try {
-        await App.supa.renameCar(carId, newName);
-        car.name = newName;
-        App.ui.pages.renderCarSelector();
-        App.toast('Название обновлено', 'success');
-    } catch (err) {
-        console.error(err);
-        App.toast('Ошибка переименования', 'error');
-    }
-});
+        var currentName = car.name || '';
+        var newName = prompt('Новое название:', currentName);
+        if (!newName || newName === currentName) return;
+        try {
+            await App.supa.renameCar(carId, newName);
+            car.name = newName;
+            App.ui.pages.renderCarSelector();
+            App.toast('Название обновлено', 'success');
+        } catch (err) {
+            console.error(err);
+            App.toast('Ошибка переименования', 'error');
+        }
+    });
 
-// Удаление – только владелец
-document.getElementById('delete-car-btn').addEventListener('click', async function() {
-    var carId = App.store.activeCarId;
-    if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
+    // Удаление – только владелец
+    document.getElementById('delete-car-btn').addEventListener('click', async function() {
+        var carId = App.store.activeCarId;
+        if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
 
-    var userId = await App.supa.getCurrentUserId();
-    var car = App.store.cars.find(c => c.id == carId);
-    if (!car || car.user_id !== userId) {
-        App.toast('Только владелец может удалять автомобиль', 'warning');
-        return;
-    }
+        var userId = await App.supa.getCurrentUserId();
+        var car = App.store.cars.find(c => c.id == carId);
+        if (!car || car.user_id !== userId) {
+            App.toast('Только владелец может удалять автомобиль', 'warning');
+            return;
+        }
 
-    if (!confirm('Удалить автомобиль и все его данные? Это действие необратимо.')) return;
-    try {
-        await App.supa.deleteCar(carId);
-        App.store.cars = App.store.cars.filter(c => c.id != carId);
-        App.store.activeCarId = null;
-        App.ui.pages.renderCarSelector();
-        App.store.operations = [];
-        App.store.fuelLog = [];
-        App.store.tireLog = [];
-        App.store.parts = [];
-        App.store.serviceRecords = [];
-        App.store.mileageHistory = [];
-        App.store.saveToLocalStorage();
-        if (typeof App.renderAll === 'function') App.renderAll();
-        App.toast('Автомобиль удалён', 'success');
-    } catch (err) {
-        console.error(err);
-        App.toast('Ошибка удаления', 'error');
-    }
-});
+        if (!confirm('Удалить автомобиль и все его данные? Это действие необратимо.')) return;
+        try {
+            await App.supa.deleteCar(carId);
+            App.store.cars = App.store.cars.filter(c => c.id != carId);
+            App.store.activeCarId = null;
+            App.ui.pages.renderCarSelector();
+            App.store.operations = [];
+            App.store.fuelLog = [];
+            App.store.tireLog = [];
+            App.store.parts = [];
+            App.store.serviceRecords = [];
+            App.store.mileageHistory = [];
+            App.store.saveToLocalStorage();
+            if (typeof App.renderAll === 'function') App.renderAll();
+            App.toast('Автомобиль удалён', 'success');
+        } catch (err) {
+            console.error(err);
+            App.toast('Ошибка удаления', 'error');
+        }
+    });
 
     document.getElementById('invite-btn').addEventListener('click', function() {
         var carId = App.store.activeCarId;
@@ -191,6 +200,34 @@ document.getElementById('delete-car-btn').addEventListener('click', async functi
             App.toast('Ссылка скопирована', 'success');
         });
     });
+
+    // Дублируем селектор в сайдбар
+    var sidebarContainer = document.getElementById('sidebar-car-selector');
+    if (sidebarContainer) {
+        var sidebarHtml = '<select id="sidebar-car-select">' +
+            '<option value="">-- Выберите авто --</option>';
+        App.store.cars.forEach(function(car) {
+            var selected = car.id == App.store.activeCarId ? ' selected' : '';
+            sidebarHtml += '<option value="' + car.id + '"' + selected + '>' + App.utils.escapeHtml(car.name) + '</option>';
+        });
+        sidebarHtml += '</select>';
+        sidebarContainer.innerHTML = sidebarHtml;
+
+        document.getElementById('sidebar-car-select').addEventListener('change', function() {
+            var carId = this.value;
+            if (carId) {
+                App.store.setActiveCar(carId);
+                if (App.realtime && App.realtime.subscribeToCar) {
+                    App.realtime.subscribeToCar(carId);
+                }
+                App.storage.loadAllData().then(function() {
+                    if (typeof App.renderAll === 'function') App.renderAll();
+                });
+                var mainSelect = document.getElementById('car-select');
+                if (mainSelect) mainSelect.value = carId;
+            }
+        });
+    }
 
     App.initIcons();
 };
