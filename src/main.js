@@ -230,25 +230,30 @@
                 window.requestPushPermission = function() {
                     Notification.requestPermission().then(function(permission) {
                         if (permission === 'granted') {
-                            messaging.getToken({ vapidKey: 'BEUVrsWau5E4NvAwwAKmkjfK8yoDVntppWmZ2IdqseLVxuNNy47bV7eOLVYDmZ1b2P3F27eRqJLoAjW58Fh0tyY' }).then(function(currentToken) {
-                                if (currentToken) {
-                                    console.log('FCM token:', currentToken);
-                                    App.supabase.auth.getUser().then(function({ data: { user } }) {
-                                        if (!user) return;
-                                        App.supabase.from('push_subscriptions').upsert({
-                                            user_id: user.id,
-                                            player_id: currentToken,
-                                            updated_at: new Date().toISOString()
-                                        }, { onConflict: 'user_id' }).then(function() {
-                                            console.log('FCM token saved');
-                                            updatePushUI(true);
-                                        });
-                                    });
-                                }
-                            }).catch(console.error);
-                        }
-                    });
-                };
+                            // Ждём готовности сервис-воркера PWA и используем его для FCM
+navigator.serviceWorker.ready.then(function(registration) {
+    messaging.getToken({
+        vapidKey: 'BEUVrsWau5E4NvAwwAKmkjfK8yoDVntppWmZ2IdqseLVxuNNy47bV7eOLVYDmZ1b2P3F27eRqJLoAjW58Fh0tyY',
+        serviceWorkerRegistration: registration
+    }).then(function(currentToken) {
+        if (currentToken) {
+            console.log('FCM token:', currentToken);
+            App.supabase.auth.getUser().then(function({ data: { user } }) {
+                if (!user) return;
+                App.supabase.from('push_subscriptions').upsert({
+                    user_id: user.id,
+                    player_id: currentToken,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' }).then(function() {
+                    console.log('FCM token saved');
+                    updatePushUI(true);
+                });
+            });
+        }
+    }).catch(console.error);
+}).catch(function(err) {
+    console.error('Service Worker not ready:', err);
+});
                 var subscribePushBtn = document.getElementById('subscribe-push-btn');
                 if (subscribePushBtn) {
                     subscribePushBtn.addEventListener('click', function() {
