@@ -82,7 +82,8 @@ App.storage.saveSettings = function(settings) {
     var userPromise = App.supa.saveUserSettings({
         telegramToken: settings.telegramToken,
         telegramChatId: settings.telegramChatId,
-        notificationMethod: settings.notificationMethod
+        notificationMethod: settings.notificationMethod,
+        reminderDays: settings.reminderDays || '7,2'
     }).then(function(res) { checkResponse(res, 'save'); });
     
     return Promise.all([vehiclePromise, userPromise]);
