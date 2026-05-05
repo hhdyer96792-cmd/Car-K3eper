@@ -12,13 +12,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script> <!-- исправленая Исправлена загрузка Lucide для PWA -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 </head>
 <body>
 
@@ -89,7 +88,7 @@
         <!-- Соцсети -->
         <div id="auth-social" class="auth-method" style="display:none;">
             <button id="supabase-auth-btn" class="primary-btn" style="width:100%; margin-bottom:8px;">
-                <i data-lucide="biohazard"></i> Войти через Google
+                <i data-lucide="chrome"></i> Войти через Google
             </button>
             <!-- Apple (раскомментируйте после настройки провайдера) -->
             <!--
@@ -376,6 +375,13 @@
                     <label>Bot Token: <input type="text" id="telegram-token" placeholder="123456:ABCdef..."></label>
                     <label>Chat ID: <input type="text" id="telegram-chatid" placeholder="123456789"></label>
                 </div>
+                <label>Напомнить за (дней):</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="number" id="reminder-days-1" value="7" min="1" max="30" style="width: 80px;">
+                    <span>и</span>
+                    <input type="number" id="reminder-days-2" value="2" min="1" max="30" style="width: 80px;">
+                </div>
+                <small class="hint">Уведомления будут приходить за указанное количество дней до плановой даты.</small>
                 <div id="push-settings">
                     <p id="push-status">Push-уведомления не настроены.</p>
                     <button id="subscribe-push-btn" class="secondary-btn"><i data-lucide="bell"></i> Подписаться на уведомления</button>
@@ -384,45 +390,45 @@
                 <button id="save-settings-btn" class="primary-btn"><i data-lucide="save"></i> Сохранить настройки</button>
                 <div id="settings-result"></div>
             </div>
-          <div class="card">
-    <h3><i data-lucide="download"></i> Экспорт данных</h3>
-    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-        <label style="flex: 1; min-width: 180px;">Тип данных:
-            <select id="export-type-select" style="width: 100%;">
-                <option value="to">📋 Журнал ТО</option>
-                <option value="fuel">⛽ Топливо</option>
-                <option value="tires">🛞 Шины</option>
-                <option value="parts">📦 Запчасти</option>
-                <option value="history">📜 История ТО</option>
-                <option value="all">📁 Все данные</option>
-            </select>
-        </label>
-        <label style="flex: 0 0 auto;">Формат:
-            <select id="export-format-select" style="width: auto;">
-                <option value="csv">CSV (csv)</option>
-                <option value="xlsx">Excel (XLSX)</option>
-            </select>
-        </label>
-        <button id="export-data-btn" class="primary-btn"><i data-lucide="download"></i> Экспорт данных</button>
-    </div>
-    <p class="hint">CSV – подходит для просмотра в таблицах, Excel – полная резервная копия (много листов).</p>
+            <div class="card">
+                <h3><i data-lucide="download"></i> Экспорт данных</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+                    <label style="flex: 1; min-width: 180px;">Тип данных:
+                        <select id="export-type-select" style="width: 100%;">
+                            <option value="to">📋 Журнал ТО</option>
+                            <option value="fuel">⛽ Топливо</option>
+                            <option value="tires">🛞 Шины</option>
+                            <option value="parts">📦 Запчасти</option>
+                            <option value="history">📜 История ТО</option>
+                            <option value="all">📁 Все данные</option>
+                        </select>
+                    </label>
+                    <label style="flex: 0 0 auto;">Формат:
+                        <select id="export-format-select" style="width: auto;">
+                            <option value="csv">CSV (csv)</option>
+                            <option value="xlsx">Excel (XLSX)</option>
+                        </select>
+                    </label>
+                    <button id="export-data-btn" class="primary-btn"><i data-lucide="download"></i> Экспорт данных</button>
+                </div>
+                <p class="hint">CSV – подходит для просмотра в таблицах, Excel – полная резервная копия (много листов).</p>
 
-    <!-- Импорт -->
-    <hr style="margin: 12px 0;">
-    <h3><i data-lucide="upload"></i> Импорт данных</h3>
-    <div id="csv-import-container"><p class="hint">Загрузка...</p></div>
-</div>
+                <!-- Импорт -->
+                <hr style="margin: 12px 0;">
+                <h3><i data-lucide="upload"></i> Импорт данных</h3>
+                <div id="csv-import-container"><p class="hint">Загрузка...</p></div>
+            </div>
             
             <div class="card">
-    <h3><i data-lucide="key"></i> Резервные коды</h3>
-    <div id="recovery-codes-container">
-        <button id="show-recovery-btn" class="secondary-btn">Показать неиспользованные коды</button>
-        <button id="gen-new-codes-btn" class="secondary-btn" style="margin-left:8px;">Сгенерировать новые</button>
-        <div id="recovery-codes-list" style="margin-top:12px;"></div>
-    </div>
+                <h3><i data-lucide="key"></i> Резервные коды</h3>
+                <div id="recovery-codes-container">
+                    <button id="show-recovery-btn" class="secondary-btn">Показать неиспользованные коды</button>
+                    <button id="gen-new-codes-btn" class="secondary-btn" style="margin-left:8px;">Сгенерировать новые</button>
+                    <div id="recovery-codes-list" style="margin-top:12px;"></div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 </div>
 
 <div class="mobile-bottom-nav">
