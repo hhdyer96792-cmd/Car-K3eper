@@ -355,10 +355,12 @@
                     }
                 }
 
+                // Проверка подписки — больше не использует maybeSingle
                 App.supabase.auth.getUser().then(function({ data: { user } }) {
                     if (!user) return;
-                    App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).maybeSingle().then(function({ data }) {
-                        updatePushUI(!!data);
+                    App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
+                        if (error) { console.warn('Ошибка проверки подписки:', error); return; }
+                        updatePushUI(!!(data && data.length > 0));
                     });
                 });
 
@@ -414,6 +416,14 @@
                     if (display && user.user_metadata && user.user_metadata.username) {
                         display.textContent = '👤 ' + user.user_metadata.username;
                     }
+                }
+
+                // больше не maybeSingle
+                if (user) {
+                    App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
+                        if (error) { console.warn('Ошибка проверки подписки:', error); return; }
+                        updatePushUI(!!(data && data.length > 0));
+                    });
                 }
 
                 App.store.loadCars().then(function() {
