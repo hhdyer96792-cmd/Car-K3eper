@@ -42,5 +42,50 @@ const localFiles = [
     '/Car-K3eeper/src/main.js'
 ];
 
-// При желании ниже можно добавить стандартную логику кэширования
-// (сейчас её нет, файл просто хранит список, но можно использовать в future)
+// ===== Кэширование статических ресурсов (Cache-First + Update) =====
+const CACHE_NAME = 'car-k3eeper-static-v1';   // меняйте при каждом обновлении списка файлов!
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('[SW] Кэширую статические ресурсы');
+      return cache.addAll(localFiles);
+    }).then(() => self.skipWaiting())   // сразу активировать новый воркер
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      );
+    }).then(() => self.clients.claim())   // перехватывать запросы без перезагрузки
+  );
+});
+
+self.addEventListener('fetch', event => {
+  const requestURL = new URL(event.request.url);
+  // Кэшируем только локальные файлы из списка
+  if (localFiles.includes(requestURL.pathname)) {
+    event.respondWith(
+      caches.match(event.request).then(cachedResponse => {
+        if (cachedResponse) {
+          // Обновляем кэш в фоне (Stale-While-Revalidate)
+          fetch(event.request).then(networkResponse => {
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse.clone()));
+          });
+          return cachedResponse;
+        }
+        // Если в кэше нет – идём в сеть
+        return fetch(event.request).then(networkResponse => {
+          return caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        });
+      })
+    );
+  }
+  // Все остальные запросы (API, Supabase, Firebase) пропускаем без кэширования
+});
