@@ -1,15 +1,11 @@
 // src/main.js
 (function() {
-    // флаг авторизации, чтобы кнопка установки была только после входа
     var isLoggedIn = false;
-    // кэш deferred-события, чтобы показать кнопку позже, если она не была показана ранее
     var deferredPrompt = null;
 
     function setInstallButtonVisible(visible) {
         var installBtn = document.getElementById('pwa-install-btn');
         if (!installBtn) return;
-        // кнопку можно показывать только если был captured beforeinstallprompt
-        // (deferredPrompt не null) и пользователь авторизован
         if (visible && deferredPrompt) {
             installBtn.style.display = 'block';
         } else {
@@ -194,13 +190,11 @@
 
         // Кнопка установки PWA – управляется через setInstallButtonVisible
         var installBtn = document.getElementById('pwa-install-btn');
-        // скрываем до авторизации
         if (installBtn) installBtn.style.display = 'none';
 
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
-            // сразу покажем кнопку, если уже авторизованы
             setInstallButtonVisible(isLoggedIn);
         });
         window.addEventListener('appinstalled', function() {
@@ -209,7 +203,6 @@
             setInstallButtonVisible(false);
         });
 
-        // Fallback‑таймер: если beforeinstallprompt не сработал, пробуем показать кнопку‑заглушку через 3 сек
         setTimeout(function() {
             if (!deferredPrompt && installBtn && isLoggedIn) {
                 installBtn.style.display = 'block';
@@ -219,7 +212,7 @@
             }
         }, 3000);
 
-        // ===== Firebase Cloud Messaging (исправлено: используем Service Worker PWA) =====
+        // ===== Firebase Cloud Messaging (с повторными попытками при блокировках) =====
         var messaging;
         try {
             if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length === 0) {
@@ -234,30 +227,40 @@
             }
             if (typeof firebase !== 'undefined' && firebase.messaging) {
                 messaging = firebase.messaging();
+
+                function saveTokenWithRetry(attempt) {
+                    attempt = attempt || 1;
+                    navigator.serviceWorker.ready.then(function(registration) {
+                        messaging.getToken({
+                            vapidKey: 'BEUVrsWau5E4NvAwwAKmkjfK8yoDVntppWmZ2IdqseLVxuNNy47bV7eOLVYDmZ1b2P3F27eRqJLoAjW58Fh0tyY',
+                            serviceWorkerRegistration: registration
+                        }).then(function(currentToken) {
+                            if (!currentToken) return;
+                            console.log('FCM token:', currentToken);
+                            App.supabase.auth.getUser().then(function({ data: { user } }) {
+                                if (!user) return;
+                                App.supabase.from('push_subscriptions').upsert({
+                                    user_id: user.id,
+                                    player_id: currentToken,
+                                    updated_at: new Date().toISOString()
+                                }, { onConflict: 'user_id' }).then(function() {
+                                    console.log('FCM token saved');
+                                    updatePushUI(true);
+                                });
+                            }).catch(function(err) {
+                                console.warn('getUser error, retrying in 1s', err);
+                                if (attempt < 3) {
+                                    setTimeout(function() { saveTokenWithRetry(attempt + 1); }, 1000);
+                                }
+                            });
+                        }).catch(console.error);
+                    });
+                }
+
                 window.requestPushPermission = function() {
                     Notification.requestPermission().then(function(permission) {
                         if (permission === 'granted') {
-                            navigator.serviceWorker.ready.then(function(registration) {
-                                messaging.getToken({
-                                    vapidKey: 'BEUVrsWau5E4NvAwwAKmkjfK8yoDVntppWmZ2IdqseLVxuNNy47bV7eOLVYDmZ1b2P3F27eRqJLoAjW58Fh0tyY',
-                                    serviceWorkerRegistration: registration
-                                }).then(function(currentToken) {
-                                    if (currentToken) {
-                                        console.log('FCM token:', currentToken);
-                                        App.supabase.auth.getUser().then(function({ data: { user } }) {
-                                            if (!user) return;
-                                            App.supabase.from('push_subscriptions').upsert({
-                                                user_id: user.id,
-                                                player_id: currentToken,
-                                                updated_at: new Date().toISOString()
-                                            }, { onConflict: 'user_id' }).then(function() {
-                                                console.log('FCM token saved');
-                                                updatePushUI(true);
-                                            });
-                                        });
-                                    }
-                                }).catch(console.error);
-                            }).catch(console.error);
+                            saveTokenWithRetry();
                         }
                     });
                 };
@@ -355,7 +358,6 @@
                     }
                 }
 
-                // Проверка подписки — больше не использует maybeSingle
                 App.supabase.auth.getUser().then(function({ data: { user } }) {
                     if (!user) return;
                     App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
@@ -418,7 +420,6 @@
                     }
                 }
 
-                // больше не maybeSingle
                 if (user) {
                     App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
                         if (error) { console.warn('Ошибка проверки подписки:', error); return; }
