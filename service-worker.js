@@ -38,28 +38,29 @@ const localFiles = [
 
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
+        caches.open(CACHE_NAME).then(async cache => {
             console.log('[SW] Кэширую статические ресурсы');
-            return cache.addAll(localFiles);
+            // Кэшируем каждый файл отдельно, чтобы одна ошибка не остановила всё
+            for (const file of localFiles) {
+                try {
+                    await cache.add(file);
+                } catch (err) {
+                    console.warn(`[SW] Не удалось закэшировать: ${file}`, err);
+                }
+            }
+            console.log('[SW] Кэширование завершено');
         }).then(() => self.skipWaiting())
     );
 });
 
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(async cache => {
-      console.log('[SW] Кэширую статические ресурсы');
-      const cachePromises = localFiles.map(url => {
-        // Пытаемся закэшировать каждый файл отдельно,
-        // чтобы одна ошибка не рушила весь процесс
-        return cache.add(url).catch(err => {
-          console.warn(`[SW] Не удалось закэшировать ${url}:`, err);
-        });
-      });
-      await Promise.all(cachePromises);
-      console.log('[SW] Кэширование завершено');
-    }).then(() => self.skipWaiting())
-  );
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(keys => {
+            return Promise.all(
+                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+            );
+        }).then(() => self.clients.claim())
+    );
 });
 
 self.addEventListener('fetch', event => {
@@ -83,5 +84,5 @@ self.addEventListener('fetch', event => {
             })
         );
     }
-    // Остальные запросы (API, Supabase) идут напрямую
+    // Остальные запросы пропускаем без кэширования
 });
