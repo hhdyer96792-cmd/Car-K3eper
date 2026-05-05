@@ -890,3 +890,19 @@ input, select {
     50% { opacity: 0.6; }
     100% { opacity: 1; }
 }
+
+/* Компактный сайдбар для селектора автомобиля */
+#sidebar-car-selector select {
+    width: 100%;
+    font-size: 1rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.sidebar-item i {
+    width: 1rem;      /* слегка уменьшим иконки для плотности */
+    height: 1rem;
+}
