@@ -1,5 +1,22 @@
 // src/main.js
 (function() {
+    // флаг авторизации, чтобы кнопка установки была только после входа
+    var isLoggedIn = false;
+    // кэш deferred-события, чтобы показать кнопку позже, если она не была показана ранее
+    var deferredPrompt = null;
+
+    function setInstallButtonVisible(visible) {
+        var installBtn = document.getElementById('pwa-install-btn');
+        if (!installBtn) return;
+        // кнопку можно показывать только если был captured beforeinstallprompt
+        // (deferredPrompt не null) и пользователь авторизован
+        if (visible && deferredPrompt) {
+            installBtn.style.display = 'block';
+        } else {
+            installBtn.style.display = 'none';
+        }
+    }
+
     function onReady() {
         // Тема
         var savedTheme = localStorage.getItem(App.config.THEME_KEY);
@@ -175,36 +192,26 @@
             });
         }
 
-        // Кнопка установки PWA
-        var deferredPrompt;
+        // Кнопка установки PWA – управляется через setInstallButtonVisible
         var installBtn = document.getElementById('pwa-install-btn');
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            if (installBtn) installBtn.style.display = 'none';
-        }
+        // скрываем до авторизации
+        if (installBtn) installBtn.style.display = 'none';
+
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
-            if (installBtn && !window.matchMedia('(display-mode: standalone)').matches) {
-                installBtn.style.display = 'block';
-                installBtn.addEventListener('click', function() {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then(function(choiceResult) {
-                        if (choiceResult.outcome === 'accepted') {
-                            console.log('User installed the app');
-                        }
-                        deferredPrompt = null;
-                        installBtn.style.display = 'none';
-                    });
-                });
-            }
+            // сразу покажем кнопку, если уже авторизованы
+            setInstallButtonVisible(isLoggedIn);
         });
         window.addEventListener('appinstalled', function() {
             console.log('App installed');
-            if (installBtn) installBtn.style.display = 'none';
             deferredPrompt = null;
+            setInstallButtonVisible(false);
         });
+
+        // Fallback‑таймер: если beforeinstallprompt не сработал, пробуем показать кнопку‑заглушку через 3 сек
         setTimeout(function() {
-            if (installBtn && !deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
+            if (!deferredPrompt && installBtn && isLoggedIn) {
                 installBtn.style.display = 'block';
                 installBtn.addEventListener('click', function() {
                     alert('Чтобы установить приложение, откройте меню браузера и выберите "Добавить на главный экран" (или "Установить").');
@@ -212,7 +219,7 @@
             }
         }, 3000);
 
-        // ===== Firebase Cloud Messaging =====
+        // ===== Firebase Cloud Messaging (исправлено: используем Service Worker PWA) =====
         var messaging;
         try {
             if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length === 0) {
@@ -230,30 +237,30 @@
                 window.requestPushPermission = function() {
                     Notification.requestPermission().then(function(permission) {
                         if (permission === 'granted') {
-                            // Ждём готовности сервис-воркера PWA и используем его для FCM
-navigator.serviceWorker.ready.then(function(registration) {
-    messaging.getToken({
-        vapidKey: 'BEUVrsWau5E4NvAwwAKmkjfK8yoDVntppWmZ2IdqseLVxuNNy47bV7eOLVYDmZ1b2P3F27eRqJLoAjW58Fh0tyY',
-        serviceWorkerRegistration: registration
-    }).then(function(currentToken) {
-        if (currentToken) {
-            console.log('FCM token:', currentToken);
-            App.supabase.auth.getUser().then(function({ data: { user } }) {
-                if (!user) return;
-                App.supabase.from('push_subscriptions').upsert({
-                    user_id: user.id,
-                    player_id: currentToken,
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' }).then(function() {
-                    console.log('FCM token saved');
-                    updatePushUI(true);
-                });
-            });
-        }
-    }).catch(console.error);
-}).catch(function(err) {
-    console.error('Service Worker not ready:', err);
-});
+                            navigator.serviceWorker.ready.then(function(registration) {
+                                messaging.getToken({
+                                    vapidKey: 'BEUVrsWau5E4NvAwwAKmkjfK8yoDVntppWmZ2IdqseLVxuNNy47bV7eOLVYDmZ1b2P3F27eRqJLoAjW58Fh0tyY',
+                                    serviceWorkerRegistration: registration
+                                }).then(function(currentToken) {
+                                    if (currentToken) {
+                                        console.log('FCM token:', currentToken);
+                                        App.supabase.auth.getUser().then(function({ data: { user } }) {
+                                            if (!user) return;
+                                            App.supabase.from('push_subscriptions').upsert({
+                                                user_id: user.id,
+                                                player_id: currentToken,
+                                                updated_at: new Date().toISOString()
+                                            }, { onConflict: 'user_id' }).then(function() {
+                                                console.log('FCM token saved');
+                                                updatePushUI(true);
+                                            });
+                                        });
+                                    }
+                                }).catch(console.error);
+                            }).catch(console.error);
+                        }
+                    });
+                };
                 var subscribePushBtn = document.getElementById('subscribe-push-btn');
                 if (subscribePushBtn) {
                     subscribePushBtn.addEventListener('click', function() {
@@ -297,7 +304,6 @@ navigator.serviceWorker.ready.then(function(registration) {
 
         // ===== Кнопка «Выйти» (мгновенная очистка UI) =====
         function doLogout() {
-            // Сначала очищаем UI
             var loginForm = document.getElementById('login-form');
             if (loginForm) loginForm.reset();
             var usernameDisplay = document.getElementById('username-display');
@@ -308,9 +314,9 @@ navigator.serviceWorker.ready.then(function(registration) {
             if (authPanel) authPanel.style.display = 'block';
             var dataPanel = document.getElementById('data-panel');
             if (dataPanel) dataPanel.style.display = 'none';
-
-            // Фоновый выход
             App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
+            isLoggedIn = false;
+            setInstallButtonVisible(false);
         }
         var logoutSidebarBtn = document.getElementById('sidebar-logout');
         if (logoutSidebarBtn) logoutSidebarBtn.addEventListener('click', doLogout);
@@ -320,6 +326,8 @@ navigator.serviceWorker.ready.then(function(registration) {
         // ======================= СЕССИЯ (с Realtime) =======================
         App.supabase.auth.onAuthStateChange(function(event, session) {
             if (session) {
+                isLoggedIn = true;
+                setInstallButtonVisible(true);
                 if (authPanel) authPanel.style.display = 'none';
                 var dp = document.getElementById('data-panel');
                 if (dp) dp.style.display = 'block';
@@ -369,6 +377,8 @@ navigator.serviceWorker.ready.then(function(registration) {
                     }
                 });
             } else {
+                isLoggedIn = false;
+                setInstallButtonVisible(false);
                 if (authPanel) authPanel.style.display = 'block';
                 var dp = document.getElementById('data-panel');
                 if (dp) dp.style.display = 'none';
@@ -390,9 +400,10 @@ navigator.serviceWorker.ready.then(function(registration) {
             }
         });
 
-        // Упрощённый вариант восстановления сессии без лишних вызовов getUser
         App.supabase.auth.getSession().then(function({ data: { session } }) {
             if (session) {
+                isLoggedIn = true;
+                setInstallButtonVisible(true);
                 if (authPanel) authPanel.style.display = 'none';
                 var dp = document.getElementById('data-panel');
                 if (dp) dp.style.display = 'block';
@@ -407,7 +418,6 @@ navigator.serviceWorker.ready.then(function(registration) {
 
                 App.store.loadCars().then(function() {
                     App.ui.pages.renderCarSelector();
-                    // checkPendingInvites здесь больше не вызывается, чтобы избежать дублирования
                     if (App.store.activeCarId) {
                         if (App.realtime && App.realtime.subscribeToCar) {
                             App.realtime.subscribeToCar(App.store.activeCarId);
