@@ -11,7 +11,9 @@ App.logic = App.logic || {};
 App.logic.getOilMotohoursInterval = function(op, avgSpeed) {
     if (!isFinite(avgSpeed) || avgSpeed <= 0) return op.intervalMotohours || 250;
     if (op.name.indexOf('Масло') !== -1 && op.category.indexOf('ДВС') !== -1) {
-        return avgSpeed < 20 ? 200 : 250;
+        if (avgSpeed < 25) return 200;        // городской
+        else if (avgSpeed < 45) return 225;   // смешанный
+        else return 250;                      // трассовый
     }
     return op.intervalMotohours;
 };
