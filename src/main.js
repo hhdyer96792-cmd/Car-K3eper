@@ -445,7 +445,9 @@
 
         // ==================== РЕГИСТРАЦИЯ СЕРВИС‑ВОРКЕРА ====================
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/Car-K3eper/service-worker.js')
+            navigator.serviceWorker.register(
+  new URL('./service-worker.js', location.href)
+);
                 .then(function(registration) {
                     console.log('✅ Сервис-воркер зарегистрирован:', registration.scope);
                 })
