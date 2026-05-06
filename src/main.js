@@ -305,7 +305,7 @@
             if (unsubBtn) unsubBtn.style.display = isActive ? 'inline-block' : 'none';
         }
 
-        // ===== Кнопка «Выйти» (мгновенная очистка UI) =====
+       // ===== Кнопка «Выйти» (мгновенная очистка UI) =====
         function doLogout() {
             var loginForm = document.getElementById('login-form');
             if (loginForm) loginForm.reset();
@@ -327,131 +327,175 @@
         if (logoutDrawerBtn) logoutDrawerBtn.addEventListener('click', doLogout);
 
         // ======================= СЕССИЯ (с Realtime) =======================
-        App.supabase.auth.onAuthStateChange(function(event, session) {
-            if (session) {
-                isLoggedIn = true;
+        async function handleOnlineSession() {
+            if (!navigator.onLine) {
+                // Офлайн: просто показываем данные из localStorage
+                isLoggedIn = true; // предполагаем, что пользователь был залогинен
                 setInstallButtonVisible(true);
                 if (authPanel) authPanel.style.display = 'none';
                 var dp = document.getElementById('data-panel');
                 if (dp) dp.style.display = 'block';
 
-                App.supabase.auth.getUser().then(function({ data: { user } }) {
-                    var display = document.getElementById('username-display');
-                    if (display && user && user.user_metadata && user.user_metadata.username) {
-                        display.textContent = '👤 ' + user.user_metadata.username;
+                // Имя пользователя берём из localStorage (если сохраняли)
+                var cachedUsername = localStorage.getItem('vesta_username') || '';
+                var display = document.getElementById('username-display');
+                if (display && cachedUsername) {
+                    display.textContent = '👤 ' + cachedUsername;
+                }
+
+                // Загружаем автомобили из кэша
+                App.store.loadCars().then(function() {
+                    App.ui.pages.renderCarSelector();
+                    // Данные уже в памяти из initFromLocalStorage, рендерим
+                    if (App.store.activeCarId) {
+                        // Realtime не подключаем
                     }
+                    if (typeof App.renderAll === 'function') App.renderAll();
                 });
+                return;
+            }
 
-                App.store.initFromLocalStorage();
+            // Онлайн: стандартная цепочка
+            App.supabase.auth.onAuthStateChange(function(event, session) {
+                if (session) {
+                    isLoggedIn = true;
+                    setInstallButtonVisible(true);
+                    if (authPanel) authPanel.style.display = 'none';
+                    var dp = document.getElementById('data-panel');
+                    if (dp) dp.style.display = 'block';
 
-                if (event === 'PASSWORD_RECOVERY') {
-                    var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
-                    if (newPassword && newPassword.length >= 6) {
-                        App.supabase.auth.updateUser({ password: newPassword }).then(function({ error }) {
-                            if (error) App.toast('Ошибка при смене пароля', 'error');
-                            else {
-                                App.toast('Пароль успешно изменён!', 'success');
-                                window.location.hash = '';
-                                window.location.search = '';
+                    App.supabase.auth.getUser().then(function({ data: { user } }) {
+                        var display = document.getElementById('username-display');
+                        if (display && user && user.user_metadata && user.user_metadata.username) {
+                            display.textContent = '👤 ' + user.user_metadata.username;
+                            localStorage.setItem('vesta_username', user.user_metadata.username);
+                        }
+                    });
+
+                    App.store.initFromLocalStorage();
+
+                    if (event === 'PASSWORD_RECOVERY') {
+                        var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
+                        if (newPassword && newPassword.length >= 6) {
+                            App.supabase.auth.updateUser({ password: newPassword }).then(function({ error }) {
+                                if (error) App.toast('Ошибка при смене пароля', 'error');
+                                else {
+                                    App.toast('Пароль успешно изменён!', 'success');
+                                    window.location.hash = '';
+                                    window.location.search = '';
+                                }
+                            });
+                        }
+                    }
+
+                    App.supabase.auth.getUser().then(function({ data: { user } }) {
+                        if (!user) return;
+                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
+                            if (error) { console.warn('Ошибка проверки подписки:', error); return; }
+                            updatePushUI(!!(data && data.length > 0));
+                        });
+                    });
+
+                    App.store.loadCars().then(function() {
+                        App.ui.pages.renderCarSelector();
+                        App.ui.pages.checkPendingInvites();
+                        if (App.store.activeCarId) {
+                            if (App.realtime && App.realtime.subscribeToCar) {
+                                App.realtime.subscribeToCar(App.store.activeCarId);
                             }
-                        });
-                    }
-                }
-
-                App.supabase.auth.getUser().then(function({ data: { user } }) {
-                    if (!user) return;
-                    App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
-                        if (error) { console.warn('Ошибка проверки подписки:', error); return; }
-                        updatePushUI(!!(data && data.length > 0));
-                    });
-                });
-
-                App.store.loadCars().then(function() {
-                    App.ui.pages.renderCarSelector();
-                    App.ui.pages.checkPendingInvites();
-                    if (App.store.activeCarId) {
-                        if (App.realtime && App.realtime.subscribeToCar) {
-                            App.realtime.subscribeToCar(App.store.activeCarId);
-                        }
-                        App.storage.loadAllData().then(function() {
+                            App.storage.loadAllData().then(function() {
+                                if (typeof App.renderAll === 'function') App.renderAll();
+                            });
+                        } else {
                             if (typeof App.renderAll === 'function') App.renderAll();
+                        }
+                    });
+                } else {
+                    isLoggedIn = false;
+                    setInstallButtonVisible(false);
+                    if (authPanel) authPanel.style.display = 'block';
+                    var dp = document.getElementById('data-panel');
+                    if (dp) dp.style.display = 'none';
+                    var carContainer = document.getElementById('car-selector-container');
+                    if (carContainer) carContainer.innerHTML = '';
+                    var usernameDisplay = document.getElementById('username-display');
+                    if (usernameDisplay) usernameDisplay.textContent = '';
+                    if (App.realtime && App.realtime.unsubscribeAll) {
+                        App.realtime.unsubscribeAll();
+                    }
+                    App.store.operations = [];
+                    App.store.fuelLog = [];
+                    App.store.tireLog = [];
+                    App.store.parts = [];
+                    App.store.serviceRecords = [];
+                    App.store.mileageHistory = [];
+                    App.store.saveToLocalStorage();
+                    if (typeof App.renderAll === 'function') App.renderAll();
+                }
+            });
+
+            App.supabase.auth.getSession().then(function({ data: { session } }) {
+                if (session) {
+                    isLoggedIn = true;
+                    setInstallButtonVisible(true);
+                    if (authPanel) authPanel.style.display = 'none';
+                    var dp = document.getElementById('data-panel');
+                    if (dp) dp.style.display = 'block';
+
+                    var user = session.user;
+                    if (user) {
+                        var display = document.getElementById('username-display');
+                        if (display && user.user_metadata && user.user_metadata.username) {
+                            display.textContent = '👤 ' + user.user_metadata.username;
+                            localStorage.setItem('vesta_username', user.user_metadata.username);
+                        }
+                    }
+
+                    if (user) {
+                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
+                            if (error) { console.warn('Ошибка проверки подписки:', error); return; }
+                            updatePushUI(!!(data && data.length > 0));
                         });
-                    } else {
-                        if (typeof App.renderAll === 'function') App.renderAll();
                     }
-                });
-            } else {
-                isLoggedIn = false;
-                setInstallButtonVisible(false);
-                if (authPanel) authPanel.style.display = 'block';
-                var dp = document.getElementById('data-panel');
-                if (dp) dp.style.display = 'none';
-                var carContainer = document.getElementById('car-selector-container');
-                if (carContainer) carContainer.innerHTML = '';
-                var usernameDisplay = document.getElementById('username-display');
-                if (usernameDisplay) usernameDisplay.textContent = '';
-                if (App.realtime && App.realtime.unsubscribeAll) {
-                    App.realtime.unsubscribeAll();
-                }
-                App.store.operations = [];
-                App.store.fuelLog = [];
-                App.store.tireLog = [];
-                App.store.parts = [];
-                App.store.serviceRecords = [];
-                App.store.mileageHistory = [];
-                App.store.saveToLocalStorage();
-                if (typeof App.renderAll === 'function') App.renderAll();
-            }
-        });
 
-        App.supabase.auth.getSession().then(function({ data: { session } }) {
-            if (session) {
-                isLoggedIn = true;
-                setInstallButtonVisible(true);
-                if (authPanel) authPanel.style.display = 'none';
-                var dp = document.getElementById('data-panel');
-                if (dp) dp.style.display = 'block';
-
-                var user = session.user;
-                if (user) {
-                    var display = document.getElementById('username-display');
-                    if (display && user.user_metadata && user.user_metadata.username) {
-                        display.textContent = '👤 ' + user.user_metadata.username;
-                    }
-                }
-
-                if (user) {
-                    App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
-                        if (error) { console.warn('Ошибка проверки подписки:', error); return; }
-                        updatePushUI(!!(data && data.length > 0));
+                    App.store.loadCars().then(function() {
+                        App.ui.pages.renderCarSelector();
+                        if (App.store.activeCarId) {
+                            if (App.realtime && App.realtime.subscribeToCar) {
+                                App.realtime.subscribeToCar(App.store.activeCarId);
+                            }
+                            App.storage.loadAllData().then(function() {
+                                if (typeof App.renderAll === 'function') App.renderAll();
+                            });
+                        } else {
+                            if (typeof App.renderAll === 'function') App.renderAll();
+                        }
                     });
                 }
+            });
+        }
 
-                App.store.loadCars().then(function() {
-                    App.ui.pages.renderCarSelector();
-                    if (App.store.activeCarId) {
-                        if (App.realtime && App.realtime.subscribeToCar) {
-                            App.realtime.subscribeToCar(App.store.activeCarId);
-                        }
-                        App.storage.loadAllData().then(function() {
-                            if (typeof App.renderAll === 'function') App.renderAll();
-                        });
-                    } else {
-                        if (typeof App.renderAll === 'function') App.renderAll();
-                    }
-                });
-            }
+        // === Обработчики online/offline ===
+        window.addEventListener('online', function() {
+            App.toast('Сеть восстановлена', 'success');
+            // Повторно инициализируем сессию и данные
+            handleOnlineSession();
         });
+        window.addEventListener('offline', function() {
+            App.toast('Вы офлайн', 'warning');
+        });
+
+        // Запускаем обработку
+        handleOnlineSession();
 
         // ==================== РЕГИСТРАЦИЯ СЕРВИС‑ВОРКЕРА ====================
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register(new URL('./service-worker.js', location.href)).then(function(registration) {
-    console.log('✅ Сервис-воркер зарегистрирован:', registration.scope);
-}).catch(function(err) {
-    console.error('❌ Ошибка регистрации сервис-воркера:', err);
-});
-}
-// ==================== КОНЕЦ БЛОКА РЕГИСТРАЦИИ ====================
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(new URL('./service-worker.js', location.href)).then(function(registration) {
+                console.log('✅ Сервис-воркер зарегистрирован:', registration.scope);
+            }).catch(function(err) {
+                console.error('❌ Ошибка регистрации сервис-воркера:', err);
+            });
+        }
 
         // ===== Остальные инициализации =====
         App.events.init();
@@ -460,7 +504,17 @@ if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
             setTimeout(App.initIcons, 200);
         });
-    }
+
+        // Вспомогательная функция обновления UI push (без изменений)
+        function updatePushUI(isActive) {
+            var pushStatus = document.getElementById('push-status');
+            var subBtn = document.getElementById('subscribe-push-btn');
+            var unsubBtn = document.getElementById('unsubscribe-push-btn');
+            if (pushStatus) pushStatus.textContent = isActive ? '✅ Push активны' : 'Push-уведомления не настроены';
+            if (subBtn) subBtn.style.display = isActive ? 'none' : 'inline-block';
+            if (unsubBtn) unsubBtn.style.display = isActive ? 'inline-block' : 'none';
+        }
+    
 
     // ===== Функции восстановления =====
     async function recoverViaTelegram(msgEl) {
