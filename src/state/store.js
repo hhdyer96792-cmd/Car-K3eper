@@ -47,6 +47,10 @@ App.store = {
             this.fuelLog = d.fuelLog || [];
             this.tireLog = d.tireLog || [];
             this.workCosts = d.workCosts || [];
+            // Сохраняем точку отсчёта, если она была в кэше
+            this.baseMileage = d.baseMileage || 0;
+            this.baseMotohours = d.baseMotohours || 0;
+            this.purchaseDate = d.purchaseDate || '';
         }
         var pendingRaw = localStorage.getItem(App.config.PENDING_KEY);
         this.pendingActions = pendingRaw ? JSON.parse(pendingRaw) : [];
@@ -72,7 +76,10 @@ App.store = {
             parts: this.parts,
             fuelLog: this.fuelLog,
             tireLog: this.tireLog,
-            workCosts: this.workCosts
+            workCosts: this.workCosts,
+            baseMileage: this.baseMileage,
+            baseMotohours: this.baseMotohours,
+            purchaseDate: this.purchaseDate
         }));
     },
 
