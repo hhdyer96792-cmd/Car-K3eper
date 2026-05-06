@@ -218,9 +218,9 @@
             if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length === 0) {
                 firebase.initializeApp({
                     apiKey: "AIzaSyCKz1GKDdqxtK6NyLQAZ84QqUUCaqTQDWQ",
-                    authDomain: "car-k3eper.firebaseapp.com",
-                    projectId: "car-k3eper",
-                    storageBucket: "car-k3eper.firebasestorage.app",
+                    authDomain: "car-k3eeper.firebaseapp.com",
+                    projectId: "car-k3eeper",
+                    storageBucket: "car-k3eeper.firebasestorage.app",
                     messagingSenderId: "826833638199",
                     appId: "1:826833638199:web:647fedbe3eae5b605240b2"
                 });
