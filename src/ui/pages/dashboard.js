@@ -50,73 +50,13 @@ App.ui.pages.renderDashboard = function() {
     // Износ шин
     App.ui.pages.renderTireWearMini();
 
-    // Отправляем уведомления (Telegram + Push)
-    sendPushAndTelegramReminders();
+    // Уведомления теперь отправляются Edge Function daily-reminder по расписанию
+    // вызов sendPushAndTelegramReminders() удалён
 
     App.initIcons();
 };
 
-// Функция отправки напоминаний (Telegram + FCM Push)
-function sendPushAndTelegramReminders() {
-    var today = new Date();
-    var actions7 = [];
-    var actions2 = [];
-    App.store.operations.forEach(function(op) {
-        var plan = App.logic.calculatePlan(op);
-        if (plan.daysLeft === 7) {
-            actions7.push({ name: op.name, date: plan.planDate, mileage: plan.planMileage });
-        } else if (plan.daysLeft === 2) {
-            actions2.push({ name: op.name, date: plan.planDate, mileage: plan.planMileage });
-        }
-    });
-
-    var reminderText = '\n🛒 Не забудь про запчасти, список в приложении';
-
-    // --- Telegram ---
-    if (App.store.settings.telegramToken && App.store.settings.telegramChatId) {
-        if (actions7.length > 0) {
-            var msg7 = '🔔 Через 7 дней запланированы работы:\n';
-            actions7.forEach(function(a) { msg7 += '• ' + a.name + ' – ' + a.date + ' (' + a.mileage + ' км)\n'; });
-            msg7 += reminderText;
-            App.ui.pages.sendTelegramMessage(msg7);
-        }
-        if (actions2.length > 0) {
-            var msg2 = '⏰ Через 2 дня запланированы работы:\n';
-            actions2.forEach(function(a) { msg2 += '• ' + a.name + ' – ' + a.date + ' (' + a.mileage + ' км)\n'; });
-            msg2 += reminderText;
-            App.ui.pages.sendTelegramMessage(msg2);
-        }
-    }
-
-    // --- FCM Push (через Edge Function) ---
-    var pushMessage = '';
-    if (actions7.length > 0) {
-        pushMessage = '🔔 Через 7 дней: ' + actions7.map(function(a) { return a.name; }).join(', ') + reminderText;
-    } else if (actions2.length > 0) {
-        pushMessage = '⏰ Через 2 дня: ' + actions2.map(function(a) { return a.name; }).join(', ') + reminderText;
-    }
-
-    if (pushMessage) {
-        App.supabase.auth.getUser().then(function({ data: { user } }) {
-            if (!user) return;
-            App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data }) {
-                var sub = data && data.length > 0 ? data[0] : null;
-                if (!sub) return;
-                fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/fcm-send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        token: sub.player_id,
-                        title: 'Напоминание о ТО',
-                        body: pushMessage
-                    })
-                }).then(function(res) { return res.json(); })
-                  .then(console.log)
-                  .catch(console.error);
-            });
-        });
-    }
-}
+// Функция sendPushAndTelegramReminders() удалена, чтобы не дублировать Edge Function
 
 App.ui.pages.renderTop5Widget = function() {
     var container = document.getElementById('top5-container');
