@@ -47,7 +47,6 @@ App.store = {
             this.fuelLog = d.fuelLog || [];
             this.tireLog = d.tireLog || [];
             this.workCosts = d.workCosts || [];
-            // Сохраняем точку отсчёта, если она была в кэше
             this.baseMileage = d.baseMileage || 0;
             this.baseMotohours = d.baseMotohours || 0;
             this.purchaseDate = d.purchaseDate || '';
@@ -67,6 +66,8 @@ App.store = {
         }
         this.loadPriceHistory();
         this.activeCarId = localStorage.getItem('vesta_active_car_id') || null;
+
+        this.calculateOwnershipDays();
     },
 
     saveToLocalStorage: function() {
