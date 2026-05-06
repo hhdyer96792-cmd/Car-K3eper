@@ -444,17 +444,18 @@
         });
 
         // ==================== РЕГИСТРАЦИЯ СЕРВИС‑ВОРКЕРА ====================
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register(
-  new URL('./service-worker.js', location.href);
-                .then(function(registration) {
-                    console.log('✅ Сервис-воркер зарегистрирован:', registration.scope);
-                })
-                .catch(function(err) {
-                    console.error('❌ Ошибка регистрации сервис-воркера:', err);
-                });
-        }
-        // ==================== КОНЕЦ БЛОКА РЕГИСТРАЦИИ ====================
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(
+        new URL('./service-worker.js', location.href)
+    )
+    .then(function(registration) {
+        console.log('✅ Сервис-воркер зарегистрирован:', registration.scope);
+    })
+    .catch(function(err) {
+        console.error('❌ Ошибка регистрации сервис-воркера:', err);
+    });
+}
+// ==================== КОНЕЦ БЛОКА РЕГИСТРАЦИИ ====================
 
         // ===== Остальные инициализации =====
         App.events.init();
