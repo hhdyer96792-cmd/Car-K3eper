@@ -504,17 +504,7 @@
         window.addEventListener('load', function() {
             setTimeout(App.initIcons, 200);
         });
-
-        // Вспомогательная функция обновления UI push (без изменений)
-        function updatePushUI(isActive) {
-            var pushStatus = document.getElementById('push-status');
-            var subBtn = document.getElementById('subscribe-push-btn');
-            var unsubBtn = document.getElementById('unsubscribe-push-btn');
-            if (pushStatus) pushStatus.textContent = isActive ? '✅ Push активны' : 'Push-уведомления не настроены';
-            if (subBtn) subBtn.style.display = isActive ? 'none' : 'inline-block';
-            if (unsubBtn) unsubBtn.style.display = isActive ? 'inline-block' : 'none';
-        }
-    
+    }
 
     // ===== Функции восстановления =====
     async function recoverViaTelegram(msgEl) {
