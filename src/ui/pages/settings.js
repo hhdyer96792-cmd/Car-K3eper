@@ -69,14 +69,15 @@ App.ui.pages.populateSettingsFields = function() {
         if (document.getElementById('reminder-days-2')) document.getElementById('reminder-days-2').value = parts[1] || 2;
     }
 
+    // Точка отсчёта – теперь берём из выделенных полей store, а не из текущих показателей
     var baseMileageInput = document.getElementById('set-base-mileage');
     var baseMotohoursInput = document.getElementById('set-base-motohours');
     var purchaseDateInput = document.getElementById('purchase-date');
     var ownershipDaysInput = document.getElementById('ownership-days');
 
-    if (baseMileageInput) baseMileageInput.value = App.store.settings.currentMileage;
-    if (baseMotohoursInput) baseMotohoursInput.value = App.store.settings.currentMotohours;
-    if (purchaseDateInput) purchaseDateInput.value = App.store.purchaseDate;
+    if (baseMileageInput) baseMileageInput.value = App.store.baseMileage || '';
+    if (baseMotohoursInput) baseMotohoursInput.value = App.store.baseMotohours || '';
+    if (purchaseDateInput) purchaseDateInput.value = App.store.purchaseDate || '';
     if (ownershipDaysInput) ownershipDaysInput.value = App.store.ownershipDays;
 
     App.ui.pages.updateOwnershipDisplay();
