@@ -1,4 +1,4 @@
-// ===== Firebase Cloud Messaging: инициализация и обработка фоновых сообщений =====
+// ===== Firebase Cloud Messaging =====
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
 
@@ -13,34 +13,34 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Когда PWA в фоне, при notification-сообщении браузер сам покажет уведомление.
-// Мы только логируем для диагностики.
 messaging.onBackgroundMessage(function(payload) {
     console.log('[SW] Получено фоновое сообщение:', payload);
 });
 // =====================================================================
 
+// Автоматическое определение базовой папки исходя из URL сервис-воркера
+const basePath = self.location.pathname.replace(/\/service-worker\.js$/, '');
+// Например, для /Car-K3eper/service-worker.js basePath станет '/Car-K3eper'
+
 const CACHE_NAME = 'car-k3eeper-static-v1';
 
 const localFiles = [
-    '/Car-K3eeper/index.html',
-    '/Car-K3eeper/style.css',
-    '/Car-K3eeper/manifest.json',
-    '/Car-K3eeper/icon-192.png',
-    '/Car-K3eeper/icon-512.png',
-    '/Car-K3eeper/src/config/constants.js',
-    '/Car-K3eeper/src/utils/dom.js',
-    '/Car-K3eeper/src/events.js',
-    '/Car-K3eeper/src/main.js'
+    basePath + '/index.html',
+    basePath + '/style.css',
+    basePath + '/manifest.json',
+    basePath + '/icon-192.png',
+    basePath + '/icon-512.png',
+    basePath + '/src/config/constants.js',
+    basePath + '/src/utils/dom.js',
+    basePath + '/src/events.js',
+    basePath + '/src/main.js'
 ];
 
-// Минимальная установка без прекэширования (чтобы избежать ошибок)
 self.addEventListener('install', event => {
-    console.log('[SW] Установка');
+    console.log('[SW] Установка, базовый путь: ' + basePath);
     self.skipWaiting();
 });
 
-// Очистка старых кэшей
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => {
@@ -51,20 +51,17 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Стратегия "сначала кэш, потом сеть" с обновлением в фоне
 self.addEventListener('fetch', event => {
     const requestURL = new URL(event.request.url);
     if (localFiles.includes(requestURL.pathname)) {
         event.respondWith(
             caches.match(event.request).then(cachedResponse => {
                 if (cachedResponse) {
-                    // Обновляем кэш в фоне
                     fetch(event.request).then(networkResponse => {
                         caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse.clone()));
                     }).catch(() => {});
                     return cachedResponse;
                 }
-                // Если в кэше нет, загружаем из сети и кэшируем
                 return fetch(event.request).then(networkResponse => {
                     return caches.open(CACHE_NAME).then(cache => {
                         cache.put(event.request, networkResponse.clone());
@@ -74,5 +71,4 @@ self.addEventListener('fetch', event => {
             })
         );
     }
-    // Все остальные запросы (API, Supabase) пропускаем без кэширования
 });
