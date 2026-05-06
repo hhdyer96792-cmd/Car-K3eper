@@ -20,11 +20,9 @@ messaging.onBackgroundMessage(function(payload) {
 });
 // =====================================================================
 
-// ===== Кэширование статических ресурсов (Stale-While-Revalidate) =====
 const CACHE_NAME = 'car-k3eeper-static-v1';
 
 const localFiles = [
-    '/Car-K3eeper/',
     '/Car-K3eeper/index.html',
     '/Car-K3eeper/style.css',
     '/Car-K3eeper/manifest.json',
@@ -36,23 +34,13 @@ const localFiles = [
     '/Car-K3eeper/src/main.js'
 ];
 
+// Минимальная установка без прекэширования (чтобы избежать ошибок)
 self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(async cache => {
-            console.log('[SW] Кэширую статические ресурсы');
-            // Кэшируем каждый файл отдельно, чтобы одна ошибка не остановила всё
-            for (const file of localFiles) {
-                try {
-                    await cache.add(file);
-                } catch (err) {
-                    console.warn(`[SW] Не удалось закэшировать: ${file}`, err);
-                }
-            }
-            console.log('[SW] Кэширование завершено');
-        }).then(() => self.skipWaiting())
-    );
+    console.log('[SW] Установка');
+    self.skipWaiting();
 });
 
+// Очистка старых кэшей
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => {
@@ -63,6 +51,7 @@ self.addEventListener('activate', event => {
     );
 });
 
+// Стратегия "сначала кэш, потом сеть" с обновлением в фоне
 self.addEventListener('fetch', event => {
     const requestURL = new URL(event.request.url);
     if (localFiles.includes(requestURL.pathname)) {
@@ -75,6 +64,7 @@ self.addEventListener('fetch', event => {
                     }).catch(() => {});
                     return cachedResponse;
                 }
+                // Если в кэше нет, загружаем из сети и кэшируем
                 return fetch(event.request).then(networkResponse => {
                     return caches.open(CACHE_NAME).then(cache => {
                         cache.put(event.request, networkResponse.clone());
@@ -84,5 +74,5 @@ self.addEventListener('fetch', event => {
             })
         );
     }
-    // Остальные запросы пропускаем без кэширования
+    // Все остальные запросы (API, Supabase) пропускаем без кэширования
 });
