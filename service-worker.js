@@ -19,7 +19,7 @@ messaging.onBackgroundMessage(function(payload) {
 // =====================================================================
 
 const basePath = self.location.pathname.replace(/\/service-worker\.js$/, '');
-const CACHE_NAME = 'car-k3eeper-static-v2';
+const CACHE_NAME = 'car-k3eeper-static-v3';
 
 // Все локальные файлы приложения
 const localFiles = [
@@ -74,10 +74,21 @@ self.addEventListener('install', event => {
     console.log('[SW] Установка, базовый путь: ' + basePath);
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            return Promise.all([
-                cache.addAll(localFiles),
-                ...cdnFiles.map(url => cache.add(url).catch(err => console.warn('Не удалось закешировать CDN:', url, err)))
-            ]);
+            // Добавляем локальные файлы по одному, игнорируя ошибки
+            const localPromises = localFiles.map(url =>
+                cache.add(url).catch(err => {
+                    console.warn('[SW] Не удалось закешировать локальный файл:', url, err.message);
+                })
+            );
+            // Добавляем CDN с игнорированием ошибок
+            const cdnPromises = cdnFiles.map(url =>
+                cache.add(url).catch(err => {
+                    console.warn('[SW] Не удалось закешировать CDN:', url, err.message);
+                })
+            );
+            return Promise.all([...localPromises, ...cdnPromises]).then(() => {
+                console.log('[SW] Установка завершена (с ошибками или без).');
+            });
         }).then(() => self.skipWaiting())
     );
 });
