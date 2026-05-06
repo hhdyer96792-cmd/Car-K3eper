@@ -65,8 +65,6 @@ App.ui.pages.renderTOTable = function() {
                     '<button class="icon-btn" data-action="edit-op" data-op-id="' + op.id + '"><i data-lucide="pencil"></i></button>' +
                     '<button class="icon-btn" data-action="shopping-list" data-op-id="' + op.id + '"><i data-lucide="shopping-cart"></i></button>' +
                     '<button class="icon-btn" data-action="delete-op" data-op-id="' + op.id + '"><i data-lucide="trash-2"></i></button>' +
-                    // Кнопка в таблице ТО – быстрое добавление в календарь с автоподгрузкой запчастей
-                    // '<button class="icon-btn" data-action="calendar" data-op-id="' + op.id + '" data-op-name="' + App.utils.escapeHtml(op.name) + '" data-plan-date="' + plan.planDate + '" data-plan-mileage="' + plan.planMileage + '"><i data-lucide="calendar-plus"></i></button>' +
                 '</td>';
             tbody.appendChild(tr);
         });
@@ -98,7 +96,6 @@ App.ui.pages.renderMaintenancePlan = function() {
         '</tr>';
     });
     html += '</tbody></table>';
-    // Кнопка скачивания ICS
     html += '<div style="margin-top:12px;"><button id="download-ics-btn" class="primary-btn"><i data-lucide="calendar-download"></i> Добавить все в календарь (.ics)</button></div>';
     container.innerHTML = html;
 
@@ -131,7 +128,6 @@ function generateICS(plan) {
         var uid = op.id + '-vesta-' + planData.planDate;
         var summary = 'ТО: ' + op.name;
 
-        // Запчасти для этой операции
         var parts = App.store.parts.filter(function(p) {
             return p.operation === op.name || p.operation === op.category;
         });
@@ -236,14 +232,38 @@ App.ui.pages.openServiceModal = function(opId, opName) {
         var motohours = App.utils.validateNumberInput(formEl.querySelector('[name="motohours"]'), true, true);
         var cost = App.utils.validateNumberInput(formEl.querySelector('[name="cost"]'), true, true);
         var workCost = App.utils.validateNumberInput(formEl.querySelector('[name="workCost"]'), true, true);
-        if (mileage === null) return;
+        if (mileage === null) return;  // ошибка уже показана
+
+        var formattedDate = App.utils.ddmmYYYYtoISO(formEl.querySelector('[name="date"]').value);
+        if (!formattedDate) {
+            App.toast('Неверный формат даты', 'error');
+            return;
+        }
+
+        // ----- ВАЛИДАЦИЯ -----
+        var refPoint = {
+            purchaseDate: App.store.purchaseDate,
+            baseMileage: App.store.baseMileage || 0,
+            baseMotohours: App.store.baseMotohours || 0
+        };
+        var validationError = App.logic.validateMaintenanceRecord(
+            formattedDate,
+            mileage,
+            motohours,
+            refPoint,
+            App.store.serviceRecords  // все записи истории
+        );
+        if (validationError) {
+            App.toast(validationError, 'error');
+            return; // Прерываем сохранение
+        }
+        // --------------------
 
         var data = new FormData(formEl);
         modal.remove();
 
         var notes = data.get('notes') || '';
         var isDIY = data.get('isDIY') === 'true';
-        var formattedDate = App.utils.ddmmYYYYtoISO(data.get('date'));
 
         var uploadPromises = [];
         if (selectedFiles.length > 0) {
