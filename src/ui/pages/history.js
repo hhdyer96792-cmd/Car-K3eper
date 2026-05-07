@@ -83,6 +83,7 @@ App.ui.pages.renderHistoryWithFilters = function() {
         var tr = document.createElement('tr');
         var op = App.store.operations.find(function(o) { return o.id == record.operation_id; }) || { name: 'Неизвестно' };
         var diyFlag = record.is_diy === 'TRUE' || record.is_diy === true;
+        var userIdShort = record.user_id ? record.user_id.substring(0, 8) : '—';
         tr.innerHTML =
             '<td>' + (record.date || '') + '</td>' +
             '<td>' + App.utils.escapeHtml(op.name) + '</td>' +
@@ -92,6 +93,7 @@ App.ui.pages.renderHistoryWithFilters = function() {
             '<td>' + (record.work_cost || '') + '</td>' +
             '<td>' + App.utils.escapeHtml(record.notes || '') + '</td>' +
             '<td style="text-align:center;">' + (diyFlag ? '<i data-lucide="check"></i>' : '—') + '</td>' +
+            '<td>' + userIdShort + '</td>' +   // новая колонка "Исполнитель"
             '<td>' +
                 '<button class="icon-btn" data-action="edit-history" data-row="' + record.rowIndex + '"><i data-lucide="pencil"></i></button>' +
                 '<button class="icon-btn" data-action="delete-history" data-row="' + record.rowIndex + '"><i data-lucide="trash-2"></i></button>' +
