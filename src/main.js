@@ -6,6 +6,11 @@
     function setInstallButtonVisible(visible) {
         var installBtn = document.getElementById('pwa-install-btn');
         if (!installBtn) return;
+        // Не показываем кнопку, если приложение уже запущено как PWA
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            installBtn.style.display = 'none';
+            return;
+        }
         if (visible && deferredPrompt) {
             installBtn.style.display = 'block';
         } else {
@@ -192,6 +197,10 @@
         var installBtn = document.getElementById('pwa-install-btn');
         if (installBtn) installBtn.style.display = 'none';
 
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            setInstallButtonVisible(false);
+        }
+
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
@@ -212,7 +221,7 @@
             }
         }, 3000);
 
-        // ===== Firebase Cloud Messaging (с повторными попытками при блокировках) =====
+        // ===== Firebase Cloud Messaging =====
         var messaging;
         try {
             if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length === 0) {
@@ -305,7 +314,7 @@
             if (unsubBtn) unsubBtn.style.display = isActive ? 'inline-block' : 'none';
         }
 
-       // ===== Кнопка «Выйти» (мгновенная очистка UI) =====
+        // ===== Кнопка «Выйти» =====
         function doLogout() {
             var loginForm = document.getElementById('login-form');
             if (loginForm) loginForm.reset();
@@ -330,23 +339,20 @@
         async function handleOnlineSession() {
             if (!navigator.onLine) {
                 // Офлайн: просто показываем данные из localStorage
-                isLoggedIn = true; // предполагаем, что пользователь был залогинен
+                isLoggedIn = true;
                 setInstallButtonVisible(true);
                 if (authPanel) authPanel.style.display = 'none';
                 var dp = document.getElementById('data-panel');
                 if (dp) dp.style.display = 'block';
 
-                // Имя пользователя берём из localStorage (если сохраняли)
                 var cachedUsername = localStorage.getItem('vesta_username') || '';
                 var display = document.getElementById('username-display');
                 if (display && cachedUsername) {
                     display.textContent = '👤 ' + cachedUsername;
                 }
 
-                // Загружаем автомобили из кэша
                 App.store.loadCars().then(function() {
                     App.ui.pages.renderCarSelector();
-                    // Данные уже в памяти из initFromLocalStorage, рендерим
                     if (App.store.activeCarId) {
                         // Realtime не подключаем
                     }
@@ -478,14 +484,26 @@
         // === Обработчики online/offline ===
         window.addEventListener('online', function() {
             App.toast('Сеть восстановлена', 'success');
-            // Повторно инициализируем сессию и данные
+            // Синхронизируем офлайн-действия (минимальная реализация)
+            if (App.store.pendingActions.length > 0) {
+                App.toast('Синхронизация офлайн-изменений...', 'info');
+                App.store.pendingActions.forEach(function(action) {
+                    if (action.type === 'service') {
+                        App.logic.addServiceRecord(
+                            action.opId, action.date, action.mileage, action.motohours,
+                            action.partsCost, action.workCost, action.isDIY, action.notes, action.photoUrl
+                        );
+                    }
+                    // Здесь можно добавить другие типы действий
+                });
+                App.store.clearPendingActions();
+            }
             handleOnlineSession();
         });
         window.addEventListener('offline', function() {
             App.toast('Вы офлайн', 'warning');
         });
 
-        // Запускаем обработку
         handleOnlineSession();
 
         // ==================== РЕГИСТРАЦИЯ СЕРВИС‑ВОРКЕРА ====================
