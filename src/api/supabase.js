@@ -121,7 +121,7 @@ App.supa.loadHistory = function() {
             is_diy: h.is_diy || false,
             notes: h.notes || '',
             photo_url: h.photo_url || '',
-            user_id: h.user_id,
+            user_id: h.user_id,   // обязательно для отображения исполнителя
             rowIndex: h.id
         }));
     });
@@ -130,6 +130,7 @@ App.supa.loadHistory = function() {
 App.supa.loadSettings = function() {
     if (!App.store.activeCarId) return Promise.resolve(null);
     return App.supa.getCurrentUserId().then(function(userId) {
+        if (!userId) return null;
         return Promise.all([
             App.supabase.from('vehicle_state').select('*').eq('car_id', App.store.activeCarId).maybeSingle(),
             App.supabase.from('user_settings').select('*').eq('user_id', userId).eq('car_id', App.store.activeCarId).maybeSingle()
@@ -376,8 +377,11 @@ App.supa.getPendingInvites = function() {
     });
 };
 
-App.supa.acceptInvite = function(inviteId) {
-    return App.supabase.from('car_shares').update({ accepted: true }).eq('id', inviteId);
+App.supa.acceptInvite = async function(inviteId) {
+    const userId = await App.supa.getCurrentUserId();
+    return App.supabase.from('car_shares')
+        .update({ accepted: true, invited_user_id: userId })
+        .eq('id', inviteId);
 };
 
 App.supa.declineInvite = function(inviteId) {
