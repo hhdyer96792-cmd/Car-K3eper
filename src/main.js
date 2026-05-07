@@ -411,6 +411,16 @@
                             }
                             App.storage.loadAllData().then(function() {
                                 if (typeof App.renderAll === 'function') App.renderAll();
+                                // --- Восстановление редиректа после 404.html ---
+                                var redirect = sessionStorage.redirect;
+                                if (redirect) {
+                                    sessionStorage.removeItem('redirect');
+                                    var url = new URL(redirect);
+                                    var inviteCode = url.searchParams.get('invite');
+                                    if (inviteCode) {
+                                        App.ui.pages.checkPendingInvites(); // повторно проверит, теперь с параметром
+                                    }
+                                }
                             });
                         } else {
                             if (typeof App.renderAll === 'function') App.renderAll();
@@ -472,6 +482,16 @@
                             }
                             App.storage.loadAllData().then(function() {
                                 if (typeof App.renderAll === 'function') App.renderAll();
+                                // --- Восстановление редиректа после 404.html ---
+                                var redirect = sessionStorage.redirect;
+                                if (redirect) {
+                                    sessionStorage.removeItem('redirect');
+                                    var url = new URL(redirect);
+                                    var inviteCode = url.searchParams.get('invite');
+                                    if (inviteCode) {
+                                        App.ui.pages.checkPendingInvites(); // обработает приглашение
+                                    }
+                                }
                             });
                         } else {
                             if (typeof App.renderAll === 'function') App.renderAll();
