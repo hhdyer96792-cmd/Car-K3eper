@@ -37,7 +37,6 @@ App.logic.addServiceRecord = function(opId, date, mileage, motohours, partsCost,
             App.storage.loadAllData();
         });
     } else {
-        // Старая логика (не используется)
         if (App.auth.accessToken) {
             return App.storage.saveOperation(op).then(function() {
                 return App.storage.addHistoryRecord({
@@ -161,19 +160,6 @@ App.logic.addDependentOperations = function(mainOpName, opId, date, mileage, mot
     });
 };
 
-// ====== ВАЛИДАЦИЯ ВЫПОЛНЕНИЯ ТО ======
-
-/**
- * Проверяет, можно ли выполнить операцию ТО с указанными параметрами.
- * Возвращает null, если ошибок нет, или строку с описанием ошибки.
- *
- * @param {string} date - дата выполнения в формате YYYY-MM-DD
- * @param {number|null} mileage - пробег (может быть null, если не указан)
- * @param {number|null} motohours - моточасы (может быть null)
- * @param {object} refPoint - { purchaseDate, baseMileage, baseMotohours }
- * @param {Array} historyRecords - массив записей истории (объекты с полями date, mileage, motohours)
- * @returns {string|null}
- */
 App.logic.validateMaintenanceRecord = function(date, mileage, motohours, refPoint, historyRecords, opName, opCategory) {
     var newMileage = (mileage !== null && mileage !== undefined && mileage !== '') ? Number(mileage) : null;
     var newMotohours = (motohours !== null && motohours !== undefined && motohours !== '') ? Number(motohours) : null;
@@ -238,71 +224,6 @@ App.logic.validateMaintenanceRecord = function(date, mileage, motohours, refPoin
     var nextRecord = null;
     for (var j = 0; j < validRecords.length; j++) {
         if (new Date(validRecords[j].date).getTime() > newDateTimestamp) {
-            nextRecord = validRecords[j];
-            break;
-        }
-    }
-
-    function checkConsistency(refRecord, direction) {
-        if (!refRecord) return null;
-        var refMileage = (refRecord.mileage !== null && refRecord.mileage !== undefined && refRecord.mileage !== '') ? Number(refRecord.mileage) : null;
-        var refMotohours = (refRecord.motohours !== null && refRecord.motohours !== undefined && refRecord.motohours !== '') ? Number(refRecord.motohours) : null;
-
-        if (direction === 'prev') {
-            if (newMileage !== null && refMileage !== null && refMileage > newMileage) {
-                return 'Пробег не может быть меньше, чем в предыдущей записи (' + refRecord.date + ': ' + refMileage + ' км).';
-            }
-            if (newMotohours !== null && refMotohours !== null && refMotohours > newMotohours) {
-                return 'Моточасы не могут быть меньше, чем в предыдущей записи (' + refRecord.date + ': ' + refMotohours + ' м/ч).';
-            }
-        } else if (direction === 'next') {
-            if (newMileage !== null && refMileage !== null && refMileage < newMileage) {
-                return 'Пробег не может быть больше, чем в следующей записи (' + refRecord.date + ': ' + refMileage + ' км).';
-            }
-            if (newMotohours !== null && refMotohours !== null && refMotohours < newMotohours) {
-                return 'Моточасы не могут быть больше, чем в следующей записи (' + refRecord.date + ': ' + refMotohours + ' м/ч).';
-            }
-        }
-        return null;
-    }
-
-    var errPrev = checkConsistency(prevRecord, 'prev');
-    if (errPrev) return errPrev;
-    var errNext = checkConsistency(nextRecord, 'next');
-    if (errNext) return errNext;
-
-    return null;
-};
-    }
-
-    // Проверка целостности всей истории
-    if (!historyRecords || historyRecords.length === 0) {
-        return null; // Нет истории – не с чем сравнивать
-    }
-
-    var validRecords = historyRecords.filter(function(r) {
-        return r.date && !isNaN(new Date(r.date).getTime());
-    });
-
-    validRecords.sort(function(a, b) {
-        return new Date(a.date) - new Date(b.date);
-    });
-
-    var newDateTimestamp = new Date(newDate).getTime();
-
-    // Ближайшая предыдущая запись (дата <= новой)
-    var prevRecord = null;
-    for (var i = validRecords.length - 1; i >= 0; i--) {
-        if (new Date(validRecords[i].date).getTime() <= newDateTimestamp) {
-            prevRecord = validRecords[i];
-            break;
-        }
-    }
-
-    // Ближайшая следующая запись (дата >= новой)
-    var nextRecord = null;
-    for (var j = 0; j < validRecords.length; j++) {
-        if (new Date(validRecords[j].date).getTime() >= newDateTimestamp) {
             nextRecord = validRecords[j];
             break;
         }
