@@ -300,6 +300,8 @@ App.ui.pages.openServiceModal = function(opId, opName) {
             op.lastMotohours = motohours || 0;
             App.store.saveToLocalStorage();
             App.toast('Запись сохранена локально. Синхронизируется при подключении к сети.', 'warning');
+            // Обновляем все представления
+            if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
             if (typeof App.ui.pages.renderMaintenancePlan === 'function') App.ui.pages.renderMaintenancePlan();
             if (typeof App.ui.pages.renderTop5Widget === 'function') App.ui.pages.renderTop5Widget();
             return;
