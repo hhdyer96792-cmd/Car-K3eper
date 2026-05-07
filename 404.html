@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting...</title>
+  <script>
+    // Перенаправление с сохранением параметров
+    sessionStorage.redirect = location.href;
+    window.location.href = '/Car-K3eeper/index.html' + (location.search ? location.search : '') + (location.hash ? location.hash : '');
+  </script>
+</head>
+<body>
+  Redirecting...
+</body>
+</html>
