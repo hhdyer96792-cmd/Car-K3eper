@@ -121,6 +121,7 @@ App.supa.loadHistory = function() {
             is_diy: h.is_diy || false,
             notes: h.notes || '',
             photo_url: h.photo_url || '',
+            user_id: h.user_id,
             rowIndex: h.id
         }));
     });
