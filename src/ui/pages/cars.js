@@ -28,7 +28,6 @@ App.ui.pages.renderCarSelector = function() {
             App.storage.loadAllData().then(function() {
                 if (typeof App.renderAll === 'function') App.renderAll();
             });
-            // синхронизация с сайдбаром
             var sidebarSelect = document.getElementById('sidebar-car-select');
             if (sidebarSelect) sidebarSelect.value = carId;
         }
@@ -61,7 +60,6 @@ App.ui.pages.renderCarSelector = function() {
         });
     });
 
-    // Переименование – только владелец
     document.getElementById('rename-car-btn').addEventListener('click', async function() {
         var carId = App.store.activeCarId;
         if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
@@ -87,7 +85,6 @@ App.ui.pages.renderCarSelector = function() {
         }
     });
 
-    // Удаление – только владелец
     document.getElementById('delete-car-btn').addEventListener('click', async function() {
         var carId = App.store.activeCarId;
         if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
@@ -150,7 +147,6 @@ App.ui.pages.renderCarSelector = function() {
             });
     });
 
-    // Кнопка подписки на календарь
     document.getElementById('calendar-subscribe-btn').addEventListener('click', async function() {
         var carId = App.store.activeCarId;
         if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
@@ -236,46 +232,71 @@ App.ui.pages.checkPendingInvites = function() {
     var urlParams = new URLSearchParams(window.location.search);
     var inviteCode = urlParams.get('invite');
 
-    if (inviteCode) {
+    // Если не авторизован, сохраним код в sessionStorage и вернёмся после входа
+    if (inviteCode && !App.supabase.auth.getUser()) {
+        sessionStorage.setItem('pendingInvite', inviteCode);
         window.history.replaceState({}, document.title, window.location.pathname);
+        return;
     }
 
+    // Обработка invite из URL
     if (inviteCode) {
-        App.supa.getInviteByCode(inviteCode).then(function(res) {
-            if (!res.data) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        App.supa.getInviteByCode(inviteCode).then(function({ data, error }) {
+            if (error || !data) {
                 App.toast('Приглашение не найдено', 'error');
                 return;
             }
-            var invite = res.data;
-            if (invite.accepted) {
+            if (data.accepted) {
                 App.toast('Приглашение уже принято', 'warning');
                 return;
             }
-            var carName = invite.cars ? invite.cars.name : 'автомобиль';
+            var carName = data.cars ? data.cars.name : 'автомобиль';
             if (confirm(`Вас пригласили в автомобиль "${carName}". Принять?`)) {
-                App.supa.acceptInvite(invite.invite_code).then(function() {
+                // Важно: acceptInvite принимает ID записи приглашения, а не invite_code
+                App.supa.acceptInvite(data.id).then(function() {
                     App.toast('Приглашение принято!', 'success');
+                    // Устанавливаем этот автомобиль как активный
+                    App.store.setActiveCar(data.car_id);
                     App.store.loadCars().then(function() {
                         App.ui.pages.renderCarSelector();
                         App.storage.loadAllData();
                     });
+                }).catch(function(err) {
+                    console.error(err);
+                    App.toast('Ошибка принятия приглашения', 'error');
                 });
             }
         });
         return;
     }
 
+    // Проверяем сохранённый в sessionStorage код (после входа)
+    var pendingInvite = sessionStorage.getItem('pendingInvite');
+    if (pendingInvite) {
+        sessionStorage.removeItem('pendingInvite');
+        // Симулируем параметр URL, чтобы обработать ниже
+        window.history.replaceState({}, document.title, window.location.pathname + '?invite=' + pendingInvite);
+        App.ui.pages.checkPendingInvites();
+        return;
+    }
+
+    // Стандартные ожидающие приглашения (уже привязанные к пользователю)
     App.supa.getPendingInvites().then(function({ data, error }) {
         if (error || !data || data.length === 0) return;
         data.forEach(function(inv) {
             var carName = inv.cars ? inv.cars.name : 'автомобиль';
             if (confirm(`Вас пригласили в автомобиль "${carName}". Принять?`)) {
-                App.supa.acceptInvite(inv.invite_code).then(function() {
+                App.supa.acceptInvite(inv.id).then(function() {
                     App.toast('Приглашение принято!', 'success');
+                    App.store.setActiveCar(inv.car_id);
                     App.store.loadCars().then(function() {
                         App.ui.pages.renderCarSelector();
                         App.storage.loadAllData();
                     });
+                }).catch(function(err) {
+                    console.error(err);
+                    App.toast('Ошибка принятия приглашения', 'error');
                 });
             } else {
                 App.supa.declineInvite(inv.id);
