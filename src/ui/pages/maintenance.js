@@ -246,8 +246,9 @@ App.ui.pages.openServiceModal = function(opId, opName) {
             baseMotohours: App.store.baseMotohours || 0
         };
         var validationError = App.logic.validateMaintenanceRecord(
-            formattedDate, mileage, motohours, refPoint, App.store.serviceRecords
-        );
+    formattedDate, mileage, motohours, refPoint, App.store.serviceRecords,
+    opName, op.category
+);
         if (validationError) {
             App.toast(validationError, 'error');
             return;
