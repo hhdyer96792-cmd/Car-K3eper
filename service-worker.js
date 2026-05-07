@@ -19,45 +19,45 @@ messaging.onBackgroundMessage(function(payload) {
 // =====================================================================
 
 const basePath = self.location.pathname.replace(/\/service-worker\.js$/, '');
-const CACHE_NAME = 'car-k3eeper-static-v3';
+const CACHE_NAME = 'car-k3eeper-static-v4';
 
-// Все локальные файлы приложения
+// Все локальные файлы приложения (без начального basePath, он добавится при проверке)
 const localFiles = [
-    basePath + '/index.html',
-    basePath + '/style.css',
-    basePath + '/manifest.json',
-    basePath + '/icon-192.png',
-    basePath + '/icon-512.png',
-    basePath + '/src/config/constants.js',
-    basePath + '/src/config/defaults.js',
-    basePath + '/src/utils/dom.js',
-    basePath + '/src/utils/dates.js',
-    basePath + '/src/utils/validate.js',
-    basePath + '/src/api/supabase.js',
-    basePath + '/src/api/storage.js',
-    basePath + '/src/state/store.js',
-    basePath + '/src/logic/planner.js',
-    basePath + '/src/logic/statistics.js',
-    basePath + '/src/logic/operations.js',
-    basePath + '/src/ui/components/modal.js',
-    basePath + '/src/ui/components/charts.js',
-    basePath + '/src/ui/pages/dashboard.js',
-    basePath + '/src/ui/pages/maintenance.js',
-    basePath + '/src/ui/pages/stats.js',
-    basePath + '/src/ui/pages/history.js',
-    basePath + '/src/ui/pages/fuel.js',
-    basePath + '/src/ui/pages/tires.js',
-    basePath + '/src/ui/pages/parts.js',
-    basePath + '/src/ui/pages/importCsv.js',
-    basePath + '/src/ui/pages/settings.js',
-    basePath + '/src/ui/pages/cars.js',
-    basePath + '/src/utils/realtime.js',
-    basePath + '/src/events.js',
-    basePath + '/src/main.js',
-    basePath + '/src/vendor/supabase.min.js'
+    '/index.html',
+    '/style.css',
+    '/manifest.json',
+    '/icon-192.png',
+    '/icon-512.png',
+    '/src/config/constants.js',
+    '/src/config/defaults.js',
+    '/src/utils/dom.js',
+    '/src/utils/dates.js',
+    '/src/utils/validate.js',
+    '/src/api/supabase.js',
+    '/src/api/storage.js',
+    '/src/state/store.js',
+    '/src/logic/planner.js',
+    '/src/logic/statistics.js',
+    '/src/logic/operations.js',
+    '/src/ui/components/modal.js',
+    '/src/ui/components/charts.js',
+    '/src/ui/pages/dashboard.js',
+    '/src/ui/pages/maintenance.js',
+    '/src/ui/pages/stats.js',
+    '/src/ui/pages/history.js',
+    '/src/ui/pages/fuel.js',
+    '/src/ui/pages/tires.js',
+    '/src/ui/pages/parts.js',
+    '/src/ui/pages/importCsv.js',
+    '/src/ui/pages/settings.js',
+    '/src/ui/pages/cars.js',
+    '/src/utils/realtime.js',
+    '/src/events.js',
+    '/src/main.js',
+    '/src/vendor/supabase.min.js'
 ];
 
-// Важные CDN-ресурсы, которые нужно кешировать
+// Важные CDN-ресурсы
 const cdnFiles = [
     'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
     'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js',
@@ -70,29 +70,25 @@ const cdnFiles = [
     'https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js'
 ];
 
+// Установка: кэшируем всё, игнорируя ошибки
 self.addEventListener('install', event => {
     console.log('[SW] Установка, базовый путь: ' + basePath);
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            // Добавляем локальные файлы по одному, игнорируя ошибки
-            const localPromises = localFiles.map(url =>
-                cache.add(url).catch(err => {
-                    console.warn('[SW] Не удалось закешировать локальный файл:', url, err.message);
-                })
-            );
-            // Добавляем CDN с игнорированием ошибок
-            const cdnPromises = cdnFiles.map(url =>
-                cache.add(url).catch(err => {
-                    console.warn('[SW] Не удалось закешировать CDN:', url, err.message);
-                })
-            );
-            return Promise.all([...localPromises, ...cdnPromises]).then(() => {
-                console.log('[SW] Установка завершена (с ошибками или без).');
-            });
+            const addAllWithCatch = (urls) =>
+                Promise.all(urls.map(url => cache.add(url).catch(err =>
+                    console.warn('[SW] Не удалось закешировать:', url, err.message)
+                )));
+
+            return Promise.all([
+                addAllWithCatch(localFiles.map(f => basePath + f)),
+                addAllWithCatch(cdnFiles)
+            ]).then(() => console.log('[SW] Установка завершена (с ошибками или без).'));
         }).then(() => self.skipWaiting())
     );
 });
 
+// Активация: удаляем старые кеши
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => {
@@ -103,26 +99,62 @@ self.addEventListener('activate', event => {
     );
 });
 
+// Перехват запросов
 self.addEventListener('fetch', event => {
-    const requestURL = new URL(event.request.url);
-    // Сначала проверяем локальные файлы
-    if (localFiles.includes(requestURL.pathname)) {
+    const url = new URL(event.request.url);
+    const requestPath = url.pathname;
+
+    // 1. Навигационные запросы (HTML) – Network First, затем кеш
+    if (event.request.mode === 'navigate') {
         event.respondWith(
-            caches.match(event.request).then(cached => cached || fetch(event.request).then(networkResponse => {
-                return caches.open(CACHE_NAME).then(cache => {
-                    cache.put(event.request, networkResponse.clone());
-                    return networkResponse;
+            fetch(event.request).catch(() => {
+                return caches.match(basePath + '/index.html').then(cachedResponse => {
+                    if (cachedResponse) {
+                        console.log('[SW] Отдаю index.html из кэша для', requestPath);
+                        return cachedResponse;
+                    }
+                    // Запасной вариант – офлайн-страница
+                    return new Response('Вы офлайн. Пожалуйста, проверьте подключение.', {
+                        status: 200,
+                        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+                    });
                 });
-            }))
+            })
         );
         return;
     }
-    // CDN-файлы: стратегия cache-first
-    if (cdnFiles.includes(requestURL.href)) {
+
+    // 2. Явный запрос к '/' или '/index.html' – отдаём index.html из кэша, если нет сети
+    if (requestPath === basePath + '/' || requestPath === basePath + '/index.html') {
+        event.respondWith(
+            fetch(event.request).catch(() => {
+                return caches.match(basePath + '/index.html').then(cached => {
+                    return cached || new Response('Офлайн – index.html не найден в кэше', { status: 404 });
+                });
+            })
+        );
+        return;
+    }
+
+    // 3. Локальные файлы – Cache First с обновлением
+    if (localFiles.some(file => requestPath === basePath + file)) {
+        event.respondWith(
+            caches.match(event.request).then(cached => {
+                const networkFetch = fetch(event.request).then(networkResponse => {
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse.clone()));
+                    return networkResponse;
+                }).catch(() => {});
+                return cached || networkFetch;
+            })
+        );
+        return;
+    }
+
+    // 4. CDN-ресурсы – Cache First с фоновым обновлением
+    if (cdnFiles.includes(event.request.url)) {
         event.respondWith(
             caches.match(event.request).then(cached => {
                 if (cached) {
-                    // В фоне обновляем кэш
                     fetch(event.request).then(networkResponse => {
                         caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse));
                     }).catch(() => {});
@@ -138,5 +170,6 @@ self.addEventListener('fetch', event => {
         );
         return;
     }
-    // Для остальных запросов – стандартное поведение
+
+    // 5. Остальные запросы – стандартное поведение
 });
