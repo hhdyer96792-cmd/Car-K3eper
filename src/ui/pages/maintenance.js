@@ -232,7 +232,7 @@ App.ui.pages.openServiceModal = function(opId, opName) {
         var motohours = App.utils.validateNumberInput(formEl.querySelector('[name="motohours"]'), true, true);
         var cost = App.utils.validateNumberInput(formEl.querySelector('[name="cost"]'), true, true);
         var workCost = App.utils.validateNumberInput(formEl.querySelector('[name="workCost"]'), true, true);
-        if (mileage === null) return;  // ошибка уже показана
+        if (mileage === null) return;
 
         var formattedDate = App.utils.ddmmYYYYtoISO(formEl.querySelector('[name="date"]').value);
         if (!formattedDate) {
@@ -240,24 +240,18 @@ App.ui.pages.openServiceModal = function(opId, opName) {
             return;
         }
 
-        // ----- ВАЛИДАЦИЯ -----
         var refPoint = {
             purchaseDate: App.store.purchaseDate,
             baseMileage: App.store.baseMileage || 0,
             baseMotohours: App.store.baseMotohours || 0
         };
         var validationError = App.logic.validateMaintenanceRecord(
-            formattedDate,
-            mileage,
-            motohours,
-            refPoint,
-            App.store.serviceRecords  // все записи истории
+            formattedDate, mileage, motohours, refPoint, App.store.serviceRecords
         );
         if (validationError) {
             App.toast(validationError, 'error');
-            return; // Прерываем сохранение
+            return;
         }
-        // --------------------
 
         var data = new FormData(formEl);
         modal.remove();
@@ -275,6 +269,43 @@ App.ui.pages.openServiceModal = function(opId, opName) {
             }
         }
 
+        // === Офлайн-логика ===
+        if (!navigator.onLine) {
+            var offlineRecord = {
+                operation_id: op.id,
+                date: formattedDate,
+                mileage: mileage,
+                motohours: motohours || 0,
+                parts_cost: cost || 0,
+                work_cost: workCost || 0,
+                is_diy: isDIY,
+                notes: notes,
+                photo_url: ''
+            };
+            App.store.serviceRecords.unshift(offlineRecord);
+            App.store.addPendingAction({
+                type: 'service',
+                opId: op.id,
+                date: formattedDate,
+                mileage: mileage,
+                motohours: motohours || 0,
+                partsCost: cost || 0,
+                workCost: workCost || 0,
+                isDIY: isDIY,
+                notes: notes,
+                photoUrl: ''
+            });
+            op.lastDate = formattedDate;
+            op.lastMileage = mileage;
+            op.lastMotohours = motohours || 0;
+            App.store.saveToLocalStorage();
+            App.toast('Запись сохранена локально. Синхронизируется при подключении к сети.', 'warning');
+            if (typeof App.ui.pages.renderMaintenancePlan === 'function') App.ui.pages.renderMaintenancePlan();
+            if (typeof App.ui.pages.renderTop5Widget === 'function') App.ui.pages.renderTop5Widget();
+            return;
+        }
+
+        // Онлайн-сохранение
         Promise.all(uploadPromises).then(function(photoUrls) {
             var photoUrl = photoUrls.filter(function(url) { return url !== ''; })[0] || '';
             var fullNotes = notes;
@@ -303,6 +334,8 @@ App.ui.pages.openServiceModal = function(opId, opName) {
                     .then(function() {
                         App.toast('ТО успешно выполнено', 'success');
                         App.storage.loadAllData();
+                        if (typeof App.ui.pages.renderMaintenancePlan === 'function') App.ui.pages.renderMaintenancePlan();
+                        if (typeof App.ui.pages.renderTop5Widget === 'function') App.ui.pages.renderTop5Widget();
                     }).catch(function(err) {
                         console.error(err);
                         App.toast('Ошибка сохранения ТО', 'error');
@@ -324,6 +357,8 @@ App.ui.pages.openServiceModal = function(opId, opName) {
                         });
                         App.logic.addDependentOperations(opName, opId, formattedDate, mileage, motohours, 'Автоматически');
                         App.toast('ТО успешно выполнено', 'success');
+                        if (typeof App.ui.pages.renderMaintenancePlan === 'function') App.ui.pages.renderMaintenancePlan();
+                        if (typeof App.ui.pages.renderTop5Widget === 'function') App.ui.pages.renderTop5Widget();
                     })
                     .catch(function(error) {
                         console.error(error);
