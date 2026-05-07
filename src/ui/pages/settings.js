@@ -20,9 +20,8 @@ App.ui.pages.saveSettings = function() {
     if (purchaseDateInput) App.store.purchaseDate = purchaseDateInput.value;
 
     App.store.calculateOwnershipDays();
-    App.store.saveToLocalStorage();   // точка отсчёта теперь в кэше
+    App.store.saveToLocalStorage();
 
-    // 2. Формируем объект настроек для Supabase
     var settings = {
         currentMileage: App.store.settings.currentMileage,
         currentMotohours: App.store.settings.currentMotohours,
@@ -34,7 +33,6 @@ App.ui.pages.saveSettings = function() {
         reminderDays: reminderDays1 + ',' + reminderDays2
     };
 
-    // 3. Отправляем на сервер (уведомления, пробеги)
     App.storage.saveSettings(settings).then(function() {
         if (telegramTokenInput) App.store.settings.telegramToken = telegramTokenInput.value;
         if (telegramChatIdInput) App.store.settings.telegramChatId = telegramChatIdInput.value;
@@ -71,7 +69,6 @@ App.ui.pages.populateSettingsFields = function() {
         if (document.getElementById('reminder-days-2')) document.getElementById('reminder-days-2').value = parts[1] || 2;
     }
 
-    // Точка отсчёта – теперь берём из выделенных полей store, а не из текущих показателей
     var baseMileageInput = document.getElementById('set-base-mileage');
     var baseMotohoursInput = document.getElementById('set-base-motohours');
     var purchaseDateInput = document.getElementById('purchase-date');
@@ -86,7 +83,6 @@ App.ui.pages.populateSettingsFields = function() {
     App.ui.pages.renderSharingList();
 };
 
-// --- Все остальные функции, которые были ранее ---
 App.ui.pages.sendTestNotification = function() {
     var title = 'Тест уведомления';
     var body = 'Если вы видите это сообщение — уведомления работают!';
@@ -353,45 +349,73 @@ App.ui.pages.renderSharingList = function() {
         return;
     }
 
-    App.supa.getCarShares(carId).then(function({ data, error }) {
-        if (error) {
-            container.innerHTML = '<p class="hint">Ошибка загрузки</p>';
-            return;
-        }
-        if (!data || data.length === 0) {
-            container.innerHTML = '<p class="hint">Нет приглашённых пользователей</p>';
-            App.initIcons();
+    App.supa.getCurrentUserId().then(function(userId) {
+        if (!userId) {
+            container.innerHTML = '<p class="hint">Не удалось определить пользователя</p>';
             return;
         }
 
-        var html = '<ul style="list-style:none; padding:0;">';
-        data.forEach(function(share) {
-            var statusIcon = share.accepted ? '✅' : '⏳';
-            var statusText = share.accepted ? 'Принято' : 'Ожидает';
-            var emailOrId = share.invited_email || (share.invited_user_id ? 'ID: ' + share.invited_user_id.substring(0,8) : '—');
-            html += '<li style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">';
-            html += '<span>' + statusIcon + ' <strong>' + App.utils.escapeHtml(emailOrId) + '</strong> (' + statusText + ')</span>';
-            html += '<button class="icon-btn remove-share-btn" data-id="' + share.id + '" title="Удалить доступ"><i data-lucide="trash-2"></i></button>';
-            html += '</li>';
-        });
-        html += '</ul>';
-        container.innerHTML = html;
+        App.supa.getCarShares(carId).then(function({ data, error }) {
+            if (error) {
+                container.innerHTML = '<p class="hint">Ошибка загрузки</p>';
+                return;
+            }
 
-        container.querySelectorAll('.remove-share-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var shareId = btn.dataset.id;
-                if (!confirm('Удалить доступ для этого пользователя?')) return;
-                App.supa.deleteCarShare(shareId).then(function() {
-                    App.toast('Доступ удалён', 'success');
-                    App.ui.pages.renderSharingList(); // обновить список
-                }).catch(function(err) {
-                    console.error(err);
-                    App.toast('Ошибка удаления доступа', 'error');
-                });
+            // Определяем, является ли текущий пользователь владельцем автомобиля
+            var car = App.store.cars.find(c => c.id == carId);
+            var isOwner = car && car.user_id === userId;
+
+            // Фильтруем приглашения в зависимости от роли
+            var shares = data || [];
+            if (!isOwner) {
+                // Гость видит только своё приглашение
+                shares = shares.filter(share => share.invited_user_id === userId);
+            }
+
+            if (shares.length === 0) {
+                container.innerHTML = '<p class="hint">Нет приглашённых пользователей</p>';
+                App.initIcons();
+                return;
+            }
+
+            var html = '<ul style="list-style:none; padding:0;">';
+            shares.forEach(function(share) {
+                var statusIcon = share.accepted ? '✅' : '⏳';
+                var statusText = share.accepted ? 'Принято' : 'Ожидает';
+                var emailOrId = share.invited_email || (share.invited_user_id ? 'ID: ' + share.invited_user_id.substring(0,8) : '—');
+                html += '<li style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">';
+                html += '<span>' + statusIcon + ' <strong>' + App.utils.escapeHtml(emailOrId) + '</strong> (' + statusText + ')</span>';
+                // Кнопку удаления показываем только владельцу
+                if (isOwner) {
+                    html += '<button class="icon-btn remove-share-btn" data-id="' + share.id + '" title="Удалить доступ"><i data-lucide="trash-2"></i></button>';
+                }
+                html += '</li>';
             });
-        });
+            html += '</ul>';
+            container.innerHTML = html;
 
-        App.initIcons();
+            // Обработчики удаления (только для владельца)
+            if (isOwner) {
+                container.querySelectorAll('.remove-share-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var shareId = btn.dataset.id;
+                        if (!confirm('Удалить доступ для этого пользователя?')) return;
+                        App.supa.deleteCarShare(shareId).then(function() {
+                            App.toast('Доступ удалён', 'success');
+                            App.ui.pages.renderSharingList(); // обновить список
+                        }).catch(function(err) {
+                            console.error(err);
+                            App.toast('Ошибка удаления доступа', 'error');
+                        });
+                    });
+                });
+            }
+
+            App.initIcons();
+        });
+    }).catch(function(err) {
+        console.error(err);
+        container.innerHTML = '<p class="hint">Ошибка загрузки</p>';
     });
 };
 
