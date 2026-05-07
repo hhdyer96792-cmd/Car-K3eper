@@ -128,7 +128,7 @@ App.ui.pages.renderCarSelector = function() {
             .then(function(res) {
                 if (res.error) throw res.error;
                 var inviteCode = res.data.invite_code;
-                var inviteLink = window.location.origin + '?invite=' + inviteCode;
+                var inviteLink = window.location.origin + '/Car-K3eper/?invite=' + inviteCode;
                 var copyHtml = '<div style="margin-top:12px;">' +
                     '<p class="hint">Ссылка для приглашения:</p>' +
                     '<input type="text" value="' + inviteLink + '" readonly style="width:100%;" id="invite-link-input">' +
