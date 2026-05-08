@@ -11,6 +11,7 @@ App.ui.pages.renderDashboard = function() {
 
     document.getElementById('dash-mileage').textContent = App.store.settings.currentMileage.toLocaleString();
     document.getElementById('dash-motohours').textContent = App.store.settings.currentMotohours.toLocaleString();
+    // Изменено: выводим средний расход как среднее по типам (уже посчитано в statistics.js)
     document.getElementById('dash-avg-consumption').textContent = stats.avgFuelConsumption.toFixed(1);
     document.getElementById('dash-cost-km').textContent = stats.costPerKm.toFixed(2);
 
@@ -49,9 +50,6 @@ App.ui.pages.renderDashboard = function() {
 
     // Износ шин
     App.ui.pages.renderTireWearMini();
-
-    // Уведомления теперь отправляются Edge Function daily-reminder по расписанию
-    // вызов sendPushAndTelegramReminders() удалён
 
     App.initIcons();
 };
