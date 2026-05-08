@@ -511,17 +511,18 @@ input, select {
         height: 300px;
     }
 }
+/* Прогноз масла — линия, поэтому убираем фиксированные размеры */
 #oilChart {
-    width: 40px;
-    height: 40px;
-    margin: 0 auto;
+    width: 100%;
+    min-height: 200px;
     display: block;
-    min-width: 0 !important;
+    margin: 0 auto;
+    max-height: 350px;   /* как у других графиков */
 }
 @media (max-width: 768px) {
     #oilChart {
-        width: 30px;
-        height: 30px;
+        max-height: 300px;   /* мобильная высота */
+        min-height: 150px;
     }
 }
 #expensePieChart {
@@ -538,7 +539,7 @@ input, select {
 }
 .pie-row .chart-card {
     flex: 1;
-    min-width: 150px;
+    min-width: 200px;
 }
 @media (max-width: 768px) {
     .pie-row {
