@@ -34,10 +34,9 @@ function isMobile() {
     return window.innerWidth < 768;
 }
 
-/**
- * График расхода топлива по месяцам (л/100 км) – по типам с возможностью скрыть/показать.
- * На мобильных — bar, на десктопе — line с зумом.
- */
+/* ================================================================
+   ГРАФИК РАСХОДА ТОПЛИВА (ПО МЕСЯЦАМ)
+   ================================================================ */
 App.charts.renderFuelConsumptionChart = function() {
     App.charts.destroyChart('fuelConsumptionChart');
     var canvas = document.getElementById('fuelConsumptionChart');
@@ -139,10 +138,9 @@ App.charts.renderFuelConsumptionChart = function() {
     App.initIcons();
 };
 
-/**
- * График средней цены топлива по месяцам (₽/л) – по типам, по умолчанию основной тип, остальные скрыты.
- * На мобильных — bar, на десктопе — line с зумом.
- */
+/* ================================================================
+   ГРАФИК СРЕДНЕЙ ЦЕНЫ ТОПЛИВА (ПО МЕСЯЦАМ)
+   ================================================================ */
 App.charts.renderFuelPriceChart = function() {
     App.charts.destroyChart('fuelPriceChart');
     var canvas = document.getElementById('fuelPriceChart');
@@ -221,10 +219,9 @@ App.charts.renderFuelPriceChart = function() {
     App.initIcons();
 };
 
-/**
- * График затрат на топливо и ТО по месяцам (столбчатый). Всегда bar.
- * На десктопе добавляется зум.
- */
+/* ================================================================
+   ГРАФИК ЗАТРАТ (ТОПЛИВО + ТО) ПО МЕСЯЦАМ
+   ================================================================ */
 App.charts.renderCostsChart = function(period) {
     App.charts.destroyChart('costsChart');
     var canvas = document.getElementById('costsChart');
@@ -325,9 +322,9 @@ App.charts.renderCostsChart = function(period) {
     App.initIcons();
 };
 
-/**
- * Круговая диаграмма распределения затрат по категориям (всегда doughnut, без изменений)
- */
+/* ================================================================
+   КРУГОВАЯ ДИАГРАММА РАСПРЕДЕЛЕНИЯ ЗАТРАТ ПО КАТЕГОРИЯМ
+   ================================================================ */
 App.charts.renderExpensePieChart = function(period) {
     App.charts.destroyChart('expensePieChart');
     var canvas = document.getElementById('expensePieChart');
@@ -390,94 +387,60 @@ App.charts.renderExpensePieChart = function(period) {
     App.initIcons();
 };
 
-/**
- * Прогноз замены масла: линия с цветовым градиентом (зелёный → красный).
- */
-App.charts.renderOilChart = function() {
-    App.charts.destroyChart('oilChart');
-    var canvas = document.getElementById('oilChart');
-    if (!canvas) return;
+/* ================================================================
+   ПРОГРЕСС-БАР ОСТАТКА РЕСУРСА МАСЛА
+   ================================================================ */
+App.charts.renderOilResourceBar = function() {
+    var container = document.getElementById('oil-resource-bar');
+    if (!container) return;
 
     var oilOp = App.store.operations.find(function(op) {
         return op.name.indexOf('Масло') !== -1 && op.category.indexOf('ДВС') !== -1;
     });
-    if (!oilOp) return;
+    if (!oilOp) {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'block';
 
     var plan = App.logic.calculatePlan(oilOp);
     var lastMileage = oilOp.lastMileage || App.store.settings.currentMileage;
     var nextMileage = plan.planMileage;
-    if (!nextMileage || nextMileage <= lastMileage) return;
+    var currentMileage = App.store.settings.currentMileage;
 
-    // Генерируем 21 точку для плавного градиента
-    var points = [];
-    for (var i = 0; i <= 20; i++) {
-        var fraction = i / 20;
-        var x = lastMileage + fraction * (nextMileage - lastMileage);
-        var y = parseFloat((fraction * 100).toFixed(1));
-        points.push({ x: x, y: y });
+    var percentUsed = 0;
+    if (nextMileage && nextMileage > lastMileage) {
+        percentUsed = Math.min(100, Math.max(0, ((currentMileage - lastMileage) / (nextMileage - lastMileage)) * 100));
+    }
+    var percentRemaining = 100 - percentUsed;
+
+    // Плавный переход от зелёного (100%) к жёлтому (50%) к красному (0%)
+    var color;
+    if (percentRemaining >= 50) {
+        var green = 200;
+        var red = Math.floor((1 - (percentRemaining - 50) / 50) * 180);
+        color = 'rgb(' + red + ', 200, 80)';
+    } else {
+        var red = 200;
+        var green = Math.floor((percentRemaining / 50) * 200);
+        color = 'rgb(200, ' + green + ', 60)';
     }
 
-    // Функция цвета: зелёный → жёлтый → красный
-    function getGradientColor(percent) {
-        var r, g;
-        if (percent <= 50) {
-            r = Math.floor((percent / 50) * 255);
-            g = 255;
-        } else {
-            r = 255;
-            g = Math.floor((1 - (percent - 50) / 50) * 255);
-        }
-        return 'rgb(' + r + ',' + g + ',0)';
+    var fill = container.querySelector('.oil-resource-fill');
+    var percentLabel = container.querySelector('.oil-resource-percent');
+    if (fill) {
+        fill.style.width = percentRemaining + '%';
+        fill.style.backgroundColor = color;
     }
-
-    var ctx = canvas.getContext('2d');
-    App.charts.activeCharts['oilChart'] = new Chart(ctx, {
-        type: 'line',
-        data: {
-            datasets: [{
-                label: 'Износ масла',
-                data: points,
-                parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                borderWidth: 4,
-                pointRadius: 0,
-                tension: 0.2,
-                segment: {
-                    borderColor: function(ctx) {
-                        var point = ctx.p0.parsed.y;
-                        return getGradientColor(point);
-                    }
-                }
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) {
-                            return 'Пробег: ' + ctx.raw.x + ' км, износ: ' + ctx.raw.y + '%';
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    title: { display: true, text: 'Пробег (км)' },
-                    ticks: { callback: function(v) { return v.toLocaleString(); } }
-                },
-                y: {
-                    title: { display: true, text: '% износа' },
-                    min: 0,
-                    max: 100,
-                    ticks: { stepSize: 20 }
-                }
-            }
-        }
-    });
+    if (percentLabel) {
+        percentLabel.textContent = Math.round(percentRemaining) + '%';
+    }
     App.initIcons();
 };
+
+/* ================================================================
+   МИНИ-ГРАФИКИ ДЛЯ ДАШБОРДА
+   ================================================================ */
 
 /**
  * Мини-график расхода топлива (дашборд) – показывает средний расход.
