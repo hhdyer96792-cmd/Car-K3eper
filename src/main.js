@@ -18,15 +18,33 @@
         }
     }
 
-    function onReady() {
-        // Тема
-        var savedTheme = localStorage.getItem(App.config.THEME_KEY);
-        if (savedTheme) {
-            App.events.applyTheme(savedTheme);
-        } else {
-            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            App.events.applyTheme(prefersDark ? 'dark' : 'light');
+    // Вставить в onReady() перед существующим кодом темы
+function onReady() {
+    // Отключаем анимации до полной загрузки, чтобы избежать моргания
+    document.body.classList.add('no-transition');
+
+    // Определяем тему
+    var savedTheme = localStorage.getItem(App.config.THEME_KEY);
+    if (savedTheme) {
+        App.events.applyTheme(savedTheme);
+    } else {
+        // Системная тема, если нет сохранённой
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        App.events.applyTheme(prefersDark ? 'dark' : 'light');
+    }
+
+    // Включаем анимации после небольшой задержки
+    setTimeout(function() {
+        document.body.classList.remove('no-transition');
+    }, 50);
+
+    // Слушаем изменения системной темы, если нет пользовательского выбора
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+        if (!localStorage.getItem(App.config.THEME_KEY)) {
+            App.events.applyTheme(e.matches ? 'dark' : 'light');
         }
+    });
+}
 
         // Supabase
         App.supabase = supabase.createClient(
