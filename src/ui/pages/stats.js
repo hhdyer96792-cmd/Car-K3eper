@@ -25,7 +25,8 @@ App.ui.pages.renderStats = function() {
         if (totalMaintEl) totalMaintEl.textContent = (stats.totalMaintenanceCost ?? 0).toFixed(0);
         if (totalFuelEl) totalFuelEl.textContent = (stats.totalFuelCost ?? 0).toFixed(0);
         if (costKmEl) costKmEl.textContent = (stats.costPerKm ?? 0).toFixed(2);
-        if (avgConsEl) avgConsEl.textContent = (stats.avgFuelConsumption ?? 0).toFixed(1);
+        // Изменено: выводим средний расход как среднее по типам
+        if (avgConsEl) avgConsEl.textContent = stats.avgFuelConsumption.toFixed(1);
         if (avgMileageEl) avgMileageEl.textContent = (stats.avgMileagePerDay ?? 0).toFixed(1);
         if (avgMotoEl) avgMotoEl.textContent = (stats.avgMotohoursPerDay ?? 0).toFixed(2);
 
@@ -52,6 +53,7 @@ App.ui.pages.renderFuelAnalytics = function() {
     App.charts.updateDrivingModeIndicator();
     App.initIcons();
 };
+
 
 /**
  * Прогноз даты достижения пробега.
