@@ -41,7 +41,6 @@ App.events.setupDelegation = function() {
                 });
                 break;
             case 'calendar':
-                // Кнопка в таблице ТО – автоматически добавляет запчасти в описание события
                 var calOpId = target.dataset.opId;
                 var calOpName = target.dataset.opName;
                 var calPlanDate = target.dataset.planDate;
@@ -204,8 +203,7 @@ App.events.initNavigation = function() {
     });
 };
 
-App.events.switchToTab = function(tabId) {
-// Замена функции switchToTab в src/events.js
+// Единая функция switchToTab (только одно определение)
 App.events.switchToTab = function(tabId) {
     // Плавная смена вкладок
     var allTabs = document.querySelectorAll('.tab-content');
@@ -531,25 +529,24 @@ App.events.updateMileageAndAverages = function() {
     App.store.settings.currentMileage = newM;
     App.store.settings.currentMotohours = newH;
 
-  // Сохранение пробега и моточасов в Supabase
-if (App.config.USE_SUPABASE) {
-    App.storage.addMileageRecord(today, newM, newH)
-        .then(function() {
-            // Передаём объект с текущими показателями
-            return App.storage.saveSettings({
-                currentMileage: newM,
-                currentMotohours: newH,
-                avgDailyMileage: App.store.settings.avgDailyMileage,
-                avgDailyMotohours: App.store.settings.avgDailyMotohours,
-                telegramToken: App.store.settings.telegramToken,
-                telegramChatId: App.store.settings.telegramChatId,
-                notificationMethod: App.store.settings.notificationMethod
+    // Сохранение пробега и моточасов в Supabase
+    if (App.config.USE_SUPABASE) {
+        App.storage.addMileageRecord(today, newM, newH)
+            .then(function() {
+                return App.storage.saveSettings({
+                    currentMileage: newM,
+                    currentMotohours: newH,
+                    avgDailyMileage: App.store.settings.avgDailyMileage,
+                    avgDailyMotohours: App.store.settings.avgDailyMotohours,
+                    telegramToken: App.store.settings.telegramToken,
+                    telegramChatId: App.store.settings.telegramChatId,
+                    notificationMethod: App.store.settings.notificationMethod
+                });
+            })
+            .catch(function(err) {
+                console.error('Ошибка сохранения пробега в Supabase:', err);
             });
-        })
-        .catch(function(err) {
-            console.error('Ошибка сохранения пробега в Supabase:', err);
-        });
-}
+    }
 
     if (typeof App.renderAll === 'function') App.renderAll();
     if (typeof App.ui.pages.renderTop5Widget === 'function') App.ui.pages.renderTop5Widget();
