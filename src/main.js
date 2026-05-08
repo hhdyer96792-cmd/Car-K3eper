@@ -6,7 +6,6 @@
     function setInstallButtonVisible(visible) {
         var installBtn = document.getElementById('pwa-install-btn');
         if (!installBtn) return;
-        // Не показываем кнопку, если приложение уже запущено как PWA
         if (window.matchMedia('(display-mode: standalone)').matches) {
             installBtn.style.display = 'none';
             return;
@@ -18,40 +17,39 @@
         }
     }
 
-function onReady() {
-    // Отключаем анимации до полной загрузки, чтобы избежать моргания
-    document.body.classList.add('no-transition');
+    function onReady() {
+        // Отключаем анимации до полной загрузки, чтобы избежать моргания
+        document.body.classList.add('no-transition');
 
-    // Определяем тему
-    var savedTheme = localStorage.getItem(App.config.THEME_KEY);
-    if (savedTheme) {
-        App.events.applyTheme(savedTheme);
-    } else {
-        // Системная тема, если нет сохранённой
-        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        App.events.applyTheme(prefersDark ? 'dark' : 'light');
-    }
-
-    // Включаем анимации после небольшой задержки
-    setTimeout(function() {
-        document.body.classList.remove('no-transition');
-    }, 50);
-
-    // Слушаем изменения системной темы, если нет пользовательского выбора
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-        if (!localStorage.getItem(App.config.THEME_KEY)) {
-            App.events.applyTheme(e.matches ? 'dark' : 'light');
+        // Определяем тему
+        var savedTheme = localStorage.getItem(App.config.THEME_KEY);
+        if (savedTheme) {
+            App.events.applyTheme(savedTheme);
+        } else {
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            App.events.applyTheme(prefersDark ? 'dark' : 'light');
         }
-    });
-}
 
-        // Supabase
+        // Включаем анимации после небольшой задержки
+        setTimeout(function() {
+            document.body.classList.remove('no-transition');
+        }, 50);
+
+        // Слушаем изменения системной темы, если нет пользовательского выбора
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            if (!localStorage.getItem(App.config.THEME_KEY)) {
+                App.events.applyTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+
+        // ------------------------------------------------------------
+        // Остальная логика, которая раньше была внутри onReady
+        // ------------------------------------------------------------
         App.supabase = supabase.createClient(
             'https://qbjlccdqaudyvedpysil.supabase.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiamxjY2RxYXVkeXZlZHB5c2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNjQ5MDEsImV4cCI6MjA5Mjk0MDkwMX0.dpdlcOQLtc6adA-l2z_ksJ3b6b6pLTQviLrKtxuF-kU'
         );
 
-        // Persistent Storage
         if (navigator.storage && navigator.storage.persist) {
             navigator.storage.persist().then(function(isPersisted) {
                 console.log('Persistent storage:', isPersisted ? '✅ granted' : '❌ denied');
@@ -64,7 +62,6 @@ function onReady() {
         var authPanel = document.getElementById('auth-panel');
         if (authPanel) authPanel.style.display = 'block';
 
-        // Вкладки
         var tabLogin = document.getElementById('tab-login');
         var tabSocial = document.getElementById('tab-social');
         var authLoginDiv = document.getElementById('auth-login');
@@ -79,8 +76,8 @@ function onReady() {
                 authSocialDiv.style.display = 'block'; authLoginDiv.style.display = 'none';
             }
         }
-        if (tabLogin) tabLogin.addEventListener('click', () => switchAuthTab('login'));
-        if (tabSocial) tabSocial.addEventListener('click', () => switchAuthTab('social'));
+        if (tabLogin) tabLogin.addEventListener('click', function() { switchAuthTab('login'); });
+        if (tabSocial) tabSocial.addEventListener('click', function() { switchAuthTab('social'); });
 
         // Google
         var googleBtn = document.getElementById('supabase-auth-btn');
@@ -122,8 +119,8 @@ function onReady() {
                 }
                 var email = username + '@vesta.internal';
                 App.supabase.auth.signInWithPassword({ email: email, password: password })
-                    .then(function({ error }) {
-                        if (error) loginMessage.textContent = 'Неверный логин или пароль.';
+                    .then(function(res) {
+                        if (res.error) loginMessage.textContent = 'Неверный логин или пароль.';
                     });
             });
 
@@ -156,22 +153,22 @@ function onReady() {
                         email: email,
                         password: password,
                         options: { data: { username: username } }
-                    }).then(function({ error }) {
-                        if (error) {
-                            App.toast('Ошибка регистрации: ' + error.message, 'error');
+                    }).then(function(res) {
+                        if (res.error) {
+                            App.toast('Ошибка регистрации: ' + res.error.message, 'error');
                         } else {
                             App.toast('Регистрация успешна! Выполняем вход...', 'success');
                             App.supabase.auth.signInWithPassword({ email: email, password: password })
-                                .then(function({ error }) {
-                                    if (!error) {
+                                .then(function(innerRes) {
+                                    if (!innerRes.error) {
                                         passwordConfirmLabel.style.display = 'none';
                                         passwordConfirmInput.style.display = 'none';
                                         passwordConfirmInput.required = false;
                                         loginForm.reset();
                                         loginMessage.textContent = '';
 
-                                        App.supabase.auth.getUser().then(function({ data: { user } }) {
-                                            if (user) generateAndShowRecoveryCodes(user.id, username);
+                                        App.supabase.auth.getUser().then(function(userRes) {
+                                            if (userRes.data.user) generateAndShowRecoveryCodes(userRes.data.user.id, username);
                                         });
                                     } else {
                                         App.toast('Регистрация прошла, но вход не удался. Войдите вручную.', 'warning');
@@ -195,10 +192,10 @@ function onReady() {
         }
 
         var btnTelegram = document.getElementById('recover-telegram');
-        if (btnTelegram) btnTelegram.addEventListener('click', () => recoverViaTelegram(recoveryMsg));
+        if (btnTelegram) btnTelegram.addEventListener('click', function() { recoverViaTelegram(recoveryMsg); });
 
         var btnCode = document.getElementById('recover-code');
-        if (btnCode) btnCode.addEventListener('click', () => recoverViaRecoveryCode(recoveryMsg));
+        if (btnCode) btnCode.addEventListener('click', function() { recoverViaRecoveryCode(recoveryMsg); });
 
         var btnRecoverGoogle = document.getElementById('recover-google');
         if (btnRecoverGoogle) {
@@ -210,10 +207,9 @@ function onReady() {
             });
         }
 
-        // Кнопка установки PWA – управляется через setInstallButtonVisible
+        // Кнопка установки PWA
         var installBtn = document.getElementById('pwa-install-btn');
         if (installBtn) installBtn.style.display = 'none';
-
         if (window.matchMedia('(display-mode: standalone)').matches) {
             setInstallButtonVisible(false);
         }
@@ -263,10 +259,10 @@ function onReady() {
                         }).then(function(currentToken) {
                             if (!currentToken) return;
                             console.log('FCM token:', currentToken);
-                            App.supabase.auth.getUser().then(function({ data: { user } }) {
-                                if (!user) return;
+                            App.supabase.auth.getUser().then(function(userRes) {
+                                if (!userRes.data.user) return;
                                 App.supabase.from('push_subscriptions').upsert({
-                                    user_id: user.id,
+                                    user_id: userRes.data.user.id,
                                     player_id: currentToken,
                                     updated_at: new Date().toISOString()
                                 }, { onConflict: 'user_id' }).then(function() {
@@ -313,9 +309,9 @@ function onReady() {
                 } catch(e) {
                     console.warn('Token delete failed:', e);
                 }
-                var { data: { user } } = await App.supabase.auth.getUser();
-                if (user) {
-                    await App.supabase.from('push_subscriptions').delete().eq('user_id', user.id);
+                var userRes = await App.supabase.auth.getUser();
+                if (userRes.data.user) {
+                    await App.supabase.from('push_subscriptions').delete().eq('user_id', userRes.data.user.id);
                 }
                 updatePushUI(false);
                 App.toast('Подписка на push отключена', 'success');
@@ -355,7 +351,6 @@ function onReady() {
         // ======================= СЕССИЯ (с Realtime) =======================
         async function handleOnlineSession() {
             if (!navigator.onLine) {
-                // Офлайн: просто показываем данные из localStorage
                 isLoggedIn = true;
                 setInstallButtonVisible(true);
                 if (authPanel) authPanel.style.display = 'none';
@@ -378,7 +373,6 @@ function onReady() {
                 return;
             }
 
-            // Онлайн: стандартная цепочка
             App.supabase.auth.onAuthStateChange(function(event, session) {
                 if (session) {
                     isLoggedIn = true;
@@ -387,11 +381,11 @@ function onReady() {
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'block';
 
-                    App.supabase.auth.getUser().then(function({ data: { user } }) {
+                    App.supabase.auth.getUser().then(function(userRes) {
                         var display = document.getElementById('username-display');
-                        if (display && user && user.user_metadata && user.user_metadata.username) {
-                            display.textContent = '👤 ' + user.user_metadata.username;
-                            localStorage.setItem('vesta_username', user.user_metadata.username);
+                        if (display && userRes.data.user && userRes.data.user.user_metadata && userRes.data.user.user_metadata.username) {
+                            display.textContent = '👤 ' + userRes.data.user.user_metadata.username;
+                            localStorage.setItem('vesta_username', userRes.data.user.user_metadata.username);
                         }
                     });
 
@@ -400,8 +394,8 @@ function onReady() {
                     if (event === 'PASSWORD_RECOVERY') {
                         var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
                         if (newPassword && newPassword.length >= 6) {
-                            App.supabase.auth.updateUser({ password: newPassword }).then(function({ error }) {
-                                if (error) App.toast('Ошибка при смене пароля', 'error');
+                            App.supabase.auth.updateUser({ password: newPassword }).then(function(res) {
+                                if (res.error) App.toast('Ошибка при смене пароля', 'error');
                                 else {
                                     App.toast('Пароль успешно изменён!', 'success');
                                     window.location.hash = '';
@@ -411,11 +405,11 @@ function onReady() {
                         }
                     }
 
-                    App.supabase.auth.getUser().then(function({ data: { user } }) {
-                        if (!user) return;
-                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
-                            if (error) { console.warn('Ошибка проверки подписки:', error); return; }
-                            updatePushUI(!!(data && data.length > 0));
+                    App.supabase.auth.getUser().then(function(userRes) {
+                        if (!userRes.data.user) return;
+                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', userRes.data.user.id).limit(1).then(function(subRes) {
+                            if (subRes.error) { console.warn('Ошибка проверки подписки:', subRes.error); return; }
+                            updatePushUI(!!(subRes.data && subRes.data.length > 0));
                         });
                     });
 
@@ -428,14 +422,13 @@ function onReady() {
                             }
                             App.storage.loadAllData().then(function() {
                                 if (typeof App.renderAll === 'function') App.renderAll();
-                                // --- Восстановление редиректа после 404.html ---
                                 var redirect = sessionStorage.redirect;
                                 if (redirect) {
                                     sessionStorage.removeItem('redirect');
                                     var url = new URL(redirect);
                                     var inviteCode = url.searchParams.get('invite');
                                     if (inviteCode) {
-                                        App.ui.pages.checkPendingInvites(); // повторно проверит, теперь с параметром
+                                        App.ui.pages.checkPendingInvites();
                                     }
                                 }
                             });
@@ -467,15 +460,15 @@ function onReady() {
                 }
             });
 
-            App.supabase.auth.getSession().then(function({ data: { session } }) {
-                if (session) {
+            App.supabase.auth.getSession().then(function(sessionRes) {
+                if (sessionRes.data.session) {
                     isLoggedIn = true;
                     setInstallButtonVisible(true);
                     if (authPanel) authPanel.style.display = 'none';
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'block';
 
-                    var user = session.user;
+                    var user = sessionRes.data.session.user;
                     if (user) {
                         var display = document.getElementById('username-display');
                         if (display && user.user_metadata && user.user_metadata.username) {
@@ -485,9 +478,9 @@ function onReady() {
                     }
 
                     if (user) {
-                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
-                            if (error) { console.warn('Ошибка проверки подписки:', error); return; }
-                            updatePushUI(!!(data && data.length > 0));
+                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function(subRes) {
+                            if (subRes.error) { console.warn('Ошибка проверки подписки:', subRes.error); return; }
+                            updatePushUI(!!(subRes.data && subRes.data.length > 0));
                         });
                     }
 
@@ -499,14 +492,13 @@ function onReady() {
                             }
                             App.storage.loadAllData().then(function() {
                                 if (typeof App.renderAll === 'function') App.renderAll();
-                                // --- Восстановление редиректа после 404.html ---
                                 var redirect = sessionStorage.redirect;
                                 if (redirect) {
                                     sessionStorage.removeItem('redirect');
                                     var url = new URL(redirect);
                                     var inviteCode = url.searchParams.get('invite');
                                     if (inviteCode) {
-                                        App.ui.pages.checkPendingInvites(); // обработает приглашение
+                                        App.ui.pages.checkPendingInvites();
                                     }
                                 }
                             });
@@ -518,10 +510,8 @@ function onReady() {
             });
         }
 
-        // === Обработчики online/offline ===
         window.addEventListener('online', function() {
             App.toast('Сеть восстановлена', 'success');
-            // Синхронизируем офлайн-действия (минимальная реализация)
             if (App.store.pendingActions.length > 0) {
                 App.toast('Синхронизация офлайн-изменений...', 'info');
                 App.store.pendingActions.forEach(function(action) {
@@ -531,7 +521,6 @@ function onReady() {
                             action.partsCost, action.workCost, action.isDIY, action.notes, action.photoUrl
                         );
                     }
-                    // Здесь можно добавить другие типы действий
                 });
                 App.store.clearPendingActions();
             }
@@ -566,30 +555,27 @@ function onReady() {
         var username = prompt('Введите ваш логин:');
         if (!username) return;
 
-        var { data: users, error } = await App.supabase.rpc('get_user_by_username', { p_username: username });
-        if (error || !users || users.length === 0) { msgEl.textContent = 'Пользователь не найден'; return; }
-        var userData = users[0];
+        var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
+        if (res.error || !res.data || res.data.length === 0) { msgEl.textContent = 'Пользователь не найден'; return; }
+        var userData = res.data[0];
 
-        var { data: settings, error: settingsError } = await App.supabase.rpc('get_telegram_settings', { p_user_id: userData.id });
-        if (settingsError || !settings || !settings.telegram_chat_id || !settings.telegram_token) {
+        var setRes = await App.supabase.rpc('get_telegram_settings', { p_user_id: userData.id });
+        if (setRes.error || !setRes.data || !setRes.data.telegram_chat_id || !setRes.data.telegram_token) {
             msgEl.textContent = 'Telegram не привязан. Используйте другой способ.'; return;
         }
 
         var code = Math.floor(100000 + Math.random() * 900000).toString();
         await App.supabase.from('recovery_codes').insert({ user_id: userData.id, code_hash: code });
-        await fetch(`https://api.telegram.org/bot${settings.telegram_token}/sendMessage`, {
+        await fetch(`https://api.telegram.org/bot${setRes.data.telegram_token}/sendMessage`, {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ chat_id: settings.telegram_chat_id, text: `Код для сброса пароля: ${code}` })
+            body: JSON.stringify({ chat_id: setRes.data.telegram_chat_id, text: `Код для сброса пароля: ${code}` })
         });
 
         var input = prompt('Код отправлен в Telegram. Введите его:');
         if (!input) return;
 
-        var { data: resetToken, error: tokenError } = await App.supabase.rpc('consume_recovery_code', {
-            p_user_id: userData.id,
-            p_code: input
-        });
-        if (tokenError || !resetToken) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
+        var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: input });
+        if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
 
         var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
         if (!newPassword || newPassword.length < 6) {
@@ -597,16 +583,16 @@ function onReady() {
             return;
         }
 
-        var res = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
+        var fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reset_token: resetToken, newPassword: newPassword })
+            body: JSON.stringify({ reset_token: tokenRes.data, newPassword: newPassword })
         });
 
-        if (res.ok) {
+        if (fetchRes.ok) {
             msgEl.textContent = 'Пароль успешно изменён! Теперь войдите с новым паролем.';
         } else {
-            var errText = await res.text();
+            var errText = await fetchRes.text();
             msgEl.textContent = 'Ошибка при сбросе: ' + errText;
         }
     }
@@ -615,24 +601,15 @@ function onReady() {
         var username = prompt('Введите ваш логин:');
         if (!username) return;
 
-        var { data: users, error } = await App.supabase.rpc('get_user_by_username', { p_username: username });
-        if (error || !users || users.length === 0) {
-            msgEl.textContent = 'Пользователь не найден';
-            return;
-        }
-        var userData = users[0];
+        var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
+        if (res.error || !res.data || res.data.length === 0) { msgEl.textContent = 'Пользователь не найден'; return; }
+        var userData = res.data[0];
 
         var code = prompt('Введите резервный код:');
         if (!code) return;
 
-        var { data: resetToken, error: tokenError } = await App.supabase.rpc('consume_recovery_code', {
-            p_user_id: userData.id,
-            p_code: code
-        });
-        if (tokenError || !resetToken) {
-            msgEl.textContent = 'Неверный код или срок истёк';
-            return;
-        }
+        var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: code });
+        if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
 
         var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
         if (!newPassword || newPassword.length < 6) {
@@ -640,16 +617,16 @@ function onReady() {
             return;
         }
 
-        var res = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
+        var fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reset_token: resetToken, newPassword: newPassword })
+            body: JSON.stringify({ reset_token: tokenRes.data, newPassword: newPassword })
         });
 
-        if (res.ok) {
+        if (fetchRes.ok) {
             msgEl.textContent = 'Пароль успешно изменён! Теперь войдите с новым паролем.';
         } else {
-            var errText = await res.text();
+            var errText = await fetchRes.text();
             msgEl.textContent = 'Ошибка при сбросе: ' + errText;
         }
     }
@@ -657,15 +634,11 @@ function onReady() {
     async function generateAndShowRecoveryCodes(userId, username) {
         var codes = [];
         for (var i = 0; i < 8; i++) {
-            var code = Array.from({length: 8}, () => Math.floor(Math.random() * 10)).join('');
+            var code = Array.from({length: 8}, function() { return Math.floor(Math.random() * 10); }).join('');
             codes.push(code);
-            await App.supabase.from('recovery_codes').insert({
-                user_id: userId,
-                code_hash: code
-            });
+            await App.supabase.from('recovery_codes').insert({ user_id: userId, code_hash: code });
         }
-        var msg = 'Ваши резервные коды для восстановления доступа (сохраните их!):\n\n' +
-                  codes.join('\n');
+        var msg = 'Ваши резервные коды для восстановления доступа (сохраните их!):\n\n' + codes.join('\n');
         alert(msg);
     }
 
