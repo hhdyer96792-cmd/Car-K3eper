@@ -191,7 +191,7 @@ App.events.initNavigation = function() {
             });
         });
         document.getElementById('drawer-theme-toggle')?.addEventListener('click', function() {
-            App.events.toggleTheme();
+           // App.events.toggleTheme();
             App.events.closeDrawer();
         });
     }
