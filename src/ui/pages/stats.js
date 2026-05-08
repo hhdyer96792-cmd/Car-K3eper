@@ -36,7 +36,7 @@ App.ui.pages.renderStats = function() {
     // Если вкладка активна, рендерим графики и индикаторы
     if (document.getElementById('tab-stats') && document.getElementById('tab-stats').classList.contains('active')) {
         // Прогресс замены масла
-        App.charts.renderOilChart();
+        App.charts.renderOilResourceBar();
     }
 
     App.initIcons();
