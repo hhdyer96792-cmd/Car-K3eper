@@ -209,9 +209,7 @@ App.events.switchToTab = function(tabId) {
     var allTabs = document.querySelectorAll('.tab-content');
     allTabs.forEach(function(tab) {
         if (tab.id === 'tab-' + tabId) {
-            // Убираем активный класс, если уже активен, чтобы перезапустить анимацию
             tab.classList.remove('active');
-            // Небольшая задержка для срабатывания анимации ухода
             setTimeout(function() {
                 tab.classList.add('active');
             }, 10);
@@ -226,7 +224,10 @@ App.events.switchToTab = function(tabId) {
         if (btn.dataset.tab === tabId) btn.classList.add('active');
     });
 
-    // Загружаем контент вкладки (логика без изменений)
+    // Закрываем drawer после выбора вкладки
+    App.events.closeDrawer();
+
+    // Загружаем контент вкладки
     switch (tabId) {
         case 'dashboard':
             if (typeof App.ui.pages.renderDashboard === 'function') App.ui.pages.renderDashboard();
