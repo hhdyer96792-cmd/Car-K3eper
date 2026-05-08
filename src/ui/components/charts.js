@@ -16,53 +16,67 @@ App.charts.destroyChart = function(canvasId) {
     }
 };
 
-/* ================================================================
-   ГРАФИКИ ДЛЯ ВКЛАДКИ "СТАТИСТИКА"
-   ================================================================ */
+/**
+ * Цвета для типов топлива (можно расширять)
+ */
+var fuelTypeColors = {
+    'Бензин': '#e67e22',
+    'Дизель': '#2ecc71',
+    'Газ (ГБО)': '#f39c12',
+    'Электричество': '#3498db'
+};
+var averageColor = '#e74c3c'; // цвет для среднего расхода
 
 /**
- * График расхода топлива по месяцам (л/100 км)
+ * График расхода топлива по месяцам (л/100 км) – по типам с возможностью скрыть/показать
  */
 App.charts.renderFuelConsumptionChart = function() {
     App.charts.destroyChart('fuelConsumptionChart');
     var canvas = document.getElementById('fuelConsumptionChart');
     if (!canvas) return;
-    var monthly = App.logic.groupFuelByMonth();
-    var labels = monthly.map(function(m) { return m.yearMonth; });
-    var data = monthly.map(function(m) {
-        return m.avgConsumption !== null ? parseFloat(m.avgConsumption.toFixed(1)) : null;
+    var grouped = App.logic.groupFuelByMonth();
+    var months = grouped.months;
+    var datasetsByType = grouped.datasetsByType;
+    var averageConsumption = grouped.averageConsumption;
+
+    var datasets = [];
+
+    // Добавляем средний расход (видимый по умолчанию)
+    datasets.push({
+        label: 'Средний расход',
+        data: averageConsumption,
+        borderColor: averageColor,
+        backgroundColor: averageColor + '20',
+        tension: 0.2,
+        fill: false,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        hidden: false
     });
 
-    if (data.filter(function(v) { return v !== null; }).length === 0) {
-        var ctx = canvas.getContext('2d');
-        App.charts.activeCharts['fuelConsumptionChart'] = new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: [] },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { title: { display: true, text: 'л/100 км' } } }
-            }
+    // Добавляем отдельные типы (скрыты по умолчанию)
+    for (var type in datasetsByType) {
+        var data = datasetsByType[type].consumption;
+        var color = fuelTypeColors[type] || '#888';
+        datasets.push({
+            label: type,
+            data: data,
+            borderColor: color,
+            backgroundColor: color + '20',
+            tension: 0.2,
+            fill: false,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            hidden: true
         });
-        return;
     }
 
     var ctx = canvas.getContext('2d');
     App.charts.activeCharts['fuelConsumptionChart'] = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
-            datasets: [{
-                label: 'Расход (л/100 км)',
-                data: data,
-                borderColor: '#e67e22',
-                backgroundColor: 'rgba(230,126,34,0.1)',
-                tension: 0.2,
-                fill: true,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
+            labels: months,
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -70,7 +84,7 @@ App.charts.renderFuelConsumptionChart = function() {
             plugins: {
                 tooltip: {
                     callbacks: {
-                        label: function(ctx) { return ctx.raw + ' л/100 км'; }
+                        label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw + ' л/100 км'; }
                     }
                 },
                 legend: { position: 'top' },
@@ -94,48 +108,42 @@ App.charts.renderFuelConsumptionChart = function() {
 };
 
 /**
- * График средней цены топлива по месяцам (₽/л)
+ * График средней цены топлива по месяцам (₽/л) – по типам, по умолчанию основной тип, остальные скрыты
  */
 App.charts.renderFuelPriceChart = function() {
     App.charts.destroyChart('fuelPriceChart');
     var canvas = document.getElementById('fuelPriceChart');
     if (!canvas) return;
-    var monthly = App.logic.groupFuelByMonth();
-    var labels = monthly.map(function(m) { return m.yearMonth; });
-    var data = monthly.map(function(m) {
-        return m.avgPrice !== null ? parseFloat(m.avgPrice.toFixed(2)) : null;
-    });
+    var grouped = App.logic.groupFuelByMonth();
+    var months = grouped.months;
+    var datasetsByType = grouped.datasetsByType;
+    var mainFuelType = grouped.mainFuelType;
 
-    if (data.filter(function(v) { return v !== null; }).length === 0) {
-        var ctx = canvas.getContext('2d');
-        App.charts.activeCharts['fuelPriceChart'] = new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: [] },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { title: { display: true, text: '₽/л' } } }
-            }
+    var datasets = [];
+
+    // Добавляем линии для всех типов, но видимым делаем только основной
+    for (var type in datasetsByType) {
+        var data = datasetsByType[type].price;
+        var color = fuelTypeColors[type] || '#888';
+        datasets.push({
+            label: type,
+            data: data,
+            borderColor: color,
+            backgroundColor: color + '20',
+            tension: 0.2,
+            fill: false,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            hidden: (type !== mainFuelType) // скрываем все, кроме основного
         });
-        return;
     }
 
     var ctx = canvas.getContext('2d');
     App.charts.activeCharts['fuelPriceChart'] = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
-            datasets: [{
-                label: 'Средняя цена (₽/л)',
-                data: data,
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52,152,219,0.1)',
-                tension: 0.2,
-                fill: true,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
+            labels: months,
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -143,7 +151,7 @@ App.charts.renderFuelPriceChart = function() {
             plugins: {
                 tooltip: {
                     callbacks: {
-                        label: function(ctx) { return ctx.raw + ' ₽/л'; }
+                        label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw + ' ₽/л'; }
                     }
                 },
                 legend: { position: 'top' },
@@ -354,7 +362,7 @@ App.charts.renderOilChart = function() {
             datasets: [{ data: [percent, 100 - percent], backgroundColor: ['#2ecc71', '#e0e0e0'] }]
         },
         options: {
-            cutout: '70%',
+            cutout: '50%',
             plugins: { legend: { display: false } }
         }
     });
@@ -366,7 +374,7 @@ App.charts.renderOilChart = function() {
    ================================================================ */
 
 /**
- * Мини-график расхода топлива (дашборд)
+ * Мини-график расхода топлива (дашборд) – показывает средний расход
  */
 App.charts.renderMiniFuelConsumptionChart = function() {
     var canvas = document.getElementById('dash-fuel-consumption-chart');
@@ -374,18 +382,26 @@ App.charts.renderMiniFuelConsumptionChart = function() {
     if (App.charts._dashFuelChart) {
         App.charts._dashFuelChart.destroy();
     }
-    var monthly = App.logic.groupFuelByMonth().slice(-6);
-    var labels = monthly.map(function(m) { return m.yearMonth; });
-    var data = monthly.map(function(m) { return m.avgConsumption; });
+    var grouped = App.logic.groupFuelByMonth();
+    var months = grouped.months.slice(-6);
+    var data = grouped.averageConsumption.slice(-6);
+
+    // Если средний расход недоступен, попробуем взять первый попавшийся тип
+    if (data.every(function(v) { return v === null; })) {
+        var firstType = Object.keys(grouped.datasetsByType)[0];
+        if (firstType) data = grouped.datasetsByType[firstType].consumption.slice(-6);
+    }
 
     var ctx = canvas.getContext('2d');
     App.charts._dashFuelChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels: months,
             datasets: [{
+                label: 'Средний расход',
                 data: data,
-                borderColor: '#e67e22',
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231,76,60,0.1)',
                 tension: 0.2,
                 pointRadius: 2
             }]
