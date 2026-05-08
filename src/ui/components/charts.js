@@ -391,17 +391,29 @@ App.charts.renderExpensePieChart = function(period) {
    ПРОГРЕСС-БАР ОСТАТКА РЕСУРСА МАСЛА
    ================================================================ */
 App.charts.renderOilResourceBar = function() {
+App.charts.renderOilResourceBar = function() {
     var container = document.getElementById('oil-resource-bar');
     if (!container) return;
 
     var oilOp = App.store.operations.find(function(op) {
         return op.name.indexOf('Масло') !== -1 && op.category.indexOf('ДВС') !== -1;
     });
+
+    // Если операция не найдена — показываем сообщение вместо прогресс-бара
     if (!oilOp) {
-        container.style.display = 'none';
+        container.innerHTML = '<p class="hint">Нет данных о массе</p>';
         return;
     }
-    container.style.display = 'block';
+
+    // Восстанавливаем структуру прогресс-бара, если ранее было сообщение
+    if (!container.querySelector('.oil-resource-track')) {
+        container.innerHTML = '' +
+            '<div class="oil-resource-label">Остаток ресурса масла</div>' +
+            '<div class="oil-resource-track">' +
+                '<div class="oil-resource-fill" style="width: 100%;"></div>' +
+            '</div>' +
+            '<div class="oil-resource-percent">100%</div>';
+    }
 
     var plan = App.logic.calculatePlan(oilOp);
     var lastMileage = oilOp.lastMileage || App.store.settings.currentMileage;
@@ -414,7 +426,7 @@ App.charts.renderOilResourceBar = function() {
     }
     var percentRemaining = 100 - percentUsed;
 
-    // Плавный переход от зелёного (100%) к жёлтому (50%) к красному (0%)
+    // Плавный переход цвета (спокойные тона)
     var color;
     if (percentRemaining >= 50) {
         var green = 200;
