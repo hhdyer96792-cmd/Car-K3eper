@@ -512,8 +512,8 @@ input, select {
     }
 }
 #oilChart {
-    width: 60px;
-    height: 60px;
+    width: 40px;
+    height: 40px;
     margin: 0 auto;
     display: block;
     min-width: 0 !important;
@@ -538,7 +538,7 @@ input, select {
 }
 .pie-row .chart-card {
     flex: 1;
-    min-width: 200px;
+    min-width: 150px;
 }
 @media (max-width: 768px) {
     .pie-row {
