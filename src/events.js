@@ -205,15 +205,30 @@ App.events.initNavigation = function() {
 };
 
 App.events.switchToTab = function(tabId) {
-    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
-    var activeTab = document.getElementById('tab-' + tabId);
-    if (activeTab) activeTab.classList.add('active');
+// Замена функции switchToTab в src/events.js
+App.events.switchToTab = function(tabId) {
+    // Плавная смена вкладок
+    var allTabs = document.querySelectorAll('.tab-content');
+    allTabs.forEach(function(tab) {
+        if (tab.id === 'tab-' + tabId) {
+            // Убираем активный класс, если уже активен, чтобы перезапустить анимацию
+            tab.classList.remove('active');
+            // Небольшая задержка для срабатывания анимации ухода
+            setTimeout(function() {
+                tab.classList.add('active');
+            }, 10);
+        } else {
+            tab.classList.remove('active');
+        }
+    });
 
+    // Обновляем активные пункты в сайдбаре и нижней панели
     document.querySelectorAll('.sidebar-item, .bottom-nav-item').forEach(function(btn) {
         btn.classList.remove('active');
         if (btn.dataset.tab === tabId) btn.classList.add('active');
     });
 
+    // Загружаем контент вкладки (логика без изменений)
     switch (tabId) {
         case 'dashboard':
             if (typeof App.ui.pages.renderDashboard === 'function') App.ui.pages.renderDashboard();
@@ -254,7 +269,7 @@ App.events.switchToTab = function(tabId) {
             break;
     }
 
-    setTimeout(function() { App.initIcons(); }, 100);
+    setTimeout(function() { App.initIcons(); }, 150);
 };
 
 App.events.openDrawer = function() {
