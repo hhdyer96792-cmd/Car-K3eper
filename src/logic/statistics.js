@@ -40,7 +40,7 @@ App.logic.filterByPeriod = function(records, period, dateField) {
 /**
  * Вычисляет статистику за выбранный период.
  * @param {string} [period='all']
- * @returns {Object} { totalMaintenanceCost, totalFuelCost, costPerKm, avgFuelConsumption, avgMileagePerDay, avgMotohoursPerDay }
+ * @returns {Object} { totalMaintenanceCost, totalFuelCost, costPerKm, avgFuelConsumption, fuelByType, avgMileagePerDay, avgMotohoursPerDay }
  */
 App.logic.calculateStatistics = function(period) {
     period = period || 'all';
@@ -51,10 +51,25 @@ App.logic.calculateStatistics = function(period) {
     var totalMaint = fServ.reduce(function(s, r) {
         return s + (Number(r.parts_cost) || 0) + (Number(r.work_cost) || 0);
     }, 0);
-    var totalFuel = fFuel.reduce(function(s, f) {
+
+    // Общие затраты на топливо
+    var totalFuelCost = fFuel.reduce(function(s, f) {
         return s + (Number(f.liters) || 0) * (Number(f.pricePerLiter) || 0);
     }, 0);
 
+    // Группируем заправки по типам топлива
+    var fuelByType = {};
+    fFuel.forEach(function(f) {
+        var type = f.fuelType || 'Бензин';
+        if (!fuelByType[type]) {
+            fuelByType[type] = { totalLiters: 0, totalCost: 0, count: 0 };
+        }
+        fuelByType[type].totalLiters += Number(f.liters) || 0;
+        fuelByType[type].totalCost += (Number(f.liters) || 0) * (Number(f.pricePerLiter) || 0);
+        fuelByType[type].count++;
+    });
+
+    // Рассчитываем пробег и период (как раньше)
     var periodMileage = 0, periodDays = 1, periodMotohours = 0;
     if (fMile.length >= 2) {
         var first = fMile[0], last = fMile[fMile.length - 1];
@@ -72,10 +87,28 @@ App.logic.calculateStatistics = function(period) {
         periodMotohours = App.store.settings.currentMotohours - (App.store.baseMotohours || 0);
     }
 
-    var totalCost = totalMaint + totalFuel;
+    // Для каждого типа считаем средний расход и цену
+    for (var type in fuelByType) {
+        if (fuelByType.hasOwnProperty(type)) {
+            var d = fuelByType[type];
+            d.avgConsumption = periodMileage > 0 ? (d.totalLiters / periodMileage) * 100 : 0;
+            d.avgPrice = d.totalLiters > 0 ? d.totalCost / d.totalLiters : 0;
+        }
+    }
+
+    // Изменено: средний расход по всем типам - среднее арифметическое
+    var totalAvgConsumption = 0;
+    var typeCount = 0;
+    for (var t in fuelByType) {
+        if (fuelByType[t].avgConsumption && fuelByType[t].totalLiters > 0) {
+            totalAvgConsumption += fuelByType[t].avgConsumption;
+            typeCount++;
+        }
+    }
+    var avgConsumption = typeCount > 0 ? totalAvgConsumption / typeCount : 0;
+
+    var totalCost = totalMaint + totalFuelCost;
     var costPerKm = periodMileage > 0 ? totalCost / periodMileage : 0;
-    var totalLiters = fFuel.reduce(function(s, f) { return s + (Number(f.liters) || 0); }, 0);
-    var avgCons = periodMileage > 0 ? (totalLiters / periodMileage) * 100 : 0;
 
     var avgMileageDay = 0, avgMotoDay = 0;
     if (fMile.length >= 2) {
@@ -90,74 +123,130 @@ App.logic.calculateStatistics = function(period) {
 
     return {
         totalMaintenanceCost: Number(totalMaint),
-        totalFuelCost: Number(totalFuel),
+        totalFuelCost: Number(totalFuelCost),
         costPerKm: Number(costPerKm),
-        avgFuelConsumption: Number(avgCons),
+        avgFuelConsumption: Number(avgConsumption), // среднее арифметическое по типам
+        fuelByType: fuelByType,                     // { "Бензин": { totalLiters, totalCost, avgConsumption, avgPrice }, ... }
         avgMileagePerDay: Number(avgMileageDay),
         avgMotohoursPerDay: Number(avgMotoDay)
     };
 };
 
 /**
- * Группирует топливные записи по месяцам и вычисляет средний расход и цену.
- * @returns {Array<{ yearMonth: string, avgConsumption: number|null, avgPrice: number|null }>}
+ * Группирует топливные записи по месяцам с разделением по типам топлива.
+ * Возвращает объект:
+ * {
+ *   months: string[],
+ *   averageConsumption: number[],     // среднее по типам за месяц
+ *   datasetsByType: { "Бензин": { consumption: number[], price: number[] }, ... },
+ *   mainFuelType: string,
+ *   mainPrice: number[]               // цена основного типа
+ * }
  */
 App.logic.groupFuelByMonth = function() {
     var sorted = App.store.fuelLog.filter(function(r) { return r.date && r.mileage; })
         .sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
-    var monthlyConsumption = {};
 
-    for (var i = 1; i < sorted.length; i++) {
-        var prev = sorted[i - 1];
-        var curr = sorted[i];
-        var mileageDiff = curr.mileage - prev.mileage;
-        if (mileageDiff <= 0) continue;
-        var consumption = (curr.liters / mileageDiff) * 100;
-        if (!isFinite(consumption)) continue;
-        var date = new Date(curr.date);
-        var yearMonth = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
-        if (!monthlyConsumption[yearMonth]) {
-            monthlyConsumption[yearMonth] = { values: [], totalPrice: 0, count: 0 };
-        }
-        monthlyConsumption[yearMonth].values.push(consumption);
-        monthlyConsumption[yearMonth].totalPrice += curr.liters * curr.pricePerLiter;
-        monthlyConsumption[yearMonth].count++;
-    }
-
-    var monthlyPrice = {};
+    // Собираем все типы топлива
+    var allTypes = [];
     sorted.forEach(function(r) {
-        if (!r.liters || !r.pricePerLiter) return;
-        var date = new Date(r.date);
-        var yearMonth = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
-        if (!monthlyPrice[yearMonth]) {
-            monthlyPrice[yearMonth] = { totalCost: 0, totalLiters: 0 };
-        }
-        monthlyPrice[yearMonth].totalCost += r.liters * r.pricePerLiter;
-        monthlyPrice[yearMonth].totalLiters += r.liters;
+        var t = r.fuelType || 'Бензин';
+        if (allTypes.indexOf(t) === -1) allTypes.push(t);
     });
 
-    var allMonths = [];
-    var seen = {};
-    Object.keys(monthlyConsumption).forEach(function(m) { if (!seen[m]) { allMonths.push(m); seen[m] = true; } });
-    Object.keys(monthlyPrice).forEach(function(m) { if (!seen[m]) { allMonths.push(m); seen[m] = true; } });
+    // Для каждого типа собираем месячные данные
+    var typeMonthly = {}; // { 'Бензин': { '2025-01': { consumptionValues: [], totalCost: 0, totalLiters: 0 } } }
+    allTypes.forEach(function(type) {
+        typeMonthly[type] = {};
+    });
 
-    var result = [];
-    for (var j = 0; j < allMonths.length; j++) {
-        var month = allMonths[j];
-        var consData = monthlyConsumption[month];
-        var avgCons = null;
-        if (consData && consData.values.length) {
-            var sumCons = consData.values.reduce(function(a, b) { return a + b; }, 0);
-            avgCons = sumCons / consData.values.length;
+    // Собираем данные
+    sorted.forEach(function(r) {
+        var type = r.fuelType || 'Бензин';
+        var date = new Date(r.date);
+        var ym = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+        if (!typeMonthly[type][ym]) {
+            typeMonthly[type][ym] = { consumptionValues: [], totalCost: 0, totalLiters: 0 };
         }
-        var priceData = monthlyPrice[month];
-        var avgPrice = null;
-        if (priceData && priceData.totalLiters) {
-            avgPrice = priceData.totalCost / priceData.totalLiters;
+        // Для расхода ищем предыдущую заправку того же типа
+        var prev = sorted.slice().reverse().find(function(p) {
+            return p.date < r.date && (p.fuelType || 'Бензин') === type;
+        });
+        if (prev) {
+            var dist = r.mileage - prev.mileage;
+            if (dist > 0) {
+                var cons = (r.liters / dist) * 100;
+                if (isFinite(cons)) typeMonthly[type][ym].consumptionValues.push(cons);
+            }
         }
-        result.push({ yearMonth: month, avgConsumption: avgCons, avgPrice: avgPrice });
+        typeMonthly[type][ym].totalCost += r.liters * r.pricePerLiter;
+        typeMonthly[type][ym].totalLiters += r.liters;
+    });
+
+    // Собираем все месяцы
+    var allMonthsSet = {};
+    for (var t in typeMonthly) {
+        for (var m in typeMonthly[t]) {
+            allMonthsSet[m] = true;
+        }
     }
-    return result.sort(function(a, b) { return a.yearMonth.localeCompare(b.yearMonth); });
+    var months = Object.keys(allMonthsSet).sort();
+
+    // Считаем средний расход и цену для каждого типа по месяцам
+    var datasetsByType = {};
+    allTypes.forEach(function(type) {
+        datasetsByType[type] = { consumption: new Array(months.length).fill(null), price: new Array(months.length).fill(null) };
+    });
+
+    months.forEach(function(month, idx) {
+        for (var t in typeMonthly) {
+            var data = typeMonthly[t][month];
+            if (data) {
+                if (data.consumptionValues.length > 0) {
+                    var sumCons = data.consumptionValues.reduce(function(a, b) { return a + b; }, 0);
+                    datasetsByType[t].consumption[idx] = parseFloat((sumCons / data.consumptionValues.length).toFixed(1));
+                }
+                if (data.totalLiters > 0) {
+                    datasetsByType[t].price[idx] = parseFloat((data.totalCost / data.totalLiters).toFixed(2));
+                }
+            }
+        }
+    });
+
+    // Вычисляем средний расход по типам за каждый месяц (среднее арифметическое)
+    var averageConsumption = months.map(function(month, idx) {
+        var sum = 0, cnt = 0;
+        for (var t in datasetsByType) {
+            var val = datasetsByType[t].consumption[idx];
+            if (val !== null) { sum += val; cnt++; }
+        }
+        return cnt > 0 ? parseFloat((sum / cnt).toFixed(1)) : null;
+    });
+
+    // Определяем основной тип топлива (по общему литражу за всё время)
+    var totalLitersByType = {};
+    sorted.forEach(function(r) {
+        var t = r.fuelType || 'Бензин';
+        totalLitersByType[t] = (totalLitersByType[t] || 0) + r.liters;
+    });
+    var mainFuelType = null, maxLiters = 0;
+    for (var ft in totalLitersByType) {
+        if (totalLitersByType[ft] > maxLiters) {
+            maxLiters = totalLitersByType[ft];
+            mainFuelType = ft;
+        }
+    }
+
+    // Цена основного типа по месяцам
+    var mainPrice = mainFuelType ? datasetsByType[mainFuelType].price : new Array(months.length).fill(null);
+
+    return {
+        months: months,
+        averageConsumption: averageConsumption,
+        datasetsByType: datasetsByType,
+        mainFuelType: mainFuelType,
+        mainPrice: mainPrice
+    };
 };
 
 /**
