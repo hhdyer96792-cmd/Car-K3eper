@@ -10,13 +10,12 @@ App.ui.pages.renderFuelTable = function() {
     App.store.fuelLog.forEach(function(f, i) {
         if (!f.date) return;
         var tr = document.createElement('tr');
-        var fullTankIcon = (f.fullTank === 'TRUE' || f.fullTank === true) ? '<i data-lucide="check"></i>' : '';
+        // Изменено: убран fullTank
         tr.innerHTML =
             '<td>' + App.utils.escapeHtml(f.date) + '</td>' +
             '<td>' + (f.mileage || '') + '</td>' +
             '<td>' + (f.liters || '') + '</td>' +
             '<td>' + (f.pricePerLiter || '') + '</td>' +
-            '<td style="text-align:center;">' + fullTankIcon + '</td>' +
             '<td>' + App.utils.escapeHtml(f.fuelType || '') + '</td>' +
             '<td>' + App.utils.escapeHtml(f.notes || '') + '</td>' +
             '<td>' +
@@ -29,6 +28,7 @@ App.ui.pages.renderFuelTable = function() {
 };
 
 App.ui.pages.checkFuelOrderConflicts = function(dateISO, mileage, excludeRowIndex) {
+    // без изменений
     var sorted = App.store.fuelLog.filter(function(_, idx) {
         return (idx + 2) !== excludeRowIndex;
     }).sort(function(a, b) {
@@ -89,7 +89,7 @@ App.ui.pages.openFuelModal = function(record) {
             '<input type="number" name="liters" step="0.01" value="' + (record ? record.liters : '') + '" required>' +
             '<label>Цена/л</label>' +
             '<input type="number" name="pricePerLiter" step="0.01" value="' + (record ? record.pricePerLiter : '') + '">' +
-            '<label>Полный бак? <input type="checkbox" name="fullTank" value="true" ' + (record && record.fullTank ? 'checked' : '') + '></label>' +
+            // Изменено: убран чекбокс fullTank
             '<label>Тип топлива</label>' +
             '<select name="fuelType">' +
                 '<option value="Бензин" ' + (record && record.fuelType === 'Бензин' ? 'selected' : '') + '>Бензин</option>' +
@@ -137,16 +137,16 @@ App.ui.pages.openFuelModal = function(record) {
             mileage: mileage,
             liters: liters,
             pricePerLiter: pricePerLiter,
-            fullTank: d.fullTank || '',
+            // Изменено: fullTank больше не используется, но сохраняем false для совместимости
+            fullTank: false,
             fuelType: d.fuelType,
             notes: d.notes || ''
         };
 
-        // Сохранение
+        // Сохранение (без изменений)
         if (App.config.USE_SUPABASE) {
             App.storage.saveFuelRecord(id, recordData)
                 .then(function(res) {
-                    // Получаем новый UUID после вставки
                     if (res && res.data && res.data.length > 0) {
                         recordData.id = res.data[0].id;
                     }
@@ -164,7 +164,7 @@ App.ui.pages.openFuelModal = function(record) {
                     App.toast('Ошибка сохранения в Supabase', 'error');
                 });
         } else {
-            // Старая логика (Google или локально)
+            // Старая логика (без изменений)
             if (App.auth.accessToken) {
                 if (isEdit) {
                     App.storage.saveFuelRecord(id, recordData);
@@ -203,6 +203,7 @@ App.ui.pages.deleteFuelEntry = function(idx) {
 };
 
 App.ui.pages.startVoiceFuelInput = function() {
+    // без изменений
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
         alert('Распознавание речи не поддерживается в этом браузере');
