@@ -18,7 +18,6 @@
         }
     }
 
-    // Вставить в onReady() перед существующим кодом темы
 function onReady() {
     // Отключаем анимации до полной загрузки, чтобы избежать моргания
     document.body.classList.add('no-transition');
