@@ -2,13 +2,8 @@
 window.App = window.App || {};
 App.charts = App.charts || {};
 
-// Хранилище активных графиков для возможности уничтожения
 App.charts.activeCharts = {};
 
-/**
- * Уничтожает график по ID canvas и удаляет из хранилища.
- * @param {string} canvasId - ID элемента canvas
- */
 App.charts.destroyChart = function(canvasId) {
     if (App.charts.activeCharts[canvasId]) {
         App.charts.activeCharts[canvasId].destroy();
@@ -16,20 +11,14 @@ App.charts.destroyChart = function(canvasId) {
     }
 };
 
-/**
- * Цвета для типов топлива (можно расширять)
- */
 var fuelTypeColors = {
     'Бензин': '#e67e22',
     'Дизель': '#2ecc71',
     'Газ (ГБО)': '#f39c12',
     'Электричество': '#3498db'
 };
-var averageColor = '#e74c3c'; // цвет для среднего расхода
+var averageColor = '#e74c3c';
 
-/**
- * Определяет, мобильное ли устройство (ширина < 768px)
- */
 function isMobile() {
     return window.innerWidth < 768;
 }
@@ -51,7 +40,6 @@ App.charts.renderFuelConsumptionChart = function() {
 
     var datasets = [];
 
-    // Средний расход (видим по умолчанию)
     var avgDataset = {
         label: 'Средний расход',
         data: averageConsumption,
@@ -72,7 +60,6 @@ App.charts.renderFuelConsumptionChart = function() {
     }
     datasets.push(avgDataset);
 
-    // Отдельные типы (скрыты по умолчанию)
     for (var type in datasetsByType) {
         var data = datasetsByType[type].consumption;
         var color = fuelTypeColors[type] || '#888';
@@ -129,10 +116,7 @@ App.charts.renderFuelConsumptionChart = function() {
 
     App.charts.activeCharts['fuelConsumptionChart'] = new Chart(ctx, {
         type: chartType,
-        data: {
-            labels: months,
-            datasets: datasets
-        },
+        data: { labels: months, datasets: datasets },
         options: options
     });
     App.initIcons();
@@ -210,10 +194,7 @@ App.charts.renderFuelPriceChart = function() {
 
     App.charts.activeCharts['fuelPriceChart'] = new Chart(ctx, {
         type: chartType,
-        data: {
-            labels: months,
-            datasets: datasets
-        },
+        data: { labels: months, datasets: datasets },
         options: options
     });
     App.initIcons();
@@ -391,21 +372,17 @@ App.charts.renderExpensePieChart = function(period) {
    ПРОГРЕСС-БАР ОСТАТКА РЕСУРСА МАСЛА
    ================================================================ */
 App.charts.renderOilResourceBar = function() {
-App.charts.renderOilResourceBar = function() {
     var container = document.getElementById('oil-resource-bar');
     if (!container) return;
 
     var oilOp = App.store.operations.find(function(op) {
         return op.name.indexOf('Масло') !== -1 && op.category.indexOf('ДВС') !== -1;
     });
-
-    // Если операция не найдена — показываем сообщение вместо прогресс-бара
     if (!oilOp) {
         container.innerHTML = '<p class="hint">Нет данных о массе</p>';
         return;
     }
 
-    // Восстанавливаем структуру прогресс-бара, если ранее было сообщение
     if (!container.querySelector('.oil-resource-track')) {
         container.innerHTML = '' +
             '<div class="oil-resource-label">Остаток ресурса масла</div>' +
@@ -426,7 +403,6 @@ App.charts.renderOilResourceBar = function() {
     }
     var percentRemaining = 100 - percentUsed;
 
-    // Плавный переход цвета (спокойные тона)
     var color;
     if (percentRemaining >= 50) {
         var green = 200;
@@ -456,7 +432,6 @@ App.charts.renderOilResourceBar = function() {
 
 /**
  * Мини-график расхода топлива (дашборд) – показывает средний расход.
- * На мобильных переключается на bar.
  */
 App.charts.renderMiniFuelConsumptionChart = function() {
     var canvas = document.getElementById('dash-fuel-consumption-chart');
@@ -468,7 +443,6 @@ App.charts.renderMiniFuelConsumptionChart = function() {
     var months = grouped.months.slice(-6);
     var data = grouped.averageConsumption.slice(-6);
 
-    // Если средний расход недоступен, берём первый попавшийся тип
     if (data.every(function(v) { return v === null; })) {
         var firstType = Object.keys(grouped.datasetsByType)[0];
         if (firstType) data = grouped.datasetsByType[firstType].consumption.slice(-6);
@@ -509,17 +483,11 @@ App.charts.renderMiniFuelConsumptionChart = function() {
 
     App.charts._dashFuelChart = new Chart(ctx, {
         type: chartType,
-        data: {
-            labels: months,
-            datasets: [dataset]
-        },
+        data: { labels: months, datasets: [dataset] },
         options: options
     });
 };
 
-/**
- * Мини-график затрат (дашборд) – всегда bar.
- */
 App.charts.renderMiniCostsChart = function() {
     var canvas = document.getElementById('dash-costs-chart');
     if (!canvas) return;
@@ -553,9 +521,6 @@ App.charts.renderMiniCostsChart = function() {
     });
 };
 
-/**
- * Мини-круговая диаграмма расходов (дашборд) – всегда doughnut.
- */
 App.charts.renderMiniExpensePieChart = function() {
     var canvas = document.getElementById('dash-expense-pie-chart');
     if (!canvas) return;
@@ -579,9 +544,6 @@ App.charts.renderMiniExpensePieChart = function() {
     });
 };
 
-/**
- * Обновление индикатора режима вождения на странице статистики
- */
 App.charts.updateDrivingModeIndicator = function() {
     var modeSpan = document.getElementById('driving-mode');
     var hintSpan = document.getElementById('driving-mode-hint');
