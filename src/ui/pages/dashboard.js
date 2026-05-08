@@ -1,5 +1,6 @@
 // src/ui/pages/dashboard.js
 window.App = window.App || {};
+App.charts = App.charts || {};
 App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
