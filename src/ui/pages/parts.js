@@ -24,6 +24,7 @@ App.ui.pages.renderPartsTable = function() {
                 '<button class="icon-btn" data-action="edit-part" data-id="' + p.id + '"><i data-lucide="pencil"></i></button>' +
                 '<button class="icon-btn" data-action="delete-part" data-id="' + p.id + '"><i data-lucide="trash-2"></i></button>' +
                 '<button class="icon-btn" data-action="search-part" data-oem="' + App.utils.escapeHtml(p.oem) + '"><i data-lucide="search"></i></button>' +
+                // Кнопка графика цен видна ТОЛЬКО если есть история цен
                 (p.priceHistory && p.priceHistory.length > 1 ? '<button class="icon-btn" data-action="price-history" data-id="' + p.id + '" title="История цен"><i data-lucide="trending-up"></i></button>' : '') +
             '</td>';
         tbody.appendChild(tr);
@@ -51,20 +52,24 @@ App.ui.pages.openPartForm = function(part) {
     var content =
         '<form id="part-form">' +
             '<input type="hidden" name="id" value="' + (part ? part.id : '') + '">' +
-            '<input type="hidden" name="update-price-only" id="update-price-only" value="false">' +   // скрытый флаг
+            '<input type="hidden" name="update-price-only" id="update-price-only" value="false">' +
             '<label>Операция</label>' +
             '<select name="operation" required><option value="">-- Выберите операцию --</option>' + operationOptions + '</select>' +
             '<label>OEM</label><input type="text" name="oem" value="' + App.utils.escapeHtml(part ? (part.oem || '') : '') + '">' +
             '<label>Аналог</label><input type="text" name="analog" value="' + App.utils.escapeHtml(part ? (part.analog || '') : '') + '">' +
-            '<label>Цена (₽)</label><input type="number" name="price" step="0.01" value="' + (part ? (part.price || '') : '') + '">' +
+            // Цена и кнопка "Обновить цену" в одной строке
+            '<label>Цена (₽)</label>' +
+            '<div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:14px;">' +
+                '<input type="number" name="price" step="0.01" value="' + (part ? (part.price || '') : '') + '" style="flex:1; margin-bottom:0;">' +
+                (isEdit ? '<button type="button" id="update-price-btn" class="secondary-btn" style="flex-shrink:0; margin-bottom:0;">Обновить</button>' : '') +
+            '</div>' +
             '<label>Поставщик</label><input type="text" name="supplier" value="' + App.utils.escapeHtml(part ? (part.supplier || '') : '') + '">' +
             '<label>Ссылка</label><input type="url" name="link" value="' + App.utils.escapeHtml(part ? (part.link || '') : '') + '">' +
             '<label>Комментарий</label><input type="text" name="comment" value="' + App.utils.escapeHtml(part ? (part.comment || '') : '') + '">' +
             '<label>В наличии (шт.)</label><input type="number" name="inStock" min="0" step="1" value="' + (part ? (part.inStock || 0) : 0) + '">' +
             '<label>Место хранения</label><input type="text" name="location" value="' + App.utils.escapeHtml(part ? (part.location || '') : '') + '" placeholder="Гараж, бардачок, полка...">' +
             priceHistoryHtml +
-            '<div class="modal-actions" style="display:flex; gap:12px; justify-content:flex-end;">' +
-                (isEdit ? '<button type="button" id="update-price-btn" class="secondary-btn">Обновить цену</button>' : '') +
+            '<div class="modal-actions">' +
                 '<button type="submit" class="primary-btn">Сохранить</button>' +
                 '<button type="button" class="cancel-btn secondary-btn">Отмена</button>' +
             '</div>' +
@@ -78,13 +83,15 @@ App.ui.pages.openPartForm = function(part) {
     if (updatePriceBtn) {
         updatePriceBtn.addEventListener('click', function() {
             modal.querySelector('#update-price-only').value = 'true';
+            // Отправляем форму
             form.dispatchEvent(new Event('submit'));
         });
     }
 
     form.onsubmit = function(e) {
         e.preventDefault();
-        var d = Object.fromEntries(new FormData(form));
+        var formData = new FormData(form);
+        var d = Object.fromEntries(formData);
         var updateOnlyPrice = d['update-price-only'] === 'true';
         var newPrice = parseFloat(d.price);
         var newSupplier = d.supplier;
@@ -119,11 +126,6 @@ App.ui.pages.openPartForm = function(part) {
             priceHistory: updateOnlyPrice ? priceHistory : (part ? part.priceHistory : [])
         };
 
-        if (isEdit && updateOnlyPrice) {
-            part.priceHistory = priceHistory;
-            App.store.savePriceHistory();
-        }
-
         if (App.config.USE_SUPABASE) {
             App.storage.savePart(rowData)
                 .then(function(res) {
@@ -149,32 +151,6 @@ App.ui.pages.openPartForm = function(part) {
                     console.error(err);
                     App.toast('Ошибка сохранения в Supabase', 'error');
                 });
-        } else {
-            if (isEdit) {
-                rowData.id = part.id;
-                if (App.auth.accessToken) {
-                    App.storage.savePart(rowData);
-                }
-                var idx = App.store.parts.findIndex(function(p) { return p.id == part.id; });
-                if (idx !== -1) {
-                    App.store.parts[idx] = rowData;
-                    if (updateOnlyPrice) {
-                        App.store.parts[idx].priceHistory = priceHistory;
-                        App.store.savePriceHistory();
-                    }
-                }
-            } else {
-                if (!App.auth.accessToken) {
-                    rowData.id = App.store.parts.length + 2;
-                    App.store.parts.push(rowData);
-                } else {
-                    App.storage.addPart(rowData);
-                }
-            }
-            App.store.saveToLocalStorage();
-            App.ui.pages.renderPartsTable();
-            if (App.auth.accessToken) App.loadSheet();
-            App.toast(isEdit ? 'Запчасть обновлена' : 'Запчасть добавлена', 'success');
         }
     };
 
