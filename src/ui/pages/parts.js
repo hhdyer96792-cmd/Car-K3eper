@@ -21,12 +21,11 @@ App.ui.pages.renderPartsTable = function() {
             '<td style="text-align:center;">' + (p.inStock || 0) + '</td>' +
             '<td>' + App.utils.escapeHtml(p.location) + '</td>' +
             '<td>' +
-                '<button class="icon-btn" data-action="edit-part" data-id="' + p.id + '"><i data-lucide="pencil"></i></button>' +
-                '<button class="icon-btn" data-action="delete-part" data-id="' + p.id + '"><i data-lucide="trash-2"></i></button>' +
-                '<button class="icon-btn" data-action="search-part" data-oem="' + App.utils.escapeHtml(p.oem) + '"><i data-lucide="search"></i></button>' +
-                // Кнопка графика цен видна ТОЛЬКО если есть история цен
-                (p.priceHistory && p.priceHistory.length > 1 ? '<button class="icon-btn" data-action="price-history" data-id="' + p.id + '" title="История цен"><i data-lucide="trending-up"></i></button>' : '') +
-            '</td>';
+    '<button class="icon-btn" data-action="edit-part" data-id="' + p.id + '"><i data-lucide="pencil"></i></button>' +
+    '<button class="icon-btn" data-action="delete-part" data-id="' + p.id + '"><i data-lucide="trash-2"></i></button>' +
+    '<button class="icon-btn" data-action="search-part" data-oem="' + App.utils.escapeHtml(p.oem) + '"><i data-lucide="search"></i></button>' +
+    '<button class="icon-btn" data-action="price-history" data-id="' + p.id + '" title="История цен"><i data-lucide="trending-up"></i></button>' +
+'</td>';
         tbody.appendChild(tr);
     });
     App.initIcons();
