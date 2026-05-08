@@ -28,7 +28,15 @@ var fuelTypeColors = {
 var averageColor = '#e74c3c'; // цвет для среднего расхода
 
 /**
- * График расхода топлива по месяцам (л/100 км) – по типам с возможностью скрыть/показать
+ * Определяет, мобильное ли устройство (ширина < 768px)
+ */
+function isMobile() {
+    return window.innerWidth < 768;
+}
+
+/**
+ * График расхода топлива по месяцам (л/100 км) – по типам с возможностью скрыть/показать.
+ * На мобильных — bar, на десктопе — line с зумом.
  */
 App.charts.renderFuelConsumptionChart = function() {
     App.charts.destroyChart('fuelConsumptionChart');
@@ -39,76 +47,101 @@ App.charts.renderFuelConsumptionChart = function() {
     var datasetsByType = grouped.datasetsByType;
     var averageConsumption = grouped.averageConsumption;
 
+    var mobile = isMobile();
+    var chartType = mobile ? 'bar' : 'line';
+
     var datasets = [];
 
-    // Добавляем средний расход (видимый по умолчанию)
-    datasets.push({
+    // Средний расход (видим по умолчанию)
+    var avgDataset = {
         label: 'Средний расход',
         data: averageConsumption,
         borderColor: averageColor,
         backgroundColor: averageColor + '20',
         tension: 0.2,
         fill: false,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: mobile ? 0 : 4,
+        pointHoverRadius: mobile ? 3 : 6,
         hidden: false
-    });
+    };
+    if (mobile) {
+        avgDataset.backgroundColor = averageColor + '70';
+        avgDataset.borderWidth = 2;
+        avgDataset.borderRadius = 6;
+        delete avgDataset.tension;
+        delete avgDataset.fill;
+    }
+    datasets.push(avgDataset);
 
-    // Добавляем отдельные типы (скрыты по умолчанию)
+    // Отдельные типы (скрыты по умолчанию)
     for (var type in datasetsByType) {
         var data = datasetsByType[type].consumption;
         var color = fuelTypeColors[type] || '#888';
-        datasets.push({
+        var typeDataset = {
             label: type,
             data: data,
             borderColor: color,
             backgroundColor: color + '20',
             tension: 0.2,
             fill: false,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            pointRadius: mobile ? 0 : 4,
+            pointHoverRadius: mobile ? 3 : 6,
             hidden: true
-        });
+        };
+        if (mobile) {
+            typeDataset.backgroundColor = color + '70';
+            typeDataset.borderWidth = 2;
+            typeDataset.borderRadius = 6;
+            delete typeDataset.tension;
+            delete typeDataset.fill;
+        }
+        datasets.push(typeDataset);
     }
 
     var ctx = canvas.getContext('2d');
+    var options = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw + ' л/100 км'; }
+                }
+            },
+            legend: { position: 'top' }
+        },
+        scales: {
+            y: { title: { display: true, text: 'л/100 км' }, beginAtZero: true }
+        }
+    };
+
+    if (!mobile) {
+        options.plugins.zoom = {
+            pan: { enabled: true, mode: 'x', speed: 10 },
+            zoom: {
+                wheel: { enabled: true },
+                pinch: { enabled: true },
+                mode: 'x',
+                speed: 0.1,
+                limits: { x: { min: 0.5, max: 5 } }
+            }
+        };
+    }
+
     App.charts.activeCharts['fuelConsumptionChart'] = new Chart(ctx, {
-        type: 'line',
+        type: chartType,
         data: {
             labels: months,
             datasets: datasets
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw + ' л/100 км'; }
-                    }
-                },
-                legend: { position: 'top' },
-                zoom: {
-                    pan: { enabled: true, mode: 'x', speed: 10 },
-                    zoom: {
-                        wheel: { enabled: true },
-                        pinch: { enabled: true },
-                        mode: 'x',
-                        speed: 0.1,
-                        limits: { x: { min: 0.5, max: 5 } }
-                    }
-                }
-            },
-            scales: {
-                y: { title: { display: true, text: 'л/100 км' }, beginAtZero: true }
-            }
-        }
+        options: options
     });
     App.initIcons();
 };
 
 /**
- * График средней цены топлива по месяцам (₽/л) – по типам, по умолчанию основной тип, остальные скрыты
+ * График средней цены топлива по месяцам (₽/л) – по типам, по умолчанию основной тип, остальные скрыты.
+ * На мобильных — bar, на десктопе — line с зумом.
  */
 App.charts.renderFuelPriceChart = function() {
     App.charts.destroyChart('fuelPriceChart');
@@ -119,63 +152,78 @@ App.charts.renderFuelPriceChart = function() {
     var datasetsByType = grouped.datasetsByType;
     var mainFuelType = grouped.mainFuelType;
 
-    var datasets = [];
+    var mobile = isMobile();
+    var chartType = mobile ? 'bar' : 'line';
 
-    // Добавляем линии для всех типов, но видимым делаем только основной
+    var datasets = [];
     for (var type in datasetsByType) {
         var data = datasetsByType[type].price;
         var color = fuelTypeColors[type] || '#888';
-        datasets.push({
+        var typeDataset = {
             label: type,
             data: data,
             borderColor: color,
             backgroundColor: color + '20',
             tension: 0.2,
             fill: false,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            hidden: (type !== mainFuelType) // скрываем все, кроме основного
-        });
+            pointRadius: mobile ? 0 : 4,
+            pointHoverRadius: mobile ? 3 : 6,
+            hidden: (type !== mainFuelType)
+        };
+        if (mobile) {
+            typeDataset.backgroundColor = color + '70';
+            typeDataset.borderWidth = 2;
+            typeDataset.borderRadius = 6;
+            delete typeDataset.tension;
+            delete typeDataset.fill;
+        }
+        datasets.push(typeDataset);
     }
 
     var ctx = canvas.getContext('2d');
+    var options = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw + ' ₽/л'; }
+                }
+            },
+            legend: { position: 'top' }
+        },
+        scales: {
+            y: { title: { display: true, text: '₽/л' }, beginAtZero: true }
+        }
+    };
+
+    if (!mobile) {
+        options.plugins.zoom = {
+            pan: { enabled: true, mode: 'x', speed: 10 },
+            zoom: {
+                wheel: { enabled: true },
+                pinch: { enabled: true },
+                mode: 'x',
+                speed: 0.1,
+                limits: { x: { min: 0.5, max: 5 } }
+            }
+        };
+    }
+
     App.charts.activeCharts['fuelPriceChart'] = new Chart(ctx, {
-        type: 'line',
+        type: chartType,
         data: {
             labels: months,
             datasets: datasets
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw + ' ₽/л'; }
-                    }
-                },
-                legend: { position: 'top' },
-                zoom: {
-                    pan: { enabled: true, mode: 'x', speed: 10 },
-                    zoom: {
-                        wheel: { enabled: true },
-                        pinch: { enabled: true },
-                        mode: 'x',
-                        speed: 0.1,
-                        limits: { x: { min: 0.5, max: 5 } }
-                    }
-                }
-            },
-            scales: {
-                y: { title: { display: true, text: '₽/л' }, beginAtZero: true }
-            }
-        }
+        options: options
     });
     App.initIcons();
 };
 
 /**
- * График затрат на топливо и ТО по месяцам (столбчатый)
+ * График затрат на топливо и ТО по месяцам (столбчатый). Всегда bar.
+ * На десктопе добавляется зум.
  */
 App.charts.renderCostsChart = function(period) {
     App.charts.destroyChart('costsChart');
@@ -206,6 +254,45 @@ App.charts.renderCostsChart = function(period) {
     }
 
     var ctx = canvas.getContext('2d');
+    var options = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.dataset.label + ': ' + context.raw.toFixed(2) + ' ₽';
+                    }
+                }
+            },
+            legend: { position: 'top' }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Затраты (₽)' },
+                ticks: { callback: function(value) { return value.toLocaleString(); } }
+            },
+            x: {
+                title: { display: true, text: 'Месяц' },
+                ticks: { maxRotation: 45, minRotation: 45 }
+            }
+        }
+    };
+
+    if (!isMobile()) {
+        options.plugins.zoom = {
+            pan: { enabled: true, mode: 'x', speed: 10 },
+            zoom: {
+                wheel: { enabled: true },
+                pinch: { enabled: true },
+                mode: 'x',
+                speed: 0.1,
+                limits: { x: { min: 0.5, max: 5 } }
+            }
+        };
+    }
+
     App.charts.activeCharts['costsChart'] = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -233,47 +320,13 @@ App.charts.renderCostsChart = function(period) {
                 }
             ]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.raw.toFixed(2) + ' ₽';
-                        }
-                    }
-                },
-                legend: { position: 'top' },
-                zoom: {
-                    pan: { enabled: true, mode: 'x', speed: 10 },
-                    zoom: {
-                        wheel: { enabled: true },
-                        pinch: { enabled: true },
-                        mode: 'x',
-                        speed: 0.1,
-                        limits: { x: { min: 0.5, max: 5 } }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Затраты (₽)' },
-                    ticks: { callback: function(value) { return value.toLocaleString(); } }
-                },
-                x: {
-                    title: { display: true, text: 'Месяц' },
-                    ticks: { maxRotation: 45, minRotation: 45 }
-                }
-            }
-        }
+        options: options
     });
     App.initIcons();
 };
 
 /**
- * Круговая диаграмма распределения затрат по категориям
+ * Круговая диаграмма распределения затрат по категориям (всегда doughnut, без изменений)
  */
 App.charts.renderExpensePieChart = function(period) {
     App.charts.destroyChart('expensePieChart');
@@ -338,43 +391,97 @@ App.charts.renderExpensePieChart = function(period) {
 };
 
 /**
- * Круговая диаграмма прогресса замены масла (маленькая)
+ * Прогноз замены масла: линия с цветовым градиентом (зелёный → красный).
  */
 App.charts.renderOilChart = function() {
     App.charts.destroyChart('oilChart');
     var canvas = document.getElementById('oilChart');
     if (!canvas) return;
+
     var oilOp = App.store.operations.find(function(op) {
         return op.name.indexOf('Масло') !== -1 && op.category.indexOf('ДВС') !== -1;
     });
     if (!oilOp) return;
+
     var plan = App.logic.calculatePlan(oilOp);
-    var current = App.store.settings.currentMileage;
-    var last = oilOp.lastMileage || 0;
-    var next = plan.planMileage;
-    var percent = Math.min(100, Math.max(0, Math.round((current - last) / (next - last) * 100)));
+    var lastMileage = oilOp.lastMileage || App.store.settings.currentMileage;
+    var nextMileage = plan.planMileage;
+    if (!nextMileage || nextMileage <= lastMileage) return;
+
+    // Генерируем 21 точку для плавного градиента
+    var points = [];
+    for (var i = 0; i <= 20; i++) {
+        var fraction = i / 20;
+        var x = lastMileage + fraction * (nextMileage - lastMileage);
+        var y = parseFloat((fraction * 100).toFixed(1));
+        points.push({ x: x, y: y });
+    }
+
+    // Функция цвета: зелёный → жёлтый → красный
+    function getGradientColor(percent) {
+        var r, g;
+        if (percent <= 50) {
+            r = Math.floor((percent / 50) * 255);
+            g = 255;
+        } else {
+            r = 255;
+            g = Math.floor((1 - (percent - 50) / 50) * 255);
+        }
+        return 'rgb(' + r + ',' + g + ',0)';
+    }
 
     var ctx = canvas.getContext('2d');
     App.charts.activeCharts['oilChart'] = new Chart(ctx, {
-        type: 'doughnut',
+        type: 'line',
         data: {
-            labels: ['Пройдено', 'Осталось'],
-            datasets: [{ data: [percent, 100 - percent], backgroundColor: ['#2ecc71', '#e0e0e0'] }]
+            datasets: [{
+                label: 'Износ масла',
+                data: points,
+                parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+                borderWidth: 4,
+                pointRadius: 0,
+                tension: 0.2,
+                segment: {
+                    borderColor: function(ctx) {
+                        var point = ctx.p0.parsed.y;
+                        return getGradientColor(point);
+                    }
+                }
+            }]
         },
         options: {
-            cutout: '50%',
-            plugins: { legend: { display: false } }
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return 'Пробег: ' + ctx.raw.x + ' км, износ: ' + ctx.raw.y + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Пробег (км)' },
+                    ticks: { callback: function(v) { return v.toLocaleString(); } }
+                },
+                y: {
+                    title: { display: true, text: '% износа' },
+                    min: 0,
+                    max: 100,
+                    ticks: { stepSize: 20 }
+                }
+            }
         }
     });
     App.initIcons();
 };
 
-/* ================================================================
-   МИНИ-ГРАФИКИ ДЛЯ ДАШБОРДА
-   ================================================================ */
-
 /**
- * Мини-график расхода топлива (дашборд) – показывает средний расход
+ * Мини-график расхода топлива (дашборд) – показывает средний расход.
+ * На мобильных переключается на bar.
  */
 App.charts.renderMiniFuelConsumptionChart = function() {
     var canvas = document.getElementById('dash-fuel-consumption-chart');
@@ -386,44 +493,57 @@ App.charts.renderMiniFuelConsumptionChart = function() {
     var months = grouped.months.slice(-6);
     var data = grouped.averageConsumption.slice(-6);
 
-    // Если средний расход недоступен, попробуем взять первый попавшийся тип
+    // Если средний расход недоступен, берём первый попавшийся тип
     if (data.every(function(v) { return v === null; })) {
         var firstType = Object.keys(grouped.datasetsByType)[0];
         if (firstType) data = grouped.datasetsByType[firstType].consumption.slice(-6);
     }
 
+    var mobile = isMobile();
+    var chartType = mobile ? 'bar' : 'line';
+
+    var dataset = {
+        label: 'Средний расход',
+        data: data,
+        borderColor: '#e74c3c',
+        backgroundColor: 'rgba(231,76,60,0.1)',
+        tension: 0.2,
+        pointRadius: mobile ? 0 : 2
+    };
+    if (mobile) {
+        dataset.backgroundColor = '#e74c3c70';
+        dataset.borderWidth = 2;
+        dataset.borderRadius = 4;
+        delete dataset.tension;
+    }
+
     var ctx = canvas.getContext('2d');
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(ctx) { return ctx.raw + ' л/100 км'; }
+                }
+            }
+        },
+        scales: { y: { beginAtZero: true } }
+    };
+
     App.charts._dashFuelChart = new Chart(ctx, {
-        type: 'line',
+        type: chartType,
         data: {
             labels: months,
-            datasets: [{
-                label: 'Средний расход',
-                data: data,
-                borderColor: '#e74c3c',
-                backgroundColor: 'rgba(231,76,60,0.1)',
-                tension: 0.2,
-                pointRadius: 2
-            }]
+            datasets: [dataset]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) { return ctx.raw + ' л/100 км'; }
-                    }
-                }
-            },
-            scales: { y: { beginAtZero: true } }
-        }
+        options: options
     });
 };
 
 /**
- * Мини-график затрат (дашборд)
+ * Мини-график затрат (дашборд) – всегда bar.
  */
 App.charts.renderMiniCostsChart = function() {
     var canvas = document.getElementById('dash-costs-chart');
@@ -459,7 +579,7 @@ App.charts.renderMiniCostsChart = function() {
 };
 
 /**
- * Мини-круговая диаграмма расходов (дашборд)
+ * Мини-круговая диаграмма расходов (дашборд) – всегда doughnut.
  */
 App.charts.renderMiniExpensePieChart = function() {
     var canvas = document.getElementById('dash-expense-pie-chart');
