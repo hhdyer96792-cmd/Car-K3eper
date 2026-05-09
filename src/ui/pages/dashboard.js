@@ -10,15 +10,42 @@ App.ui.pages.renderDashboard = function() {
 
     var stats = App.logic.calculateStatistics('6months');
 
+    // Сводка (п.5 уже в HTML)
     document.getElementById('dash-mileage').textContent = App.store.settings.currentMileage.toLocaleString();
     document.getElementById('dash-motohours').textContent = App.store.settings.currentMotohours.toLocaleString();
-    // Изменено: выводим средний расход как среднее по типам (уже посчитано в statistics.js)
     document.getElementById('dash-avg-consumption').textContent = stats.avgFuelConsumption.toFixed(1);
     document.getElementById('dash-cost-km').textContent = stats.costPerKm.toFixed(2);
 
+    // Режим (п.6) – вместо старого «Режим»
     var mode = App.logic.getDrivingMode();
-    document.getElementById('dash-driving-mode').textContent = mode.text;
-    document.getElementById('dash-driving-hint').textContent = mode.hint;
+    var modeTextEl = document.getElementById('dash-driving-mode-text');
+    var modeDotEl = document.getElementById('mode-dot');
+    if (modeTextEl) {
+        modeTextEl.textContent = mode.text; // только название режима, например "Городской (23.5 км/ч)"
+    }
+    if (modeDotEl) {
+        // Определяем класс для цвета
+        var modeClass = '';
+        if (mode.text.indexOf('Городской') !== -1) modeClass = 'city';
+        else if (mode.text.indexOf('Трассовый') !== -1) modeClass = 'highway';
+        else if (mode.text.indexOf('Смешанный') !== -1) modeClass = 'mixed';
+        modeDotEl.className = 'mode-dot ' + modeClass;
+    }
+    // Скрываем старый виджет, если он ещё есть
+    var oldWidget = document.getElementById('widget-driving-mode');
+    if (oldWidget) oldWidget.style.display = 'none'; // заменён на compact
+
+    // Мини-графики и т.д.
+    App.charts.renderMiniFuelConsumptionChart();
+    App.charts.renderMiniCostsChart();
+    App.charts.renderMiniExpensePieChart();
+    App.ui.pages.renderTireWearMini();
+
+    // Виджет ближайших ТО
+    App.ui.pages.renderTop5Widget();
+
+    App.initIcons();
+};
 
     // Виджет ближайших ТО
     App.ui.pages.renderTop5Widget();
