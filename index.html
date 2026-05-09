@@ -23,6 +23,14 @@
 
 <div class="desktop-sidebar">
     <div id="sidebar-car-selector" style="padding: 12px 20px; border-bottom: 1px solid var(--border);"></div>
+    <!-- Кнопки управления авто (только на десктопе) -->
+    <div id="sidebar-car-actions" style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:8px 20px; border-bottom:1px solid var(--border);">
+        <button id="sidebar-add-car-btn" class="icon-btn" title="Добавить авто"><i data-lucide="plus"></i></button>
+        <button id="sidebar-rename-car-btn" class="icon-btn" title="Переименовать"><i data-lucide="pencil"></i></button>
+        <button id="sidebar-delete-car-btn" class="icon-btn" title="Удалить авто"><i data-lucide="trash-2"></i></button>
+        <button id="sidebar-invite-btn" class="icon-btn" title="Пригласить"><i data-lucide="user-plus"></i></button>
+        <button id="sidebar-calendar-subscribe-btn" class="icon-btn" title="Подписка на календарь"><i data-lucide="calendar-days"></i></button>
+    </div>
     <nav class="sidebar-nav">
         <button class="sidebar-item active" data-tab="dashboard"><i data-lucide="layout-dashboard"></i> Дашборд</button>
         <button class="sidebar-item" data-tab="to"><i data-lucide="wrench"></i> ТО</button>
@@ -42,16 +50,14 @@
 <div class="app-container">
     <header>
         <h1>Car K3eeper D&T</h1>
-             <button id="pwa-install-btn" class="primary-btn" style="display:none;">Установить приложение</button>
+        <button id="pwa-install-btn" class="primary-btn" style="display:none;">Установить приложение</button>
         <span id="username-display" style="font-size:0.9rem; opacity:0.8; margin-left:12px;"></span>
-        <!-- Селектор авто только на мобильных -->
         <div id="car-selector-container" class="mobile-only" style="margin-bottom:20px;"></div>
         <div class="header-controls">
-            <button id="theme-toggle" class="mobile-only" title="Переключить тему"><i data-lucide="moon"></i></button>
             <button id="sync-indicator" class="synced" title="Статус синхронизации"><i data-lucide="cloud"></i></button>
         </div>
     </header>
-
+    
     <!-- ==================== Панель авторизации ==================== -->
     <div id="auth-panel" class="card" style="display:none;">
         <div class="auth-tabs">
@@ -101,23 +107,26 @@
     </div>
 
     <!-- ==================== Основной интерфейс ==================== -->
-    <div id="data-panel" style="display:none;">
+     <div id="data-panel" style="display:none;">
         <!-- Дашборд -->
         <div id="tab-dashboard" class="tab-content active">
             <div class="dashboard-grid">
+                <!-- Сводка – единицы вынесены под цифры (п.5) -->
                 <div class="dash-widget" id="widget-summary">
                     <h3><i data-lucide="gauge"></i> Сводка</h3>
                     <div class="summary-values">
-                        <div><span id="dash-mileage">0</span><small> км</small></div>
-                        <div><span id="dash-motohours">0</span><small> ч</small></div>
-                        <div><span id="dash-avg-consumption">0</span><small> л/100км</small></div>
-                        <div><span id="dash-cost-km">0</span><small> ₽/км</small></div>
+                        <div><span id="dash-mileage">0</span><small>км</small></div>
+                        <div><span id="dash-motohours">0</span><small>ч</small></div>
+                        <div><span id="dash-avg-consumption">0</span><small>л/100км</small></div>
+                        <div><span id="dash-cost-km">0</span><small>₽/км</small></div>
                     </div>
                 </div>
+                 <!-- Режим – переработан (п.6) -->
                 <div class="dash-widget" id="widget-driving-mode">
-                    <h3><i data-lucide="car"></i> Режим</h3>
-                    <div id="dash-driving-mode">—</div>
-                    <p class="hint" id="dash-driving-hint"></p>
+                    <div class="mode-indicator-compact" id="dash-driving-mode-compact">
+                        <div class="mode-dot" id="mode-dot"></div>
+                        <span id="dash-driving-mode-text">—</span>
+                    </div>
                 </div>
                 <div class="dash-widget dash-widget-wide" id="widget-upcoming">
                     <h3><i data-lucide="alert-circle"></i> Ближайшие ТО</h3>
@@ -156,18 +165,20 @@
         <!-- ТО -->
         <div id="tab-to" class="tab-content">
             <div class="stats-grid" id="stats-grid-skeleton">
+                <!-- Карточки пробега, среднего и т.д. (п.5) – стили изменятся через CSS -->
                 <div class="stat-card"><span class="stat-label">Пробег</span><span class="stat-value" id="display-mileage">0</span><span class="stat-unit">км</span></div>
                 <div class="stat-card"><span class="stat-label">Ср. пробег/день</span><span class="stat-value" id="display-avg-mileage">20</span><span class="stat-unit">км</span></div>
                 <div class="stat-card"><span class="stat-label">Моточасы</span><span class="stat-value" id="display-motohours">0</span><span class="stat-unit">ч</span></div>
                 <div class="stat-card"><span class="stat-label">Ср. м/ч/день</span><span class="stat-value" id="display-avg-motohours">1.65</span><span class="stat-unit">ч</span></div>
             </div>
+            <!-- Пробег и моточасы (п.4) -->
             <div class="card" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <label style="margin:0;">Пробег: <input type="number" id="new-mileage" placeholder="км" style="width:120px;"></label>
-                <label style="margin:0;">Моточасы: <input type="number" id="new-motohours" placeholder="ч" style="width:120px;"></label>
-                <button id="update-mileage-btn" class="primary-btn"><i data-lucide="refresh-cw"></i> Обновить</button>
+                <input type="number" id="new-mileage" placeholder="Пробег, км" style="width:140px;">
+                <input type="number" id="new-motohours" placeholder="Моточасы, ч" style="width:140px;">
+                <button id="update-mileage-btn" class="icon-btn primary-btn" style="width:40px; height:40px;" title="Обновить"><i data-lucide="refresh-cw"></i></button>
             </div>
             <div class="card top5-widget"><h3><i data-lucide="arrow-up"></i> Ближайшие работы</h3><div id="top5-container"></div></div>
-            <!-- Планировщик ТО с календарём -->
+            <!-- Планировщик ТО с календарём (п.1) -->
             <div class="card planner-card">
                 <h3><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
                 <div style="display: flex; flex-wrap: nowrap; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
@@ -179,7 +190,7 @@
                             <option value="year">Год</option>
                         </select>
                     </label>
-                    <button id="download-ics-btn-static" class="primary-btn"><i data-lucide="calendar-download"></i> Скачать календарь</button>
+                    <button id="download-ics-btn-static" class="primary-btn" style="margin-left:auto; padding:10px 14px; font-size:0.9rem;"><i data-lucide="calendar-download"></i> Скачать календарь</button>
                 </div>
                 <div id="plan-container" style="max-height: 400px; overflow-y: auto;">
                     <p class="hint">Выберите период, календарь обновится автоматически.</p>
@@ -361,6 +372,10 @@
 
         <!-- Настройки -->
         <div id="tab-settings" class="tab-content">
+             <div class="card">
+                <h3><i data-lucide="palette"></i> Тема</h3>
+                <button id="settings-theme-toggle" class="secondary-btn"><i data-lucide="moon"></i> Переключить тему</button>
+            </div>
             <div class="card"><h3><i data-lucide="wrench"></i> Показатели точки отсчёта</h3>
                 <label>Пробег точки отсчёта (км): <input type="number" id="set-base-mileage" step="1" value="0"></label>
                 <label>Моточасы точки отсчёта: <input type="number" id="set-base-motohours" step="1" value="0"></label>
