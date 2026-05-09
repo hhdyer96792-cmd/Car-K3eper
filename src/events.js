@@ -360,6 +360,9 @@ App.events.initDirectListeners = function() {
     var exportDataBtn = document.getElementById('export-data-btn');
     if (exportDataBtn) exportDataBtn.addEventListener('click', App.ui.pages.handleExport);
 
+    var generatePlanBtn = document.getElementById('generate-plan-btn');
+    if (generatePlanBtn) generatePlanBtn.addEventListener('click', function() { App.ui.pages.renderMaintenancePlan(); });
+
     var calcPredictionBtn = document.getElementById('calc-prediction-btn');
     if (calcPredictionBtn) calcPredictionBtn.addEventListener('click', App.ui.pages.renderMileagePrediction);
 
@@ -417,7 +420,7 @@ App.events.initDirectListeners = function() {
         });
     });
 
-    // Автообновление календаря при изменении периода
+    // Автообновление календаря при изменении периода (Этап 2)
     var planPeriodSelect = document.getElementById('plan-period-select');
     if (planPeriodSelect) {
         planPeriodSelect.addEventListener('change', function() {
@@ -427,7 +430,7 @@ App.events.initDirectListeners = function() {
         });
     }
 
-    // Кнопка "Скачать календарь" (статическая)
+    // Кнопка "Скачать календарь" (статическая) (Этап 2)
     var downloadIcsStaticBtn = document.getElementById('download-ics-btn-static');
     if (downloadIcsStaticBtn) {
         downloadIcsStaticBtn.addEventListener('click', function() {
@@ -442,6 +445,17 @@ App.events.initDirectListeners = function() {
             link.click();
             document.body.removeChild(link);
             App.toast('Календарь скачан', 'success');
+        });
+    }
+
+    // Кнопка темы на вкладке Настройки (п.2)
+    var settingsThemeToggle = document.getElementById('settings-theme-toggle');
+    if (settingsThemeToggle) {
+        settingsThemeToggle.addEventListener('click', function() {
+            App.events.toggleTheme();
+            var isDark = document.body.classList.contains('dark');
+            this.innerHTML = isDark ? '<i data-lucide="sun"></i> Светлая тема' : '<i data-lucide="moon"></i> Тёмная тема';
+            App.initIcons();
         });
     }
 };
