@@ -385,11 +385,14 @@
                     isLoggedIn = true;
                     setInstallButtonVisible(true);
                     if (authPanel) authPanel.style.display = 'none';
-                    var dp = document.getElementById('data-panel');
-                    if (dp) dp.style.display = 'block';
-                    // Показываем облачко после авторизации
-                    var syncIndicator = document.getElementById('sync-indicator');
-                    if (syncIndicator) syncIndicator.style.display = '';
+var dp = document.getElementById('data-panel');
+if (dp) dp.style.display = 'block';
+// Показываем облачко после авторизации
+var syncIndicator = document.getElementById('sync-indicator');
+if (syncIndicator) syncIndicator.style.display = '';
+// Показываем мобильные элементы после авторизации
+var mobileRow = document.getElementById('mobile-header-row2');
+if (mobileRow) mobileRow.style.display = 'flex';
 
                     App.supabase.auth.getUser().then(function(userRes) {
                         var display = document.getElementById('username-display');
@@ -450,11 +453,14 @@
                     isLoggedIn = false;
                     setInstallButtonVisible(false);
                     if (authPanel) authPanel.style.display = 'block';
-                    var dp = document.getElementById('data-panel');
-                    if (dp) dp.style.display = 'none';
-                    // Скрываем облачко на странице авторизации
-                    var syncIndicator = document.getElementById('sync-indicator');
-                    if (syncIndicator) syncIndicator.style.display = 'none';
+var dp = document.getElementById('data-panel');
+if (dp) dp.style.display = 'none';
+// Скрываем облачко на странице авторизации
+var syncIndicator = document.getElementById('sync-indicator');
+if (syncIndicator) syncIndicator.style.display = 'none';
+// Скрываем мобильные элементы на странице авторизации
+var mobileRow = document.getElementById('mobile-header-row2');
+if (mobileRow) mobileRow.style.display = 'none';
                     var carContainer = document.getElementById('car-selector-container');
                     if (carContainer) carContainer.innerHTML = '';
                     var usernameDisplay = document.getElementById('username-display');
