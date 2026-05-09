@@ -73,35 +73,147 @@ App.ui.pages.renderTOTable = function() {
     App.initIcons();
 };
 
+// ================== НОВЫЙ КАЛЕНДАРЬ ПЛАНИРОВЩИКА ==================
 App.ui.pages.renderMaintenancePlan = function() {
     var container = document.getElementById('plan-container');
     if (!container) return;
-    var plan = App.logic.generateMaintenancePlan(document.getElementById('plan-period-select')?.value || 'month');
-    if (plan.length === 0) {
-        container.innerHTML = '<p class="hint">Нет запланированных операций на выбранный период.</p>';
-        App.initIcons();
-        return;
-    }
-    var html = '<table class="plan-table" style="width:100%; border-collapse:collapse;">';
-    html += '<thead><tr><th>Операция</th><th>Категория</th><th>Плановая дата</th><th>Плановый пробег</th><th></th></tr></thead><tbody>';
+
+    var period = document.getElementById('plan-period-select')?.value || 'month';
+    var plan = App.logic.generateMaintenancePlan(period);
+    var interval = App.logic.getPlanPeriodDates(period);
+    var currentDate = new Date(interval.start);
+    // Определяем начальный месяц/год для календаря
+    var displayMonth = currentDate.getMonth();
+    var displayYear = currentDate.getFullYear();
+
+    // Строим карту: ключ = YYYY-MM-DD, значение = массив операций
+    var eventMap = {};
     plan.forEach(function(op) {
         var planData = App.logic.calculatePlan(op);
-        var formattedDate = planData.planDate.split('-').reverse().join('.');
-        html += '<tr>' +
-            '<td><strong>' + App.utils.escapeHtml(op.name) + '</strong></td>' +
-            '<td>' + App.utils.escapeHtml(op.category) + '</td>' +
-            '<td>' + formattedDate + '</td>' +
-            '<td>' + planData.planMileage.toLocaleString() + ' км</td>' +
-            '<td><button class="icon-btn" data-action="execute-plan" data-op-id="' + op.id + '" data-op-name="' + App.utils.escapeHtml(op.name) + '"><i data-lucide="check-circle"></i> Выполнить</button></td>' +
-        '</tr>';
+        if (!planData.planDate) return;
+        var dateKey = planData.planDate; // YYYY-MM-DD
+        if (!eventMap[dateKey]) eventMap[dateKey] = [];
+        eventMap[dateKey].push({ op: op, plan: planData });
     });
-    html += '</tbody></table>';
-    html += '<div style="margin-top:12px;"><button id="download-ics-btn" class="primary-btn"><i data-lucide="calendar-download"></i> Добавить все в календарь (.ics)</button></div>';
-    container.innerHTML = html;
 
-    var planToCalendarBtn = document.getElementById('plan-to-calendar-btn');
-    if (planToCalendarBtn) planToCalendarBtn.style.display = 'none';
+    // Функция рендера календаря для конкретного месяца
+    function renderCalendar(year, month) {
+        var firstDay = new Date(year, month, 1).getDay();
+        // Корректировка: воскресенье = 0, понедельник = 1 (для удобства оставим воскресенье первым днём)
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
 
+        var html = '<div class="plan-calendar">';
+        html += '<div class="cal-nav">';
+        html += '<button class="cal-nav-btn" id="cal-prev"><i data-lucide="chevron-left"></i></button>';
+        html += '<span class="cal-month">' + new Date(year, month).toLocaleString('ru', { month: 'long', year: 'numeric' }) + '</span>';
+        html += '<button class="cal-nav-btn" id="cal-next"><i data-lucide="chevron-right"></i></button>';
+        html += '</div>';
+        html += '<div class="cal-weekdays">';
+        ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'].forEach(function(d) {
+            html += '<div class="cal-weekday">' + d + '</div>';
+        });
+        html += '</div>';
+        html += '<div class="cal-grid">';
+
+        // Пустые ячейки перед первым днём
+        for (var i = 0; i < firstDay; i++) {
+            html += '<div class="cal-day empty"></div>';
+        }
+
+        // Дни месяца
+        for (var d = 1; d <= daysInMonth; d++) {
+            var dateISO = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+            var events = eventMap[dateISO] || [];
+            var hasEvents = events.length > 0;
+            var todayClass = (dateISO === new Date().toISOString().split('T')[0]) ? ' today' : '';
+
+            html += '<div class="cal-day' + todayClass + '" data-date="' + dateISO + '">';
+            html += '<span class="cal-day-num">' + d + '</span>';
+            if (hasEvents) {
+                html += '<div class="cal-events">';
+                events.forEach(function(ev) {
+                    html += '<span class="cal-event-dot" title="' + App.utils.escapeHtml(ev.op.name) + '"></span>';
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+        html += '</div>'; // .plan-calendar
+
+        return html;
+    }
+
+    container.innerHTML = renderCalendar(displayYear, displayMonth);
+
+    // Обработчики навигации
+    var currentYear = displayYear;
+    var currentMonth = displayMonth;
+
+    function updateCalendar() {
+        container.innerHTML = renderCalendar(currentYear, currentMonth);
+        bindListeners();
+        App.initIcons();
+    }
+
+    function bindListeners() {
+        var prevBtn = document.getElementById('cal-prev');
+        var nextBtn = document.getElementById('cal-next');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function() {
+                if (currentMonth === 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                } else {
+                    currentMonth--;
+                }
+                updateCalendar();
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function() {
+                if (currentMonth === 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                } else {
+                    currentMonth++;
+                }
+                updateCalendar();
+            });
+        }
+
+        // Клик по дню – показать список операций
+        var days = container.querySelectorAll('.cal-day:not(.empty)');
+        days.forEach(function(dayEl) {
+            dayEl.addEventListener('click', function() {
+                var date = dayEl.dataset.date;
+                var events = eventMap[date] || [];
+                if (events.length === 0) return;
+
+                var listHtml = '<ul style="margin-top:12px;">';
+                events.forEach(function(ev) {
+                    var op = ev.op;
+                    var planData = ev.plan;
+                    listHtml += '<li style="margin-bottom:8px;">';
+                    listHtml += '<strong>' + App.utils.escapeHtml(op.name) + '</strong> (' + App.utils.escapeHtml(op.category) + ')<br>';
+                    listHtml += 'План: ' + App.utils.isoToDDMMYYYY(planData.planDate) + ', ' + planData.planMileage + ' км';
+                    listHtml += ' <button class="icon-btn" data-action="execute-plan" data-op-id="' + op.id + '" data-op-name="' + App.utils.escapeHtml(op.name) + '"><i data-lucide="check-circle"></i></button>';
+                    listHtml += '</li>';
+                });
+                listHtml += '</ul>';
+                App.ui.createModal('События на ' + App.utils.isoToDDMMYYYY(date), listHtml);
+            });
+        });
+    }
+
+    bindListeners();
+    App.initIcons();
+
+    // Кнопка скачивания ICS
+    var downloadContainer = document.createElement('div');
+    downloadContainer.style.marginTop = '16px';
+    downloadContainer.innerHTML = '<button id="download-ics-btn" class="primary-btn"><i data-lucide="calendar-download"></i> Скачать .ics</button>';
+    container.appendChild(downloadContainer);
     document.getElementById('download-ics-btn').addEventListener('click', function() {
         var icsContent = generateICS(plan);
         var blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
@@ -113,6 +225,46 @@ App.ui.pages.renderMaintenancePlan = function() {
         document.body.removeChild(link);
         App.toast('Файл .ics скачан. Откройте его для импорта в календарь.', 'success');
     });
+};
+
+// Генерация ICS (без изменений)
+function generateICS(plan) {
+    var now = new Date().toISOString().replace(/[-:]/g, '').slice(0,15) + 'Z';
+    var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Vesta Dashboard//RU\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
+    plan.forEach(function(op) {
+        var planData = App.logic.calculatePlan(op);
+        if (!planData.planDate) return;
+        var dtStart = planData.planDate.replace(/-/g, '') + 'T090000';
+        var dtEnd = planData.planDate.replace(/-/g, '') + 'T100000';
+        var uid = op.id + '-vesta-' + planData.planDate;
+        var summary = 'ТО: ' + op.name;
+
+        var parts = App.store.parts.filter(function(p) {
+            return p.operation === op.name || p.operation === op.category;
+        });
+        var partsList = '';
+        if (parts.length > 0) {
+            partsList = '\\n\\nСписок запчастей:\\n';
+            parts.forEach(function(p) {
+                var status = (p.inStock && p.inStock > 0) ? '✅' : '☐';
+                partsList += status + ' ' + (p.oem || p.analog || p.operation) + (p.price ? ' (' + p.price + '₽)' : '') + '\\n';
+            });
+        }
+
+        var description = 'Пробег: ' + planData.planMileage + ' км. Категория: ' + (op.category || '') + partsList;
+
+        ics += 'BEGIN:VEVENT\r\n';
+        ics += 'UID:' + uid + '\r\n';
+        ics += 'DTSTART:' + dtStart + '\r\n';
+        ics += 'DTEND:' + dtEnd + '\r\n';
+        ics += 'SUMMARY:' + summary + '\r\n';
+        ics += 'DESCRIPTION:' + description + '\r\n';
+        ics += 'DTSTAMP:' + now + '\r\n';
+        ics += 'END:VEVENT\r\n';
+    });
+    ics += 'END:VCALENDAR\r\n';
+    return ics;
+}
 
     App.initIcons();
 };
