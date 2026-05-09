@@ -349,197 +349,204 @@
         if (logoutDrawerBtn) logoutDrawerBtn.addEventListener('click', doLogout);
 
         // ======================= СЕССИЯ (с Realtime) =======================
-        async function handleOnlineSession() {
-            if (!navigator.onLine) {
-                isLoggedIn = true;
-                setInstallButtonVisible(true);
-                if (authPanel) authPanel.style.display = 'none';
-                var dp = document.getElementById('data-panel');
-                if (dp) dp.style.display = 'block';
+async function handleOnlineSession() {
+    if (!navigator.onLine) {
+        // Офлайн: просто показываем данные из localStorage
+        isLoggedIn = true;
+        setInstallButtonVisible(true);
+        if (authPanel) authPanel.style.display = 'none';
+        var dp = document.getElementById('data-panel');
+        if (dp) dp.style.display = 'block';
 
-                var cachedUsername = localStorage.getItem('vesta_username') || '';
+        var cachedUsername = localStorage.getItem('vesta_username') || '';
+        var display = document.getElementById('username-display');
+        if (display && cachedUsername) {
+            display.textContent = '👤 ' + cachedUsername;
+        }
+
+        App.store.loadCars().then(function() {
+            App.ui.pages.renderCarSelector();
+            if (App.store.activeCarId) {
+                // Realtime не подключаем
+            }
+            if (typeof App.renderAll === 'function') App.renderAll();
+        });
+        return;
+    }
+
+    // Онлайн: стандартная цепочка
+    App.supabase.auth.onAuthStateChange(function(event, session) {
+        if (session) {
+            isLoggedIn = true;
+            setInstallButtonVisible(true);
+            if (authPanel) authPanel.style.display = 'none';
+            var dp = document.getElementById('data-panel');
+            if (dp) dp.style.display = 'block';
+
+            App.supabase.auth.getUser().then(function({ data: { user } }) {
                 var display = document.getElementById('username-display');
-                if (display && cachedUsername) {
-                    display.textContent = '👤 ' + cachedUsername;
+                if (display && user && user.user_metadata && user.user_metadata.username) {
+                    display.textContent = '👤 ' + user.user_metadata.username;
+                    localStorage.setItem('vesta_username', user.user_metadata.username);
                 }
+            });
 
-                App.store.loadCars().then(function() {
-                    App.ui.pages.renderCarSelector();
-                    if (App.store.activeCarId) {
-                        // Realtime не подключаем
-                    }
-                    if (typeof App.renderAll === 'function') App.renderAll();
-                });
-                return;
+            App.store.initFromLocalStorage();
+
+            if (event === 'PASSWORD_RECOVERY') {
+                var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
+                if (newPassword && newPassword.length >= 6) {
+                    App.supabase.auth.updateUser({ password: newPassword }).then(function({ error }) {
+                        if (error) App.toast('Ошибка при смене пароля', 'error');
+                        else {
+                            App.toast('Пароль успешно изменён!', 'success');
+                            window.location.hash = '';
+                            window.location.search = '';
+                        }
+                    });
+                }
             }
 
-            App.supabase.auth.onAuthStateChange(function(event, session) {
-                if (session) {
-                    isLoggedIn = true;
-                    setInstallButtonVisible(true);
-                    if (authPanel) authPanel.style.display = 'none';
-                    var dp = document.getElementById('data-panel');
-                    if (dp) dp.style.display = 'block';
+            App.supabase.auth.getUser().then(function({ data: { user } }) {
+                if (!user) return;
+                App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
+                    if (error) { console.warn('Ошибка проверки подписки:', error); return; }
+                    updatePushUI(!!(data && data.length > 0));
+                });
+            });
 
-                    App.supabase.auth.getUser().then(function(userRes) {
-                        var display = document.getElementById('username-display');
-                        if (display && userRes.data.user && userRes.data.user.user_metadata && userRes.data.user.user_metadata.username) {
-                            display.textContent = '👤 ' + userRes.data.user.user_metadata.username;
-                            localStorage.setItem('vesta_username', userRes.data.user.user_metadata.username);
-                        }
-                    });
-
-                    App.store.initFromLocalStorage();
-
-                    if (event === 'PASSWORD_RECOVERY') {
-                        var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
-                        if (newPassword && newPassword.length >= 6) {
-                            App.supabase.auth.updateUser({ password: newPassword }).then(function(res) {
-                                if (res.error) App.toast('Ошибка при смене пароля', 'error');
-                                else {
-                                    App.toast('Пароль успешно изменён!', 'success');
-                                    window.location.hash = '';
-                                    window.location.search = '';
-                                }
-                            });
-                        }
+            App.store.loadCars().then(function() {
+                App.ui.pages.renderCarSelector();
+                App.ui.pages.checkPendingInvites();
+                if (App.store.activeCarId) {
+                    if (App.realtime && App.realtime.subscribeToCar) {
+                        App.realtime.subscribeToCar(App.store.activeCarId);
                     }
-
-                    App.supabase.auth.getUser().then(function(userRes) {
-                        if (!userRes.data.user) return;
-                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', userRes.data.user.id).limit(1).then(function(subRes) {
-                            if (subRes.error) { console.warn('Ошибка проверки подписки:', subRes.error); return; }
-                            updatePushUI(!!(subRes.data && subRes.data.length > 0));
-                        });
-                    });
-
-                    App.store.loadCars().then(function() {
-                        App.ui.pages.renderCarSelector();
-                        App.ui.pages.checkPendingInvites();
-                        if (App.store.activeCarId) {
-                            if (App.realtime && App.realtime.subscribeToCar) {
-                                App.realtime.subscribeToCar(App.store.activeCarId);
+                    App.storage.loadAllData().then(function() {
+                        if (typeof App.renderAll === 'function') App.renderAll();
+                        // --- Восстановление редиректа после 404.html ---
+                        var redirect = sessionStorage.redirect;
+                        if (redirect) {
+                            sessionStorage.removeItem('redirect');
+                            var url = new URL(redirect);
+                            var inviteCode = url.searchParams.get('invite');
+                            if (inviteCode) {
+                                App.ui.pages.checkPendingInvites(); // повторно проверит, теперь с параметром
                             }
-                            App.storage.loadAllData().then(function() {
-                                if (typeof App.renderAll === 'function') App.renderAll();
-                                var redirect = sessionStorage.redirect;
-                                if (redirect) {
-                                    sessionStorage.removeItem('redirect');
-                                    var url = new URL(redirect);
-                                    var inviteCode = url.searchParams.get('invite');
-                                    if (inviteCode) {
-                                        App.ui.pages.checkPendingInvites();
-                                    }
-                                }
-                            });
-                        } else {
-                            if (typeof App.renderAll === 'function') App.renderAll();
                         }
                     });
                 } else {
-                    isLoggedIn = false;
-                    setInstallButtonVisible(false);
-                    if (authPanel) authPanel.style.display = 'block';
-                    var dp = document.getElementById('data-panel');
-                    if (dp) dp.style.display = 'none';
-                    var carContainer = document.getElementById('car-selector-container');
-                    if (carContainer) carContainer.innerHTML = '';
-                    var usernameDisplay = document.getElementById('username-display');
-                    if (usernameDisplay) usernameDisplay.textContent = '';
-                    if (App.realtime && App.realtime.unsubscribeAll) {
-                        App.realtime.unsubscribeAll();
-                    }
-                    App.store.operations = [];
-                    App.store.fuelLog = [];
-                    App.store.tireLog = [];
-                    App.store.parts = [];
-                    App.store.serviceRecords = [];
-                    App.store.mileageHistory = [];
-                    App.store.saveToLocalStorage();
                     if (typeof App.renderAll === 'function') App.renderAll();
                 }
             });
+        } else {
+            isLoggedIn = false;
+            setInstallButtonVisible(false);
+            if (authPanel) authPanel.style.display = 'block';
+            var dp = document.getElementById('data-panel');
+            if (dp) dp.style.display = 'none';
+            var carContainer = document.getElementById('car-selector-container');
+            if (carContainer) carContainer.innerHTML = '';
+            var usernameDisplay = document.getElementById('username-display');
+            if (usernameDisplay) usernameDisplay.textContent = '';
+            if (App.realtime && App.realtime.unsubscribeAll) {
+                App.realtime.unsubscribeAll();
+            }
+            App.store.operations = [];
+            App.store.fuelLog = [];
+            App.store.tireLog = [];
+            App.store.parts = [];
+            App.store.serviceRecords = [];
+            App.store.mileageHistory = [];
+            App.store.saveToLocalStorage();
+            if (typeof App.renderAll === 'function') App.renderAll();
+        }
+    });
 
-            App.supabase.auth.getSession().then(function(sessionRes) {
-                if (sessionRes.data.session) {
-                    isLoggedIn = true;
-                    setInstallButtonVisible(true);
-                    if (authPanel) authPanel.style.display = 'none';
-                    var dp = document.getElementById('data-panel');
-                    if (dp) dp.style.display = 'block';
+    App.supabase.auth.getSession().then(function({ data: { session } }) {
+        if (session) {
+            isLoggedIn = true;
+            setInstallButtonVisible(true);
+            if (authPanel) authPanel.style.display = 'none';
+            var dp = document.getElementById('data-panel');
+            if (dp) dp.style.display = 'block';
 
-                    var user = sessionRes.data.session.user;
-                    if (user) {
-                        var display = document.getElementById('username-display');
-                        if (display && user.user_metadata && user.user_metadata.username) {
-                            display.textContent = '👤 ' + user.user_metadata.username;
-                            localStorage.setItem('vesta_username', user.user_metadata.username);
-                        }
+            var user = session.user;
+            if (user) {
+                var display = document.getElementById('username-display');
+                if (display && user.user_metadata && user.user_metadata.username) {
+                    display.textContent = '👤 ' + user.user_metadata.username;
+                    localStorage.setItem('vesta_username', user.user_metadata.username);
+                }
+            }
+
+            if (user) {
+                App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function({ data, error }) {
+                    if (error) { console.warn('Ошибка проверки подписки:', error); return; }
+                    updatePushUI(!!(data && data.length > 0));
+                });
+            }
+
+            App.store.loadCars().then(function() {
+                App.ui.pages.renderCarSelector();
+                if (App.store.activeCarId) {
+                    if (App.realtime && App.realtime.subscribeToCar) {
+                        App.realtime.subscribeToCar(App.store.activeCarId);
                     }
-
-                    if (user) {
-                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function(subRes) {
-                            if (subRes.error) { console.warn('Ошибка проверки подписки:', subRes.error); return; }
-                            updatePushUI(!!(subRes.data && subRes.data.length > 0));
-                        });
-                    }
-
-                    App.store.loadCars().then(function() {
-                        App.ui.pages.renderCarSelector();
-                        if (App.store.activeCarId) {
-                            if (App.realtime && App.realtime.subscribeToCar) {
-                                App.realtime.subscribeToCar(App.store.activeCarId);
+                    App.storage.loadAllData().then(function() {
+                        if (typeof App.renderAll === 'function') App.renderAll();
+                        // --- Восстановление редиректа после 404.html ---
+                        var redirect = sessionStorage.redirect;
+                        if (redirect) {
+                            sessionStorage.removeItem('redirect');
+                            var url = new URL(redirect);
+                            var inviteCode = url.searchParams.get('invite');
+                            if (inviteCode) {
+                                App.ui.pages.checkPendingInvites(); // обработает приглашение
                             }
-                            App.storage.loadAllData().then(function() {
-                                if (typeof App.renderAll === 'function') App.renderAll();
-                                var redirect = sessionStorage.redirect;
-                                if (redirect) {
-                                    sessionStorage.removeItem('redirect');
-                                    var url = new URL(redirect);
-                                    var inviteCode = url.searchParams.get('invite');
-                                    if (inviteCode) {
-                                        App.ui.pages.checkPendingInvites();
-                                    }
-                                }
-                            });
-                        } else {
-                            if (typeof App.renderAll === 'function') App.renderAll();
                         }
                     });
+                } else {
+                    if (typeof App.renderAll === 'function') App.renderAll();
                 }
             });
         }
+    });
+}
 
-        window.addEventListener('online', function() {
-            App.toast('Сеть восстановлена', 'success');
-            if (App.store.pendingActions.length > 0) {
-                App.toast('Синхронизация офлайн-изменений...', 'info');
-                App.store.pendingActions.forEach(function(action) {
-                    if (action.type === 'service') {
-                        App.logic.addServiceRecord(
-                            action.opId, action.date, action.mileage, action.motohours,
-                            action.partsCost, action.workCost, action.isDIY, action.notes, action.photoUrl
-                        );
-                    }
-                });
-                App.store.clearPendingActions();
+// === Обработчики online/offline ===
+window.addEventListener('online', function() {
+    App.toast('Сеть восстановлена', 'success');
+    // Синхронизируем офлайн-действия (минимальная реализация)
+    if (App.store.pendingActions.length > 0) {
+        App.toast('Синхронизация офлайн-изменений...', 'info');
+        App.store.pendingActions.forEach(function(action) {
+            if (action.type === 'service') {
+                App.logic.addServiceRecord(
+                    action.opId, action.date, action.mileage, action.motohours,
+                    action.partsCost, action.workCost, action.isDIY, action.notes, action.photoUrl
+                );
             }
-            handleOnlineSession();
+            // Здесь можно добавить другие типы действий
         });
-        window.addEventListener('offline', function() {
-            App.toast('Вы офлайн', 'warning');
-        });
+        App.store.clearPendingActions();
+    }
+    handleOnlineSession();
+});
+window.addEventListener('offline', function() {
+    App.toast('Вы офлайн', 'warning');
+});
 
-        handleOnlineSession();
+handleOnlineSession();
 
-        // ==================== РЕГИСТРАЦИЯ СЕРВИС‑ВОРКЕРА ====================
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register(new URL('./service-worker.js', location.href)).then(function(registration) {
-                console.log('✅ Сервис-воркер зарегистрирован:', registration.scope);
-            }).catch(function(err) {
-                console.error('❌ Ошибка регистрации сервис-воркера:', err);
-            });
-        }
+// ==================== РЕГИСТРАЦИЯ СЕРВИС‑ВОРКЕРА ====================
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(new URL('./service-worker.js', location.href)).then(function(registration) {
+        console.log('✅ Сервис-воркер зарегистрирован:', registration.scope);
+    }).catch(function(err) {
+        console.error('❌ Ошибка регистрации сервис-воркера:', err);
+    });
+}
 
         // ===== Остальные инициализации =====
         App.events.init();
