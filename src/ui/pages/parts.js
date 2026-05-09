@@ -52,28 +52,46 @@ App.ui.pages.openPartForm = function(part) {
     var content =
         '<form id="part-form">' +
             '<input type="hidden" name="id" value="' + (part ? part.id : '') + '">' +
+            '<input type="hidden" name="update-price-only" id="update-price-only" value="false">' +
             '<label>Операция</label>' +
             '<select name="operation" required><option value="">-- Выберите операцию --</option>' + operationOptions + '</select>' +
             '<label>OEM</label><input type="text" name="oem" value="' + App.utils.escapeHtml(part ? (part.oem || '') : '') + '">' +
             '<label>Аналог</label><input type="text" name="analog" value="' + App.utils.escapeHtml(part ? (part.analog || '') : '') + '">' +
-            '<label>Цена (₽)</label><input type="number" name="price" step="0.01" value="' + (part ? (part.price || '') : '') + '">' +
-            (isEdit ? '<label><input type="checkbox" id="update-price-only"> Добавить новую цену (не заменять)</label>' : '') +
+            // Цена и кнопка "Обновить" в одной строке
+            '<label>Цена (₽)</label>' +
+            '<div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:14px;">' +
+                '<input type="number" name="price" step="0.01" value="' + (part ? (part.price || '') : '') + '" style="flex:1; margin-bottom:0;">' +
+                (isEdit ? '<button type="button" id="update-price-btn" class="secondary-btn" style="flex-shrink:0; margin-bottom:0;">Обновить</button>' : '') +
+            '</div>' +
             '<label>Поставщик</label><input type="text" name="supplier" value="' + App.utils.escapeHtml(part ? (part.supplier || '') : '') + '">' +
             '<label>Ссылка</label><input type="url" name="link" value="' + App.utils.escapeHtml(part ? (part.link || '') : '') + '">' +
             '<label>Комментарий</label><input type="text" name="comment" value="' + App.utils.escapeHtml(part ? (part.comment || '') : '') + '">' +
             '<label>В наличии (шт.)</label><input type="number" name="inStock" min="0" step="1" value="' + (part ? (part.inStock || 0) : 0) + '">' +
             '<label>Место хранения</label><input type="text" name="location" value="' + App.utils.escapeHtml(part ? (part.location || '') : '') + '" placeholder="Гараж, бардачок, полка...">' +
             priceHistoryHtml +
-            '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
+            '<div class="modal-actions">' +
+                '<button type="submit" class="primary-btn">Сохранить</button>' +
+                '<button type="button" class="cancel-btn secondary-btn">Отмена</button>' +
+            '</div>' +
         '</form>';
 
     var modal = App.ui.createModal(isEdit ? '✏️ Запчасть' : '➕ Запчасть', content);
     var form = modal.querySelector('#part-form');
 
+    // Кнопка "Обновить цену" устанавливает флаг и отправляет форму
+    var updatePriceBtn = modal.querySelector('#update-price-btn');
+    if (updatePriceBtn) {
+        updatePriceBtn.addEventListener('click', function() {
+            modal.querySelector('#update-price-only').value = 'true';
+            // Отправляем форму
+            form.dispatchEvent(new Event('submit'));
+        });
+    }
+
     form.onsubmit = function(e) {
         e.preventDefault();
         var d = Object.fromEntries(new FormData(form));
-        var updateOnlyPrice = modal.querySelector('#update-price-only')?.checked || false;
+        var updateOnlyPrice = d['update-price-only'] === 'true';
         var newPrice = parseFloat(d.price);
         var newSupplier = d.supplier;
         var priceHistory = part && part.priceHistory ? part.priceHistory.slice() : [];
