@@ -82,24 +82,20 @@ App.ui.pages.renderMaintenancePlan = function() {
     var plan = App.logic.generateMaintenancePlan(period);
     var interval = App.logic.getPlanPeriodDates(period);
     var currentDate = new Date(interval.start);
-    // Определяем начальный месяц/год для календаря
     var displayMonth = currentDate.getMonth();
     var displayYear = currentDate.getFullYear();
 
-    // Строим карту: ключ = YYYY-MM-DD, значение = массив операций
     var eventMap = {};
     plan.forEach(function(op) {
         var planData = App.logic.calculatePlan(op);
         if (!planData.planDate) return;
-        var dateKey = planData.planDate; // YYYY-MM-DD
+        var dateKey = planData.planDate;
         if (!eventMap[dateKey]) eventMap[dateKey] = [];
         eventMap[dateKey].push({ op: op, plan: planData });
     });
 
-    // Функция рендера календаря для конкретного месяца
     function renderCalendar(year, month) {
         var firstDay = new Date(year, month, 1).getDay();
-        // Корректировка: воскресенье = 0, понедельник = 1 (для удобства оставим воскресенье первым днём)
         var daysInMonth = new Date(year, month + 1, 0).getDate();
 
         var html = '<div class="plan-calendar">';
@@ -115,12 +111,10 @@ App.ui.pages.renderMaintenancePlan = function() {
         html += '</div>';
         html += '<div class="cal-grid">';
 
-        // Пустые ячейки перед первым днём
         for (var i = 0; i < firstDay; i++) {
             html += '<div class="cal-day empty"></div>';
         }
 
-        // Дни месяца
         for (var d = 1; d <= daysInMonth; d++) {
             var dateISO = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
             var events = eventMap[dateISO] || [];
@@ -139,14 +133,13 @@ App.ui.pages.renderMaintenancePlan = function() {
             html += '</div>';
         }
         html += '</div>';
-        html += '</div>'; // .plan-calendar
+        html += '</div>';
 
         return html;
     }
 
     container.innerHTML = renderCalendar(displayYear, displayMonth);
 
-    // Обработчики навигации
     var currentYear = displayYear;
     var currentMonth = displayMonth;
 
@@ -182,7 +175,6 @@ App.ui.pages.renderMaintenancePlan = function() {
             });
         }
 
-        // Клик по дню – показать список операций
         var days = container.querySelectorAll('.cal-day:not(.empty)');
         days.forEach(function(dayEl) {
             dayEl.addEventListener('click', function() {
@@ -209,7 +201,6 @@ App.ui.pages.renderMaintenancePlan = function() {
     bindListeners();
     App.initIcons();
 
-    // Кнопка скачивания ICS
     var downloadContainer = document.createElement('div');
     downloadContainer.style.marginTop = '16px';
     downloadContainer.innerHTML = '<button id="download-ics-btn" class="primary-btn"><i data-lucide="calendar-download"></i> Скачать .ics</button>';
@@ -227,48 +218,7 @@ App.ui.pages.renderMaintenancePlan = function() {
     });
 };
 
-// Генерация ICS (без изменений)
-function generateICS(plan) {
-    var now = new Date().toISOString().replace(/[-:]/g, '').slice(0,15) + 'Z';
-    var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Vesta Dashboard//RU\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
-    plan.forEach(function(op) {
-        var planData = App.logic.calculatePlan(op);
-        if (!planData.planDate) return;
-        var dtStart = planData.planDate.replace(/-/g, '') + 'T090000';
-        var dtEnd = planData.planDate.replace(/-/g, '') + 'T100000';
-        var uid = op.id + '-vesta-' + planData.planDate;
-        var summary = 'ТО: ' + op.name;
-
-        var parts = App.store.parts.filter(function(p) {
-            return p.operation === op.name || p.operation === op.category;
-        });
-        var partsList = '';
-        if (parts.length > 0) {
-            partsList = '\\n\\nСписок запчастей:\\n';
-            parts.forEach(function(p) {
-                var status = (p.inStock && p.inStock > 0) ? '✅' : '☐';
-                partsList += status + ' ' + (p.oem || p.analog || p.operation) + (p.price ? ' (' + p.price + '₽)' : '') + '\\n';
-            });
-        }
-
-        var description = 'Пробег: ' + planData.planMileage + ' км. Категория: ' + (op.category || '') + partsList;
-
-        ics += 'BEGIN:VEVENT\r\n';
-        ics += 'UID:' + uid + '\r\n';
-        ics += 'DTSTART:' + dtStart + '\r\n';
-        ics += 'DTEND:' + dtEnd + '\r\n';
-        ics += 'SUMMARY:' + summary + '\r\n';
-        ics += 'DESCRIPTION:' + description + '\r\n';
-        ics += 'DTSTAMP:' + now + '\r\n';
-        ics += 'END:VEVENT\r\n';
-    });
-    ics += 'END:VCALENDAR\r\n';
-    return ics;
-}
-
-    App.initIcons();
-};
-
+// Генерация ICS (только одно определение)
 function generateICS(plan) {
     var now = new Date().toISOString().replace(/[-:]/g, '').slice(0,15) + 'Z';
     var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Vesta Dashboard//RU\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
