@@ -73,7 +73,6 @@ App.ui.pages.renderTOTable = function() {
     App.initIcons();
 };
 
-// ================== НОВЫЙ КАЛЕНДАРЬ ПЛАНИРОВЩИКА ==================
 App.ui.pages.renderMaintenancePlan = function() {
     var container = document.getElementById('plan-container');
     if (!container) return;
@@ -86,8 +85,6 @@ App.ui.pages.renderMaintenancePlan = function() {
     var displayYear = currentDate.getFullYear();
 
     function renderCalendar(year, month) {
-        // Пересчитываем события для отображаемого месяца (используем plan, но он глобальный)
-        // Но чтобы события обновлялись при смене периода, возьмём свежий plan из замыкания
         var eventMap = {};
         plan.forEach(function(op) {
             var planData = App.logic.calculatePlan(op);
@@ -137,7 +134,7 @@ App.ui.pages.renderMaintenancePlan = function() {
         html += '</div>';
         html += '</div>';
 
-        return { html: html, eventMap: eventMap }; // возвращаем и eventMap
+        return { html: html, eventMap: eventMap };
     }
 
     var firstRender = renderCalendar(displayYear, displayMonth);
@@ -145,7 +142,7 @@ App.ui.pages.renderMaintenancePlan = function() {
 
     var currentYear = displayYear;
     var currentMonth = displayMonth;
-    var currentEventMap = firstRender.eventMap; // сохраняем карту событий
+    var currentEventMap = firstRender.eventMap;
 
     function updateCalendar() {
         var rend = renderCalendar(currentYear, currentMonth);
@@ -206,25 +203,9 @@ App.ui.pages.renderMaintenancePlan = function() {
 
     bindListeners();
     App.initIcons();
-
-    var downloadContainer = document.createElement('div');
-    downloadContainer.style.marginTop = '16px';
-    downloadContainer.innerHTML = '<button id="download-ics-btn" class="primary-btn"><i data-lucide="calendar-download"></i> Скачать календарь</button>';
-    container.appendChild(downloadContainer);
-    document.getElementById('download-ics-btn').addEventListener('click', function() {
-        var icsContent = generateICS(plan);
-        var blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-        var link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'vesta_plan_' + new Date().toISOString().slice(0,10) + '.ics';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        App.toast('Файл .ics скачан. Откройте его для импорта в календарь.', 'success');
-    });
 };
 
-// Генерация ICS (только одно определение)
+// Генерация ICS (глобальная функция, используется в events.js)
 function generateICS(plan) {
     var now = new Date().toISOString().replace(/[-:]/g, '').slice(0,15) + 'Z';
     var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Vesta Dashboard//RU\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
@@ -262,6 +243,8 @@ function generateICS(plan) {
     ics += 'END:VCALENDAR\r\n';
     return ics;
 }
+
+// Остальные функции (openServiceModal, openOperationForm, generateShoppingList) остаются без изменений
 
 App.ui.pages.openServiceModal = function(opId, opName) {
     var op = App.store.operations.find(function(o) { return o.id == opId; });
