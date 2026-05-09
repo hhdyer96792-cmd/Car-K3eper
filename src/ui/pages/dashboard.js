@@ -10,42 +10,35 @@ App.ui.pages.renderDashboard = function() {
 
     var stats = App.logic.calculateStatistics('6months');
 
-    // Сводка (п.5 уже в HTML)
-    document.getElementById('dash-mileage').textContent = App.store.settings.currentMileage.toLocaleString();
-    document.getElementById('dash-motohours').textContent = App.store.settings.currentMotohours.toLocaleString();
-    document.getElementById('dash-avg-consumption').textContent = stats.avgFuelConsumption.toFixed(1);
-    document.getElementById('dash-cost-km').textContent = stats.costPerKm.toFixed(2);
+    // Сводка
+    var mileageEl = document.getElementById('dash-mileage');
+    var motoEl = document.getElementById('dash-motohours');
+    var avgConsEl = document.getElementById('dash-avg-consumption');
+    var costKmEl = document.getElementById('dash-cost-km');
+    if (mileageEl) mileageEl.textContent = App.store.settings.currentMileage.toLocaleString();
+    if (motoEl) motoEl.textContent = App.store.settings.currentMotohours.toLocaleString();
+    if (avgConsEl) avgConsEl.textContent = stats.avgFuelConsumption.toFixed(1);
+    if (costKmEl) costKmEl.textContent = stats.costPerKm.toFixed(2);
 
-    // Режим (п.6) – вместо старого «Режим»
+    // Режим (новый компактный виджет)
     var mode = App.logic.getDrivingMode();
     var modeTextEl = document.getElementById('dash-driving-mode-text');
     var modeDotEl = document.getElementById('mode-dot');
-    if (modeTextEl) {
-        modeTextEl.textContent = mode.text; // только название режима, например "Городской (23.5 км/ч)"
-    }
+    if (modeTextEl) modeTextEl.textContent = mode.text.replace(/\s*\(.*\)/, ''); // только название режима
     if (modeDotEl) {
-        // Определяем класс для цвета
+        // Определяем цвет точки
         var modeClass = '';
         if (mode.text.indexOf('Городской') !== -1) modeClass = 'city';
         else if (mode.text.indexOf('Трассовый') !== -1) modeClass = 'highway';
         else if (mode.text.indexOf('Смешанный') !== -1) modeClass = 'mixed';
         modeDotEl.className = 'mode-dot ' + modeClass;
     }
-    // Скрываем старый виджет, если он ещё есть
-    var oldWidget = document.getElementById('widget-driving-mode');
-    if (oldWidget) oldWidget.style.display = 'none'; // заменён на compact
 
-    // Мини-графики и т.д.
+    // Мини-графики
     App.charts.renderMiniFuelConsumptionChart();
     App.charts.renderMiniCostsChart();
     App.charts.renderMiniExpensePieChart();
     App.ui.pages.renderTireWearMini();
-
-    // Виджет ближайших ТО
-    App.ui.pages.renderTop5Widget();
-
-    App.initIcons();
-};
 
     // Виджет ближайших ТО
     App.ui.pages.renderTop5Widget();
@@ -70,6 +63,9 @@ App.ui.pages.renderDashboard = function() {
             item.appendChild(btn);
         });
     }
+
+    App.initIcons();
+};
 
     // Мини-графики
     App.charts.renderMiniFuelConsumptionChart();
