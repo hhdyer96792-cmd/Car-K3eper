@@ -119,7 +119,6 @@ App.events.setupDelegation = function() {
     });
 };
 
-// Функция для быстрого добавления события в календарь с автоподгрузкой запчастей
 App.events.addToCalendar = function(opId, opName, planDate, planMileage) {
     var parts = App.store.parts.filter(function(p) {
         var op = App.store.operations.find(function(o) { return o.id == opId; });
@@ -190,10 +189,6 @@ App.events.initNavigation = function() {
                 App.events.closeDrawer();
             });
         });
-        document.getElementById('drawer-theme-toggle')?.addEventListener('click', function() {
-           // App.events.toggleTheme();
-            App.events.closeDrawer();
-        });
     }
 
     document.addEventListener('keydown', function(e) {
@@ -203,9 +198,7 @@ App.events.initNavigation = function() {
     });
 };
 
-// Единая функция switchToTab (только одно определение)
 App.events.switchToTab = function(tabId) {
-    // Плавная смена вкладок
     var allTabs = document.querySelectorAll('.tab-content');
     allTabs.forEach(function(tab) {
         if (tab.id === 'tab-' + tabId) {
@@ -218,16 +211,13 @@ App.events.switchToTab = function(tabId) {
         }
     });
 
-    // Обновляем активные пункты в сайдбаре и нижней панели
     document.querySelectorAll('.sidebar-item, .bottom-nav-item').forEach(function(btn) {
         btn.classList.remove('active');
         if (btn.dataset.tab === tabId) btn.classList.add('active');
     });
 
-    // Закрываем drawer после выбора вкладки
     App.events.closeDrawer();
 
-    // Загружаем контент вкладки
     switch (tabId) {
         case 'dashboard':
             if (typeof App.ui.pages.renderDashboard === 'function') App.ui.pages.renderDashboard();
@@ -370,9 +360,6 @@ App.events.initDirectListeners = function() {
     var exportDataBtn = document.getElementById('export-data-btn');
     if (exportDataBtn) exportDataBtn.addEventListener('click', App.ui.pages.handleExport);
 
-    var generatePlanBtn = document.getElementById('generate-plan-btn');
-    if (generatePlanBtn) generatePlanBtn.addEventListener('click', function() { App.ui.pages.renderMaintenancePlan(); });
-
     var calcPredictionBtn = document.getElementById('calc-prediction-btn');
     if (calcPredictionBtn) calcPredictionBtn.addEventListener('click', App.ui.pages.renderMileagePrediction);
 
@@ -429,6 +416,34 @@ App.events.initDirectListeners = function() {
             if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
         });
     });
+
+    // Автообновление календаря при изменении периода
+    var planPeriodSelect = document.getElementById('plan-period-select');
+    if (planPeriodSelect) {
+        planPeriodSelect.addEventListener('change', function() {
+            if (document.getElementById('tab-to')?.classList.contains('active')) {
+                App.ui.pages.renderMaintenancePlan();
+            }
+        });
+    }
+
+    // Кнопка "Скачать календарь" (статическая)
+    var downloadIcsStaticBtn = document.getElementById('download-ics-btn-static');
+    if (downloadIcsStaticBtn) {
+        downloadIcsStaticBtn.addEventListener('click', function() {
+            var period = document.getElementById('plan-period-select')?.value || 'month';
+            var plan = App.logic.generateMaintenancePlan(period);
+            var icsContent = generateICS(plan);
+            var blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'vesta_plan_' + new Date().toISOString().slice(0,10) + '.ics';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            App.toast('Календарь скачан', 'success');
+        });
+    }
 };
 
 App.events.initHistoryFilters = function() {
@@ -530,7 +545,6 @@ App.events.updateMileageAndAverages = function() {
     App.store.settings.currentMileage = newM;
     App.store.settings.currentMotohours = newH;
 
-    // Сохранение пробега и моточасов в Supabase
     if (App.config.USE_SUPABASE) {
         App.storage.addMileageRecord(today, newM, newH)
             .then(function() {
