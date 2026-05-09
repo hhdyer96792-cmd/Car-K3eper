@@ -244,7 +244,6 @@ function generateICS(plan) {
     return ics;
 }
 
-// Остальные функции (openServiceModal, openOperationForm, generateShoppingList) остаются без изменений
 
 App.ui.pages.openServiceModal = function(opId, opName) {
     var op = App.store.operations.find(function(o) { return o.id == opId; });
