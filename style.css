@@ -506,22 +506,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 /* ==================== Индикатор синхронизации ==================== */
 #sync-indicator {
     transition: color 0.3s;
-}
-#sync-indicator.synced { color: var(--success); }
-#sync-indicator.syncing { color: var(--warning); animation: spin 1s linear infinite; }
-#sync-indicator.local { color: var(--text-muted); }
-#sync-indicator.error { color: var(--danger); }
-
-#sync-indicator {
-    transition: color 0.3s;
-}
-#sync-indicator.synced { color: var(--success); }
-#sync-indicator.syncing { color: var(--warning); animation: spin 1s linear infinite; }
-#sync-indicator.local { color: var(--text-muted); }
-#sync-indicator.error { color: var(--danger); }
-
-#sync-indicator {
-    transition: color 0.3s;
     background: none !important;
     border: none !important;
     box-shadow: none !important;
@@ -531,4 +515,3 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 #sync-indicator.syncing { color: var(--warning); animation: spin 1s linear infinite; }
 #sync-indicator.local { color: var(--text-muted); }
 #sync-indicator.error { color: var(--danger); }
-
