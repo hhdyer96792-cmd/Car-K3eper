@@ -422,6 +422,13 @@ a { color: var(--primary); }
 .header-controls button:hover { background: rgba(0,0,0,0.05); }
 body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 
+/* Фикс для мобильных: облако возвращается в поток */
+@media (max-width: 767px) {
+    #sync-indicator {
+        position: static;
+    }
+}
+
 /* Календарь планировщика */
 .plan-calendar {
     background: var(--card-bg);
