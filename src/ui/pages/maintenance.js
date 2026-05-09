@@ -85,24 +85,26 @@ App.ui.pages.renderMaintenancePlan = function() {
     var displayMonth = currentDate.getMonth();
     var displayYear = currentDate.getFullYear();
 
-    var eventMap = {};
-    plan.forEach(function(op) {
-        var planData = App.logic.calculatePlan(op);
-        if (!planData.planDate) return;
-        var dateKey = planData.planDate;
-        if (!eventMap[dateKey]) eventMap[dateKey] = [];
-        eventMap[dateKey].push({ op: op, plan: planData });
-    });
-
     function renderCalendar(year, month) {
+        // Пересчитываем события для отображаемого месяца (используем plan, но он глобальный)
+        // Но чтобы события обновлялись при смене периода, возьмём свежий plan из замыкания
+        var eventMap = {};
+        plan.forEach(function(op) {
+            var planData = App.logic.calculatePlan(op);
+            if (!planData.planDate) return;
+            var dateKey = planData.planDate;
+            if (!eventMap[dateKey]) eventMap[dateKey] = [];
+            eventMap[dateKey].push({ op: op, plan: planData });
+        });
+
         var firstDay = new Date(year, month, 1).getDay();
         var daysInMonth = new Date(year, month + 1, 0).getDate();
 
         var html = '<div class="plan-calendar">';
         html += '<div class="cal-nav">';
-        html += '<button class="cal-nav-btn" id="cal-prev"><i data-lucide="chevron-left"></i></button>';
+        html += '<button class="cal-nav-btn cal-prev-btn"><i data-lucide="chevron-left"></i></button>';
         html += '<span class="cal-month">' + new Date(year, month).toLocaleString('ru', { month: 'long', year: 'numeric' }) + '</span>';
-        html += '<button class="cal-nav-btn" id="cal-next"><i data-lucide="chevron-right"></i></button>';
+        html += '<button class="cal-nav-btn cal-next-btn"><i data-lucide="chevron-right"></i></button>';
         html += '</div>';
         html += '<div class="cal-weekdays">';
         ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'].forEach(function(d) {
@@ -135,23 +137,27 @@ App.ui.pages.renderMaintenancePlan = function() {
         html += '</div>';
         html += '</div>';
 
-        return html;
+        return { html: html, eventMap: eventMap }; // возвращаем и eventMap
     }
 
-    container.innerHTML = renderCalendar(displayYear, displayMonth);
+    var firstRender = renderCalendar(displayYear, displayMonth);
+    container.innerHTML = firstRender.html;
 
     var currentYear = displayYear;
     var currentMonth = displayMonth;
+    var currentEventMap = firstRender.eventMap; // сохраняем карту событий
 
     function updateCalendar() {
-        container.innerHTML = renderCalendar(currentYear, currentMonth);
+        var rend = renderCalendar(currentYear, currentMonth);
+        container.innerHTML = rend.html;
+        currentEventMap = rend.eventMap;
         bindListeners();
         App.initIcons();
     }
 
     function bindListeners() {
-        var prevBtn = document.getElementById('cal-prev');
-        var nextBtn = document.getElementById('cal-next');
+        var prevBtn = container.querySelector('.cal-prev-btn');
+        var nextBtn = container.querySelector('.cal-next-btn');
         if (prevBtn) {
             prevBtn.addEventListener('click', function() {
                 if (currentMonth === 0) {
@@ -179,7 +185,7 @@ App.ui.pages.renderMaintenancePlan = function() {
         days.forEach(function(dayEl) {
             dayEl.addEventListener('click', function() {
                 var date = dayEl.dataset.date;
-                var events = eventMap[date] || [];
+                var events = currentEventMap[date] || [];
                 if (events.length === 0) return;
 
                 var listHtml = '<ul style="margin-top:12px;">';
