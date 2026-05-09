@@ -24,7 +24,13 @@ App.ui.pages.renderDashboard = function() {
     var mode = App.logic.getDrivingMode();
     var modeTextEl = document.getElementById('dash-driving-mode-text');
     var modeDotEl = document.getElementById('mode-dot');
-    if (modeTextEl) modeTextEl.textContent = mode.text.replace(/\s*\(.*\)/, ''); // только название
+    if (modeTextEl) {
+    var rawMode = mode.text;
+    if (rawMode.indexOf('Городской') !== -1) modeTextEl.textContent = 'Город';
+    else if (rawMode.indexOf('Трассовый') !== -1) modeTextEl.textContent = 'Трасса';
+    else if (rawMode.indexOf('Смешанный') !== -1) modeTextEl.textContent = 'Смешанный';
+    else modeTextEl.textContent = rawMode;
+    }
     if (modeDotEl) {
         var modeClass = '';
         if (mode.text.indexOf('Городской') !== -1) modeClass = 'city';
