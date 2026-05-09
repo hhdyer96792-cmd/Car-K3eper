@@ -50,26 +50,27 @@
 
 <div class="app-container">
     <header>
-    <!-- Первая строка: название + иконка синхронизации -->
+    <!-- Строка 1: Название + статус синхронизации -->
     <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
         <h1>🚗 Car K3eeper D&T</h1>
         <button id="sync-indicator" class="synced" title="Статус синхронизации"><i data-lucide="cloud"></i></button>
     </div>
 
-    <!-- Вторая строка: селектор авто + имя владельца (только на мобильных) -->
-    <div id="car-selector-container" class="mobile-only" style="margin-bottom:8px;"></div>
-    <span id="username-display" class="mobile-only" style="font-size:0.9rem; opacity:0.8;"></span>
-
-    <!-- Третья строка: кнопки управления авто (только на мобильных) -->
-    <div id="mobile-car-actions" class="mobile-only" style="display:flex; justify-content:space-between; gap:6px; margin-top:4px;">
-        <button id="mobile-add-car-btn" class="icon-btn" title="Добавить авто"><i data-lucide="plus"></i></button>
-        <button id="mobile-rename-car-btn" class="icon-btn" title="Переименовать"><i data-lucide="pencil"></i></button>
-        <button id="mobile-delete-car-btn" class="icon-btn" title="Удалить авто"><i data-lucide="trash-2"></i></button>
-        <button id="mobile-invite-btn" class="icon-btn" title="Пригласить"><i data-lucide="user-plus"></i></button>
-        <button id="mobile-calendar-subscribe-btn" class="icon-btn" title="Подписка на календарь"><i data-lucide="calendar-days"></i></button>
+    <!-- Строка 2 (только мобильные): селектор авто, имя владельца + иконки управления -->
+    <div class="mobile-only" id="mobile-header-row2" style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; width:100%;">
+        <div style="display:flex; align-items:center; gap:8px; flex:1;">
+            <div id="car-selector-container" style="margin:0;"></div>
+            <span id="username-display" style="font-size:0.9rem; opacity:0.8; white-space:nowrap;"></span>
+        </div>
+        <div id="mobile-car-actions" style="display:flex; gap:12px; margin-left:12px;">
+            <button id="mobile-add-car-btn" class="icon-btn" title="Добавить авто"><i data-lucide="plus"></i></button>
+            <button id="mobile-rename-car-btn" class="icon-btn" title="Переименовать"><i data-lucide="pencil"></i></button>
+            <button id="mobile-delete-car-btn" class="icon-btn" title="Удалить авто"><i data-lucide="trash-2"></i></button>
+            <button id="mobile-invite-btn" class="icon-btn" title="Пригласить"><i data-lucide="user-plus"></i></button>
+            <button id="mobile-calendar-subscribe-btn" class="icon-btn" title="Подписка на календарь"><i data-lucide="calendar-days"></i></button>
+        </div>
     </div>
 
-    <!-- Кнопка установки PWA (оставляем как было) -->
     <button id="pwa-install-btn" class="primary-btn" style="display:none;">Установить приложение</button>
 </header>
     
