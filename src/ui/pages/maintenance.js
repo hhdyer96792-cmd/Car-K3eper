@@ -209,7 +209,7 @@ App.ui.pages.renderMaintenancePlan = function() {
 
     var downloadContainer = document.createElement('div');
     downloadContainer.style.marginTop = '16px';
-    downloadContainer.innerHTML = '<button id="download-ics-btn" class="primary-btn"><i data-lucide="calendar-download"></i> Скачать .ics</button>';
+    downloadContainer.innerHTML = '<button id="download-ics-btn" class="primary-btn"><i data-lucide="calendar-download"></i> Скачать календарь</button>';
     container.appendChild(downloadContainer);
     document.getElementById('download-ics-btn').addEventListener('click', function() {
         var icsContent = generateICS(plan);
