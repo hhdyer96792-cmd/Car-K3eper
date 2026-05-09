@@ -464,13 +464,15 @@ async function handleOnlineSession() {
     });
 
     App.supabase.auth.getSession().then(function({ data: { session } }) {
-        if (session) {
-            isLoggedIn = true;
-            setInstallButtonVisible(true);
-            if (authPanel) authPanel.style.display = 'none';
-            var dp = document.getElementById('data-panel');
-            if (dp) dp.style.display = 'block';
-
+    if (session) {
+        isLoggedIn = true;
+        setInstallButtonVisible(true);
+        if (authPanel) authPanel.style.display = 'none';
+        var dp = document.getElementById('data-panel');
+        if (dp) dp.style.display = 'block';
+        // Показываем облачко после авторизации
+        var syncIndicator = document.getElementById('sync-indicator');
+        if (syncIndicator) syncIndicator.style.display = '';
             var user = session.user;
             if (user) {
                 var display = document.getElementById('username-display');
