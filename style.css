@@ -409,8 +409,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 0.9rem; }
 a { color: var(--primary); }
 
-.mobile-only { display: block; }
-@media (min-width: 768px) { .mobile-only { display: none; } }
+.mobile-only { display: none; }
+@media (min-width: 768px) { .mobile-only { display: block; } }
 
 .header-controls button {
     background: none;
@@ -515,3 +515,9 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 #sync-indicator.syncing { color: var(--warning); animation: spin 1s linear infinite; }
 #sync-indicator.local { color: var(--text-muted); }
 #sync-indicator.error { color: var(--danger); }
+
+#mobile-header-row2 { display: none !important; }
+@media (max-width: 767px) {
+    #mobile-header-row2 { display: flex !important; }
+}
+
