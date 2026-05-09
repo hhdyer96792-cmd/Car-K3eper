@@ -50,14 +50,28 @@
 
 <div class="app-container">
     <header>
-        <h1>Car K3eeper D&T</h1>
-        <button id="pwa-install-btn" class="primary-btn" style="display:none;">Установить приложение</button>
-        <span id="username-display" style="font-size:0.9rem; opacity:0.8; margin-left:12px;"></span>
-        <div id="car-selector-container" class="mobile-only" style="margin-bottom:20px;"></div>
-        <div class="header-controls">
-            <button id="sync-indicator" class="synced" title="Статус синхронизации"><i data-lucide="cloud"></i></button>
-        </div>
-    </header>
+    <!-- Первая строка: название + иконка синхронизации -->
+    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <h1>🚗 Car K3eeper D&T</h1>
+        <button id="sync-indicator" class="synced" title="Статус синхронизации"><i data-lucide="cloud"></i></button>
+    </div>
+
+    <!-- Вторая строка: селектор авто + имя владельца (только на мобильных) -->
+    <div id="car-selector-container" class="mobile-only" style="margin-bottom:8px;"></div>
+    <span id="username-display" class="mobile-only" style="font-size:0.9rem; opacity:0.8;"></span>
+
+    <!-- Третья строка: кнопки управления авто (только на мобильных) -->
+    <div id="mobile-car-actions" class="mobile-only" style="display:flex; justify-content:space-between; gap:6px; margin-top:4px;">
+        <button id="mobile-add-car-btn" class="icon-btn" title="Добавить авто"><i data-lucide="plus"></i></button>
+        <button id="mobile-rename-car-btn" class="icon-btn" title="Переименовать"><i data-lucide="pencil"></i></button>
+        <button id="mobile-delete-car-btn" class="icon-btn" title="Удалить авто"><i data-lucide="trash-2"></i></button>
+        <button id="mobile-invite-btn" class="icon-btn" title="Пригласить"><i data-lucide="user-plus"></i></button>
+        <button id="mobile-calendar-subscribe-btn" class="icon-btn" title="Подписка на календарь"><i data-lucide="calendar-days"></i></button>
+    </div>
+
+    <!-- Кнопка установки PWA (оставляем как было) -->
+    <button id="pwa-install-btn" class="primary-btn" style="display:none;">Установить приложение</button>
+</header>
     
     <!-- ==================== Панель авторизации ==================== -->
     <div id="auth-panel" class="card" style="display:none;">
