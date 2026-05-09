@@ -339,8 +339,6 @@ App.ui.pages.renderCarSelector = function() {
 };
 
 App.ui.pages.checkPendingInvites = function() {
-
-App.ui.pages.checkPendingInvites = function() {
     var urlParams = new URLSearchParams(window.location.search);
     var inviteCode = urlParams.get('invite');
 
