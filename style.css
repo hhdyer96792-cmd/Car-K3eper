@@ -420,7 +420,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .plan-calendar {
     background: var(--card-bg);
     border-radius: var(--radius);
-    padding: 8px; // высота календаря
+    padding: 6px; // высота календаря
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
     margin-bottom: 16px;
@@ -490,7 +490,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 /* --- Адаптивная высота календаря (мобильные -20%, десктоп -40%) --- */
 @media (max-width: 767px) {
     .plan-calendar {
-        padding: 4px;      /* ≈ -20% от 12px */
+        padding: 6px;      /* ≈ -20% от 12px */
     }
     .cal-grid {
         gap: 1.6px;
