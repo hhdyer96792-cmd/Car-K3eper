@@ -486,3 +486,66 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     background: var(--primary);
     display: inline-block;
 }
+
+/* --- Адаптивная высота календаря (мобильные -20%, десктоп -40%) --- */
+@media (max-width: 767px) {
+    .plan-calendar {
+        padding: 10px;      /* ≈ -20% от 12px */
+    }
+    .cal-grid {
+        gap: 1.6px;
+    }
+    .cal-day {
+        padding: 1.6px;
+        font-size: 0.72rem;
+    }
+    .cal-day-num {
+        margin-bottom: 1px;
+    }
+    .cal-event-dot {
+        width: 4px;
+        height: 4px;
+        margin-top: 1px;
+    }
+    .cal-nav {
+        margin-bottom: 6px;
+    }
+    .cal-month {
+        font-size: 0.85rem;
+    }
+    .cal-weekdays {
+        font-size: 0.7rem;
+        margin-bottom: 4px;
+    }
+}
+
+@media (min-width: 768px) {
+    .plan-calendar {
+        padding: 7px;       /* ≈ -40% от 12px */
+    }
+    .cal-grid {
+        gap: 1.2px;
+    }
+    .cal-day {
+        padding: 1.2px;
+        font-size: 0.7rem;
+    }
+    .cal-day-num {
+        margin-bottom: 0.5px;
+    }
+    .cal-event-dot {
+        width: 4px;
+        height: 4px;
+        margin-top: 0.5px;
+    }
+    .cal-nav {
+        margin-bottom: 5px;
+    }
+    .cal-month {
+        font-size: 0.8rem;
+    }
+    .cal-weekdays {
+        font-size: 0.65rem;
+        margin-bottom: 3px;
+    }
+}
