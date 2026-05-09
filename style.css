@@ -141,8 +141,9 @@ button:active { transform: translateY(0); }
     border: 1px solid var(--border);
 }
 .stat-label { font-size: 0.8rem; opacity: 0.8; }
-.stat-value { font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
-.stat-unit { font-size: 0.75rem; opacity: 0.6; }
+/* п.5: уменьшаем значение, увеличиваем единицу */
+.stat-value { font-size: 1.1rem; font-weight: 700; line-height: 1.2; }
+.stat-unit { font-size: 0.9rem; opacity: 0.8; }
 
 .dashboard-grid {
     display: grid;
@@ -163,10 +164,46 @@ button:active { transform: translateY(0); }
     max-height: 150px !important;
     width: 100% !important;
 }
+/* п.5: дашборд – единицы под цифрами */
 .summary-values { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .summary-values > div { text-align: center; }
 .summary-values span { font-size: 1.8rem; font-weight: 700; }
-.summary-values small { font-size: 0.8rem; opacity: 0.6; }
+.summary-values small { display: block; font-size: 0.9rem; opacity: 0.8; margin-top: 2px; }
+
+/* п.6: компактный индикатор режима */
+.mode-indicator-compact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: var(--text);
+}
+.mode-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #ccc;
+    animation: pulse-dot 1.5s infinite ease-in-out;
+}
+.mode-dot.city { background: #e67e22; }
+.mode-dot.highway { background: #2ecc71; }
+.mode-dot.mixed { background: #3498db; }
+@keyframes pulse-dot {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.25); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+
+/* п.7: кнопки управления авто в сайдбаре */
+#sidebar-car-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+}
+#sidebar-car-actions .icon-btn { padding: 6px; }
 
 .table-wrapper {
     overflow-x: auto;
@@ -458,3 +495,12 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; } }
 @keyframes toastOut { to { opacity: 0; transform: translateX(40px); } }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==================== Индикатор синхронизации ==================== */
+#sync-indicator {
+    transition: color 0.3s;
+}
+#sync-indicator.synced { color: var(--success); }
+#sync-indicator.syncing { color: var(--warning); animation: spin 1s linear infinite; }
+#sync-indicator.local { color: var(--text-muted); }
+#sync-indicator.error { color: var(--danger); }
