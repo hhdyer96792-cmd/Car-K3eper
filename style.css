@@ -532,3 +532,12 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 #sync-indicator.local { color: var(--text-muted); }
 #sync-indicator.error { color: var(--danger); }
 
+@media (max-width: 767px) {
+    #mobile-header-row2 {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+    #mobile-car-actions {
+        flex-shrink: 0;
+    }
+}
