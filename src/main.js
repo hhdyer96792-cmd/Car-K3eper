@@ -377,11 +377,14 @@ async function handleOnlineSession() {
     // Онлайн: стандартная цепочка
     App.supabase.auth.onAuthStateChange(function(event, session) {
         if (session) {
-            isLoggedIn = true;
-            setInstallButtonVisible(true);
-            if (authPanel) authPanel.style.display = 'none';
-            var dp = document.getElementById('data-panel');
-            if (dp) dp.style.display = 'block';
+    isLoggedIn = true;
+    setInstallButtonVisible(true);
+    if (authPanel) authPanel.style.display = 'none';
+    var dp = document.getElementById('data-panel');
+    if (dp) dp.style.display = 'block';
+    // Показываем облачко после авторизации
+    var syncIndicator = document.getElementById('sync-indicator');
+    if (syncIndicator) syncIndicator.style.display = '';
 
             App.supabase.auth.getUser().then(function({ data: { user } }) {
                 var display = document.getElementById('username-display');
