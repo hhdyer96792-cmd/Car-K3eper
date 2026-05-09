@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Car K3eeper D&T</title>
+    <title>🚗 Car K3eeper D&T</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
@@ -41,16 +41,16 @@
 
 <div class="app-container">
     <header>
-    <h1>Car K3eeper D&T</h1>
-    <button id="pwa-install-btn" class="primary-btn" style="display:none;">Установить приложение</button>
-    <span id="username-display" style="font-size:0.9rem; opacity:0.8; margin-left:12px;"></span>
-    <!-- Селектор авто только на мобильных -->
-    <div id="car-selector-container" class="mobile-only" style="margin-bottom:20px;"></div>
-    <div class="header-controls">
-        <button id="theme-toggle" class="mobile-only" title="Переключить тему"><i data-lucide="moon"></i></button>
-        <button id="sync-indicator" class="synced" title="Статус синхронизации"><i data-lucide="cloud"></i></button>
-    </div>
-</header>
+        <h1>🚗 Car K3eeper D&T</h1>
+             <button id="pwa-install-btn" class="primary-btn" style="display:none;">Установить приложение</button>
+        <span id="username-display" style="font-size:0.9rem; opacity:0.8; margin-left:12px;"></span>
+        <!-- Селектор авто только на мобильных -->
+        <div id="car-selector-container" class="mobile-only" style="margin-bottom:20px;"></div>
+        <div class="header-controls">
+            <button id="theme-toggle" class="mobile-only" title="Переключить тему"><i data-lucide="moon"></i></button>
+            <button id="sync-indicator" class="synced" title="Статус синхронизации"><i data-lucide="cloud"></i></button>
+        </div>
+    </header>
 
     <!-- ==================== Панель авторизации ==================== -->
     <div id="auth-panel" class="card" style="display:none;">
@@ -167,6 +167,7 @@
                 <button id="update-mileage-btn" class="primary-btn"><i data-lucide="refresh-cw"></i> Обновить</button>
             </div>
             <div class="card top5-widget"><h3><i data-lucide="arrow-up"></i> Ближайшие работы</h3><div id="top5-container"></div></div>
+            <!-- Планировщик ТО с календарём -->
             <div class="card planner-card">
                 <h3><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
                 <div style="display: flex; flex-wrap: nowrap; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
@@ -178,11 +179,10 @@
                             <option value="year">Год</option>
                         </select>
                     </label>
-                    <button id="generate-plan-btn" class="primary-btn"><i data-lucide="calendar"></i> Создать план</button>
-                    <button id="plan-to-calendar-btn" class="secondary-btn" style="display:none;"><i data-lucide="calendar-plus"></i> Добавить все в календарь</button>
+                    <button id="download-ics-btn-static" class="primary-btn"><i data-lucide="calendar-download"></i> Скачать календарь</button>
                 </div>
                 <div id="plan-container" style="max-height: 400px; overflow-y: auto;">
-                    <p class="hint">Выберите период и нажмите «Сформировать план».</p>
+                    <p class="hint">Выберите период, календарь обновится автоматически.</p>
                 </div>
             </div>
             <div class="action-bar">
@@ -199,6 +199,7 @@
                 </table>
             </div>
         </div>
+
 
         <!-- Статистика -->
         <div id="tab-stats" class="tab-content">
