@@ -11,7 +11,7 @@ App.ui.pages.renderCarSelector = function() {
         html += '<option value="' + car.id + '"' + selected + '>' + App.utils.escapeHtml(car.name) + '</option>';
     });
     html += '</select>';
-    html += ' <button id="add-car-btn" class="icon-btn"><i data-lucide="plus"></i></button>';
+    html += ' <button id="add-car-btn" class="icon-btn" title="Добавить авто"><i data-lucide="plus"></i></button>';
     html += ' <button id="invite-btn" class="icon-btn" title="Пригласить"><i data-lucide="user-plus"></i></button>';
     html += ' <button id="rename-car-btn" class="icon-btn" title="Переименовать"><i data-lucide="pencil"></i></button>';
     html += ' <button id="delete-car-btn" class="icon-btn" title="Удалить автомобиль"><i data-lucide="trash-2"></i></button>';
@@ -33,6 +33,7 @@ App.ui.pages.renderCarSelector = function() {
         }
     });
 
+    // Обработчики для кнопок в основном контейнере
     document.getElementById('add-car-btn').addEventListener('click', function() {
         var name = prompt('Название автомобиля:', 'Мой автомобиль');
         if (!name) return;
@@ -63,14 +64,12 @@ App.ui.pages.renderCarSelector = function() {
     document.getElementById('rename-car-btn').addEventListener('click', async function() {
         var carId = App.store.activeCarId;
         if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
-
         var userId = await App.supa.getCurrentUserId();
         var car = App.store.cars.find(c => c.id == carId);
         if (!car || car.user_id !== userId) {
             App.toast('Только владелец может переименовывать автомобиль', 'warning');
             return;
         }
-
         var currentName = car.name || '';
         var newName = prompt('Новое название:', currentName);
         if (!newName || newName === currentName) return;
@@ -88,14 +87,12 @@ App.ui.pages.renderCarSelector = function() {
     document.getElementById('delete-car-btn').addEventListener('click', async function() {
         var carId = App.store.activeCarId;
         if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
-
         var userId = await App.supa.getCurrentUserId();
         var car = App.store.cars.find(c => c.id == carId);
         if (!car || car.user_id !== userId) {
             App.toast('Только владелец может удалять автомобиль', 'warning');
             return;
         }
-
         if (!confirm('Удалить автомобиль и все его данные? Это действие необратимо.')) return;
         try {
             await App.supa.deleteCar(carId);
@@ -120,7 +117,6 @@ App.ui.pages.renderCarSelector = function() {
     document.getElementById('invite-btn').addEventListener('click', function() {
         var carId = App.store.activeCarId;
         if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
-
         App.supabase.from('car_shares')
             .insert({ car_id: carId, invited_email: null })
             .select()
@@ -150,19 +146,16 @@ App.ui.pages.renderCarSelector = function() {
     document.getElementById('calendar-subscribe-btn').addEventListener('click', async function() {
         var carId = App.store.activeCarId;
         if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
-
         var { data: existing, error: selectError } = await App.supabase
             .from('calendar_tokens')
             .select('token')
             .eq('car_id', carId)
             .maybeSingle();
-
         if (selectError) {
             console.error('Ошибка проверки токена:', selectError);
             App.toast('Ошибка получения токена', 'error');
             return;
         }
-
         var token;
         if (existing && existing.token) {
             token = existing.token;
@@ -173,7 +166,6 @@ App.ui.pages.renderCarSelector = function() {
                 .insert({ car_id: carId, token: newToken })
                 .select('token')
                 .single();
-
             if (insertError) {
                 console.error('Ошибка создания токена:', insertError);
                 App.toast('Ошибка создания токена', 'error');
@@ -181,10 +173,128 @@ App.ui.pages.renderCarSelector = function() {
             }
             token = inserted.token;
         }
-
         var feedUrl = `https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/calendar-feed?token=${token}`;
         var copyHtml = '<div style="margin-top:12px;">' +
             '<p class="hint">Скопируйте ссылку и добавьте в свой календарь как интернет-календарь:</p>' +
+            '<input type="text" value="' + feedUrl + '" readonly style="width:100%;" id="calendar-feed-url">' +
+            '<button id="copy-feed-url-btn" class="primary-btn" style="margin-top:8px;">Копировать</button>' +
+            '</div>';
+        var modal = App.ui.createModal('Подписка на календарь', copyHtml);
+        document.getElementById('copy-feed-url-btn').addEventListener('click', function() {
+            var input = document.getElementById('calendar-feed-url');
+            input.select();
+            document.execCommand('copy');
+            App.toast('Ссылка скопирована', 'success');
+        });
+    });
+
+    // ========== Обработчики для кнопок в сайдбаре (десктоп) (п.7) ==========
+    var sidebarAddBtn = document.getElementById('sidebar-add-car-btn');
+    if (sidebarAddBtn) sidebarAddBtn.addEventListener('click', function() {
+        var name = prompt('Название автомобиля:', 'Мой автомобиль');
+        if (!name) return;
+        App.supa.createCar(name).then(function(res) {
+            var car = res.data;
+            if (!car) return;
+            App.store.cars.push(car);
+            App.store.setActiveCar(car.id);
+            App.ui.pages.renderCarSelector();
+            if (App.realtime && App.realtime.subscribeToCar) App.realtime.subscribeToCar(car.id);
+            App.storage.loadAllData().then(function() { if (typeof App.renderAll === 'function') App.renderAll(); });
+            App.toast('Автомобиль добавлен', 'success');
+        }).catch(function(err) { console.error(err); App.toast('Ошибка создания авто', 'error'); });
+    });
+
+    var sidebarRenameBtn = document.getElementById('sidebar-rename-car-btn');
+    if (sidebarRenameBtn) sidebarRenameBtn.addEventListener('click', async function() {
+        var carId = App.store.activeCarId;
+        if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
+        var userId = await App.supa.getCurrentUserId();
+        var car = App.store.cars.find(c => c.id == carId);
+        if (!car || car.user_id !== userId) {
+            App.toast('Только владелец может переименовывать автомобиль', 'warning');
+            return;
+        }
+        var currentName = car.name || '';
+        var newName = prompt('Новое название:', currentName);
+        if (!newName || newName === currentName) return;
+        try {
+            await App.supa.renameCar(carId, newName);
+            car.name = newName;
+            App.ui.pages.renderCarSelector();
+            App.toast('Название обновлено', 'success');
+        } catch (err) { console.error(err); App.toast('Ошибка переименования', 'error'); }
+    });
+
+    var sidebarDeleteBtn = document.getElementById('sidebar-delete-car-btn');
+    if (sidebarDeleteBtn) sidebarDeleteBtn.addEventListener('click', async function() {
+        var carId = App.store.activeCarId;
+        if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
+        var userId = await App.supa.getCurrentUserId();
+        var car = App.store.cars.find(c => c.id == carId);
+        if (!car || car.user_id !== userId) {
+            App.toast('Только владелец может удалять автомобиль', 'warning');
+            return;
+        }
+        if (!confirm('Удалить автомобиль и все его данные? Это действие необратимо.')) return;
+        try {
+            await App.supa.deleteCar(carId);
+            App.store.cars = App.store.cars.filter(c => c.id != carId);
+            App.store.activeCarId = null;
+            App.ui.pages.renderCarSelector();
+            App.store.operations = [];
+            App.store.fuelLog = [];
+            App.store.tireLog = [];
+            App.store.parts = [];
+            App.store.serviceRecords = [];
+            App.store.mileageHistory = [];
+            App.store.saveToLocalStorage();
+            if (typeof App.renderAll === 'function') App.renderAll();
+            App.toast('Автомобиль удалён', 'success');
+        } catch (err) { console.error(err); App.toast('Ошибка удаления', 'error'); }
+    });
+
+    var sidebarInviteBtn = document.getElementById('sidebar-invite-btn');
+    if (sidebarInviteBtn) sidebarInviteBtn.addEventListener('click', function() {
+        var carId = App.store.activeCarId;
+        if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
+        App.supabase.from('car_shares')
+            .insert({ car_id: carId, invited_email: null })
+            .select()
+            .single()
+            .then(function(res) {
+                if (res.error) throw res.error;
+                var inviteCode = res.data.invite_code;
+                var inviteLink = window.location.origin + '/Car-K3eper/?invite=' + inviteCode;
+                var copyHtml = '<div style="margin-top:12px;">' +
+                    '<p class="hint">Ссылка для приглашения:</p>' +
+                    '<input type="text" value="' + inviteLink + '" readonly style="width:100%;" id="invite-link-input">' +
+                    '<button id="copy-invite-link-btn" class="primary-btn" style="margin-top:8px;">Копировать</button>' +
+                    '</div>';
+                var modal = App.ui.createModal('Пригласить пользователя', copyHtml);
+                document.getElementById('copy-invite-link-btn').addEventListener('click', function() {
+                    var input = document.getElementById('invite-link-input');
+                    input.select();
+                    document.execCommand('copy');
+                    App.toast('Ссылка скопирована в буфер обмена', 'success');
+                });
+            }).catch(function(err) { console.error(err); App.toast('Ошибка создания приглашения', 'error'); });
+    });
+
+    var sidebarCalendarBtn = document.getElementById('sidebar-calendar-subscribe-btn');
+    if (sidebarCalendarBtn) sidebarCalendarBtn.addEventListener('click', async function() {
+        var carId = App.store.activeCarId;
+        if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
+        var { data: existing, error: selectError } = await App.supabase
+            .from('calendar_tokens')
+            .select('token')
+            .eq('car_id', carId)
+            .maybeSingle();
+        if (selectError) { console.error(selectError); return; }
+        var token = existing?.token || (await App.supabase.from('calendar_tokens').insert({ car_id: carId, token: crypto.randomUUID() }).select('token').single()).data.token;
+        var feedUrl = `https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/calendar-feed?token=${token}`;
+        var copyHtml = '<div style="margin-top:12px;">' +
+            '<p class="hint">Скопируйте ссылку и добавьте в свой календарь:</p>' +
             '<input type="text" value="' + feedUrl + '" readonly style="width:100%;" id="calendar-feed-url">' +
             '<button id="copy-feed-url-btn" class="primary-btn" style="margin-top:8px;">Копировать</button>' +
             '</div>';
@@ -227,6 +337,8 @@ App.ui.pages.renderCarSelector = function() {
 
     App.initIcons();
 };
+
+App.ui.pages.checkPendingInvites = function() {
 
 App.ui.pages.checkPendingInvites = function() {
     var urlParams = new URLSearchParams(window.location.search);
