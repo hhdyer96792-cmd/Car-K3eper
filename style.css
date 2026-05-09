@@ -416,33 +416,33 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 @keyframes toastOut { to { opacity: 0; transform: translateX(40px); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* === Календарь планировщика === */
+/* === Календарь планировщика (компактный) === */
 .plan-calendar {
     background: var(--card-bg);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 12px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 .cal-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 .cal-nav-btn {
     background: var(--primary-light);
     border: none;
     color: var(--primary);
-    padding: 8px;
+    padding: 6px;
     border-radius: 50%;
     cursor: pointer;
     transition: background var(--transition);
 }
 .cal-nav-btn:hover { background: var(--primary); color: #fff; }
 .cal-month {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
 }
 .cal-weekdays {
@@ -450,37 +450,38 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
     font-weight: 500;
-    font-size: 0.8rem;
-    margin-bottom: 8px;
+    font-size: 0.75rem;
+    margin-bottom: 6px;
     color: var(--text-muted);
 }
 .cal-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    gap: 2px;
 }
 .cal-day {
     aspect-ratio: 1;
     border-radius: var(--radius-sm);
-    padding: 4px;
+    padding: 2px;
     text-align: center;
     cursor: pointer;
     transition: background var(--transition);
     position: relative;
+    font-size: 0.8rem;
 }
 .cal-day.empty { cursor: default; }
 .cal-day.today { background: var(--primary-light); font-weight: 600; }
 .cal-day:hover:not(.empty) { background: var(--bg); }
-.cal-day-num { display: block; font-size: 0.85rem; }
+.cal-day-num { display: block; margin-bottom: 1px; }
 .cal-events {
     display: flex;
     justify-content: center;
-    gap: 3px;
-    margin-top: 2px;
+    gap: 2px;
+    margin-top: 1px;
 }
 .cal-event-dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: var(--primary);
     display: inline-block;
