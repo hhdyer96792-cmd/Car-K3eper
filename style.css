@@ -420,7 +420,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .plan-calendar {
     background: var(--card-bg);
     border-radius: var(--radius);
-    padding: 10px; // высота календаря
+    padding: 6px; // высота календаря
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
     margin-bottom: 16px;
