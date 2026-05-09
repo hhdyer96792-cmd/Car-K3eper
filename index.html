@@ -71,9 +71,9 @@
                 <label>Логин</label>
                 <input type="text" name="username" required placeholder="VestaDriver" id="username-input">
                 <label>Пароль</label>
-                <input type="password" name="password" required minlength="6" placeholder="Минимум 6 символов">
+                <input type="password" name="password" required minlength="6" placeholder="Минимум 6 символов" autocomplete="current-password">
                 <label id="password-confirm-label" style="display:none;">Подтвердите пароль</label>
-                <input type="password" name="password_confirm" id="password-confirm-input" minlength="6" placeholder="Повторите пароль" style="display:none;">
+              <input type="password" name="password_confirm" id="password-confirm-input" minlength="6" placeholder="Повторите пароль" style="display:none;" autocomplete="new-password">
                 <div class="modal-actions" style="margin-top:12px;">
                     <button type="submit" class="primary-btn" id="login-sign-in-btn">Войти</button>
                     <button type="button" class="secondary-btn" id="login-sign-up-btn">Регистрация</button>
