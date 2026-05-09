@@ -511,3 +511,14 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 #sync-indicator.syncing { color: var(--warning); animation: spin 1s linear infinite; }
 #sync-indicator.local { color: var(--text-muted); }
 #sync-indicator.error { color: var(--danger); }
+
+/* Показываем управление только когда авторизация скрыта */
+#sync-indicator,
+#mobile-car-actions {
+    display: none;
+}
+
+#data-panel[style*="display: block"] ~ header #sync-indicator,
+#data-panel[style*="display: block"] ~ header #mobile-car-actions {
+    display: flex;
+}
