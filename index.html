@@ -23,6 +23,8 @@
 <body>
 
 <div class="desktop-sidebar">
+    <!-- Имя пользователя в сайдбаре -->
+    <span id="sidebar-username" style="display:block; padding: 8px 20px; font-size:0.9rem; color: var(--text);"></span>
     <div id="sidebar-car-selector" style="padding: 12px 20px; border-bottom: 1px solid var(--border);"></div>
     <!-- Кнопки управления авто (только на десктопе) -->
     <div id="sidebar-car-actions" style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:8px 20px; border-bottom:1px solid var(--border);">
@@ -32,6 +34,13 @@
         <button id="sidebar-invite-btn" class="icon-btn" title="Пригласить"><i data-lucide="user-plus"></i></button>
         <button id="sidebar-calendar-subscribe-btn" class="icon-btn" title="Подписка на календарь"><i data-lucide="calendar-days"></i></button>
     </div>
+    <nav class="sidebar-nav">
+        <!-- пункты меню -->
+    </nav>
+    <div class="sidebar-footer">
+        <!-- как раньше -->
+    </div>
+</div>
     <nav class="sidebar-nav">
         <button class="sidebar-item active" data-tab="dashboard"><i data-lucide="layout-dashboard"></i> Дашборд</button>
         <button class="sidebar-item" data-tab="to"><i data-lucide="wrench"></i> ТО</button>
