@@ -171,24 +171,23 @@
     <div class="card top5-widget"><h3><i data-lucide="arrow-up"></i> Ближайшие работы</h3><div id="top5-container"></div></div>
     <!-- Планировщик ТО с календарём -->
   <div class="card planner-card">
-                <h3><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
-                <div style="display: flex; flex-wrap: nowrap; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
-                    <label style="flex:1; min-width:150px;">Период:
-                        <select id="plan-period-select" style="width:100%">
-                            <option value="month">Месяц</option>
-                            <option value="quarter">Квартал</option>
-                            <option value="6months">6 месяцев</option>
-                            <option value="year">Год</option>
-                        </select>
-                    </label>
-                    <button id="download-ics-btn-static" class="primary-btn" style="margin-left:auto; padding:10px 14px; font-size:0.9rem;"><i data-lucide="download"></i> Скачать календарь</button>
-                </div>
-                <!-- Кнопка подписки на календарь -->
-                <button id="calendar-subscribe-btn" class="secondary-btn" style="margin-top:8px;"><i data-lucide="calendar-plus"></i> Подписаться на календарь</button>
-                <div id="plan-container" style="max-height: 400px; overflow-y: auto;">
-                    <p class="hint">Выберите период, календарь обновится автоматически.</p>
-                </div>
-            </div>
+    <h3><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
+    <div style="display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
+        <label style="flex:1; min-width:150px;">Период:
+            <select id="plan-period-select" style="width:100%">
+                <option value="month">Месяц</option>
+                <option value="quarter">Квартал</option>
+                <option value="6months">6 месяцев</option>
+                <option value="year">Год</option>
+            </select>
+        </label>
+        <button id="download-ics-btn-static" class="primary-btn" style="padding:10px 14px; font-size:0.9rem;"><i data-lucide="download"></i> Скачать календарь</button>
+        <button id="calendar-subscribe-btn" class="secondary-btn" style="padding:10px 14px; font-size:0.9rem;"><i data-lucide="calendar-plus"></i> Подписаться</button>
+    </div>
+    <div id="plan-container" style="max-height: 400px; overflow-y: auto;">
+        <p class="hint">Выберите период, календарь обновится автоматически.</p>
+    </div>
+</div>
     <div class="action-bar">
         <button id="add-operation-btn" class="primary-btn"><i data-lucide="plus"></i> Операция</button>
         <button id="recalculate-btn" class="secondary-btn"><i data-lucide="refresh-ccw"></i> Пересчитать</button>
