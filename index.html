@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>🚗 Car K3eeper D&T</title>
+    <title>Car K3eeper D&T</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <meta name="theme-color" content="#2c3e50">
 
-    <!-- Внешние библиотеки (без изменений) -->
+    <!-- Внешние библиотеки -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -23,17 +23,8 @@
 <body>
 
 <div class="desktop-sidebar">
-    <!-- Имя пользователя (заполняется из JS) -->
-    <span id="sidebar-username" style="display:block; padding: 8px 20px; font-size:0.9rem; color: var(--text);"></span>
+    <!-- Только селектор авто (перенесён из сайдбара, но мы его оставим пока) -->
     <div id="sidebar-car-selector" style="padding: 12px 20px; border-bottom: 1px solid var(--border);"></div>
-    <!-- Кнопки управления авто (видны только на десктопе, управляются JS) -->
-    <div id="sidebar-car-actions" style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:8px 20px; border-bottom:1px solid var(--border);">
-        <button id="sidebar-add-car-btn" class="icon-btn" title="Добавить авто"><i data-lucide="plus"></i></button>
-        <button id="sidebar-rename-car-btn" class="icon-btn" title="Переименовать"><i data-lucide="pencil"></i></button>
-        <button id="sidebar-delete-car-btn" class="icon-btn" title="Удалить авто"><i data-lucide="trash-2"></i></button>
-        <button id="sidebar-invite-btn" class="icon-btn" title="Пригласить"><i data-lucide="user-plus"></i></button>
-        <button id="sidebar-calendar-subscribe-btn" class="icon-btn" title="Подписка на календарь"><i data-lucide="calendar-days"></i></button>
-    </div>
     <nav class="sidebar-nav">
         <button class="sidebar-item active" data-tab="dashboard"><i data-lucide="layout-dashboard"></i> Дашборд</button>
         <button class="sidebar-item" data-tab="to"><i data-lucide="wrench"></i> ТО</button>
@@ -42,7 +33,6 @@
         <button class="sidebar-item" data-tab="fuel"><i data-lucide="fuel"></i> Топливо</button>
         <button class="sidebar-item" data-tab="tires"><i data-lucide="circle"></i> Шины</button>
         <button class="sidebar-item" data-tab="parts"><i data-lucide="package"></i> Запчасти</button>
-        <!-- Новая вкладка -->
         <button class="sidebar-item" data-tab="car"><i data-lucide="car"></i> Автомобиль</button>
         <button class="sidebar-item" data-tab="settings"><i data-lucide="settings"></i> Настройки</button>
     </nav>
@@ -55,7 +45,7 @@
 <div class="app-container">
     <header>
         <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-            <h1>🚗 Car K3eeper D&T</h1>
+            <h1>Car K3eeper D&T</h1>
             <button id="sync-indicator" class="synced" title="Статус синхронизации"><i data-lucide="cloud"></i></button>
         </div>
         <!-- Только на мобильных: имя пользователя и название текущего авто -->
@@ -180,23 +170,25 @@
     </div>
     <div class="card top5-widget"><h3><i data-lucide="arrow-up"></i> Ближайшие работы</h3><div id="top5-container"></div></div>
     <!-- Планировщик ТО с календарём -->
-    <div class="card planner-card">
-        <h3><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
-        <div style="display: flex; flex-wrap: nowrap; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
-            <label style="flex:1; min-width:150px;">Период:
-                <select id="plan-period-select" style="width:100%">
-                    <option value="month">Месяц</option>
-                    <option value="quarter">Квартал</option>
-                    <option value="6months">6 месяцев</option>
-                    <option value="year">Год</option>
-                </select>
-            </label>
-            <button id="download-ics-btn-static" class="primary-btn" style="margin-left:auto; padding:10px 14px; font-size:0.9rem;"><i data-lucide="download"></i> Скачать календарь</button>
-        </div>
-        <div id="plan-container" style="max-height: 400px; overflow-y: auto;">
-            <p class="hint">Выберите период, календарь обновится автоматически.</p>
-        </div>
-    </div>
+  <div class="card planner-card">
+                <h3><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
+                <div style="display: flex; flex-wrap: nowrap; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
+                    <label style="flex:1; min-width:150px;">Период:
+                        <select id="plan-period-select" style="width:100%">
+                            <option value="month">Месяц</option>
+                            <option value="quarter">Квартал</option>
+                            <option value="6months">6 месяцев</option>
+                            <option value="year">Год</option>
+                        </select>
+                    </label>
+                    <button id="download-ics-btn-static" class="primary-btn" style="margin-left:auto; padding:10px 14px; font-size:0.9rem;"><i data-lucide="download"></i> Скачать календарь</button>
+                </div>
+                <!-- Кнопка подписки на календарь -->
+                <button id="calendar-subscribe-btn" class="secondary-btn" style="margin-top:8px;"><i data-lucide="calendar-plus"></i> Подписаться на календарь</button>
+                <div id="plan-container" style="max-height: 400px; overflow-y: auto;">
+                    <p class="hint">Выберите период, календарь обновится автоматически.</p>
+                </div>
+            </div>
     <div class="action-bar">
         <button id="add-operation-btn" class="primary-btn"><i data-lucide="plus"></i> Операция</button>
         <button id="recalculate-btn" class="secondary-btn"><i data-lucide="refresh-ccw"></i> Пересчитать</button>
@@ -372,13 +364,17 @@
         <!-- ========== НОВАЯ ВКЛАДКА: АВТОМОБИЛЬ ========== -->
         <div id="tab-car" class="tab-content">
             <div class="card" id="car-details-card">
-                <h3>🚗 Автомобиль</h3>
+                <h3> Автомобиль</h3>
                 <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
                     <label style="flex:1; min-width:150px;">Выберите авто:
                         <select id="car-page-selector" style="width:100%">
                             <option value="">-- Загрузка... --</option>
                         </select>
                     </label>
+                    <!-- Кнопки управления авто -->
+                    <button id="add-car-btn" class="icon-btn" title="Добавить авто"><i data-lucide="plus"></i></button>
+                    <button id="rename-car-btn" class="icon-btn" title="Переименовать"><i data-lucide="pencil"></i></button>
+                    <button id="delete-car-btn" class="icon-btn" title="Удалить авто"><i data-lucide="trash-2"></i></button>
                 </div>
                 <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
                     <input type="text" id="car-brand" placeholder="Марка" style="flex:1;">
@@ -389,7 +385,7 @@
                     <input type="text" id="car-plate" placeholder="Гос. номер" style="flex:1;">
                     <input type="text" id="car-vin" placeholder="VIN" style="flex:1;">
                 </div>
-                <button id="save-car-details-btn" class="primary-btn" style="margin-top:12px;">Сохранить данные авто</button>
+                <button id="save-car-details-btn" class="primary-btn" style="margin-top:12px;"> Сохранить данные авто</button>
             </div>
 
             <!-- Перенесено из настроек -->
@@ -398,18 +394,20 @@
                 <label>Пробег точки отсчёта (км): <input type="number" id="set-base-mileage" step="1" value="0"></label>
                 <label>Моточасы точки отсчёта: <input type="number" id="set-base-motohours" step="1" value="0"></label>
                 <p class="hint">Используются, если история пробега ещё не накоплена.</p>
-                <button id="save-base-points-btn" class="secondary-btn">Сохранить</button>
+                <button id="save-base-points-btn" class="secondary-btn"> Сохранить</button>
             </div>
 
             <div class="card" id="car-ownership">
                 <h3><i data-lucide="calendar"></i> Владение автомобилем</h3>
                 <label>Дата приобретения: <input type="date" id="purchase-date"></label>
                 <label>Дней владения: <input type="text" id="ownership-days" readonly></label>
-                <button id="save-ownership-btn" class="secondary-btn">Сохранить</button>
+                <button id="save-ownership-btn" class="secondary-btn"> Сохранить</button>
             </div>
 
             <div class="card" id="car-sharing">
                 <h3><i data-lucide="users"></i> Совместный доступ</h3>
+                <!-- Кнопка пригласить -->
+                <button id="invite-btn" class="secondary-btn" style="margin-bottom:12px;"><i data-lucide="user-plus"></i> Пригласить пользователя</button>
                 <div id="sharing-container"><p class="hint">Загрузка...</p></div>
             </div>
         </div>
@@ -458,12 +456,12 @@
         <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
             <label style="flex: 1; min-width: 180px;">Тип данных:
                 <select id="export-type-select" style="width: 100%;">
-                    <option value="to">📋 Журнал ТО</option>
-                    <option value="fuel">⛽ Топливо</option>
-                    <option value="tires">🛞 Шины</option>
-                    <option value="parts">📦 Запчасти</option>
-                    <option value="history">📜 История ТО</option>
-                    <option value="all">📁 Все данные</option>
+                    <option value="to"> Журнал ТО</option>
+                    <option value="fuel"> Топливо</option>
+                    <option value="tires"> Шины</option>
+                    <option value="parts"> Запчасти</option>
+                    <option value="history"> История ТО</option>
+                    <option value="all"> Все данные</option>
                 </select>
             </label>
             <label style="flex: 0 0 auto;">Формат:
