@@ -369,6 +369,10 @@ App.ui.pages.renderCarTab = function() {
                     App.ui.pages.loadCarDetails(carId);
                     App.ui.pages.renderCarSelector();
                     App.ui.pages.updateCurrentCarName();
+                    // Обновляем совместный доступ при смене авто
+                    if (typeof App.ui.pages.renderSharingList === 'function') {
+                        App.ui.pages.renderSharingList();
+                    }
                 });
             }
         });
@@ -429,7 +433,7 @@ App.ui.pages.renderCarTab = function() {
         App.toast('Дата покупки сохранена', 'success');
     };
 
-    // Совместный доступ (рендерим из settings)
+    // Совместный доступ
     if (typeof App.ui.pages.renderSharingList === 'function') {
         App.ui.pages.renderSharingList();
     }
