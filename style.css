@@ -141,7 +141,6 @@ button:active { transform: translateY(0); }
     border: 1px solid var(--border);
 }
 .stat-label { font-size: 0.8rem; opacity: 0.8; }
-/* п.5: уменьшаем значение, увеличиваем единицу */
 .stat-value { font-size: 1.1rem; font-weight: 700; line-height: 1.2; }
 .stat-unit { font-size: 0.9rem; opacity: 0.8; }
 
@@ -164,13 +163,11 @@ button:active { transform: translateY(0); }
     max-height: 150px !important;
     width: 100% !important;
 }
-/* п.5: дашборд – единицы под цифрами */
 .summary-values { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .summary-values > div { text-align: center; }
 .summary-values span { font-size: 1.8rem; font-weight: 700; }
 .summary-values small { display: block; font-size: 0.9rem; opacity: 0.8; margin-top: 2px; }
 
-/* п.6: компактный индикатор режима */
 .mode-indicator-compact {
     display: flex;
     align-items: center;
@@ -194,7 +191,6 @@ button:active { transform: translateY(0); }
     100% { transform: scale(1); opacity: 0.8; }
 }
 
-/* п.7: кнопки управления авто в сайдбаре */
 #sidebar-car-actions {
     display: flex;
     flex-wrap: wrap;
@@ -518,7 +514,9 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 #sync-indicator.local { color: var(--text-muted); }
 #sync-indicator.error { color: var(--danger); }
 
-#mobile-header-row2 { display: none; }
-@media (max-width: 767px) {
-    #mobile-header-row2 { display: flex; }
+/* Стили для вкладки Автомобиль */
+#car-details-card input,
+#car-base-points input,
+#car-ownership input {
+    margin-bottom: 8px;
 }
