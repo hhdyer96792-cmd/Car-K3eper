@@ -430,21 +430,39 @@ App.events.initDirectListeners = function() {
         });
     }
 
-    // Кнопка "Скачать календарь" (статическая) (Этап 2)
-    var downloadIcsStaticBtn = document.getElementById('download-ics-btn-static');
-    if (downloadIcsStaticBtn) {
-        downloadIcsStaticBtn.addEventListener('click', function() {
+     // Объединённая кнопка "Действия с календарём"
+    var calendarActionBtn = document.getElementById('calendar-action-btn');
+    if (calendarActionBtn) {
+        calendarActionBtn.addEventListener('click', function() {
             var period = document.getElementById('plan-period-select')?.value || 'month';
-            var plan = App.logic.generateMaintenancePlan(period);
-            var icsContent = generateICS(plan);
-            var blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-            var link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'vesta_plan_' + new Date().toISOString().slice(0,10) + '.ics';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            App.toast('Календарь скачан', 'success');
+            var modalContent = '<div style="display:flex; gap:12px; justify-content:center;">' +
+                '<button id="modal-download-ics" class="primary-btn"><i data-lucide="download"></i> Скачать</button>' +
+                '<button id="modal-subscribe-cal" class="secondary-btn"><i data-lucide="calendar-plus"></i> Подписаться</button>' +
+                '</div>';
+            var modal = App.ui.createModal('Выберите действие', modalContent);
+
+            document.getElementById('modal-download-ics').addEventListener('click', function() {
+                modal.remove();
+                var plan = App.logic.generateMaintenancePlan(period);
+                var icsContent = generateICS(plan);
+                var blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'vesta_plan_' + new Date().toISOString().slice(0,10) + '.ics';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                App.toast('Календарь скачан', 'success');
+            });
+
+            document.getElementById('modal-subscribe-cal').addEventListener('click', function() {
+                modal.remove();
+                if (typeof App.ui.pages.subscribeToCalendar === 'function') {
+                    App.ui.pages.subscribeToCalendar();
+                } else {
+                    App.toast('Функция подписки недоступна', 'error');
+                }
+            });
         });
     }
 
