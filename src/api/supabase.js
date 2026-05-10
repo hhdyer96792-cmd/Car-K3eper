@@ -121,7 +121,7 @@ App.supa.loadHistory = function() {
             is_diy: h.is_diy || false,
             notes: h.notes || '',
             photo_url: h.photo_url || '',
-            user_id: h.user_id,   // обязательно для отображения исполнителя
+            user_id: h.user_id,
             rowIndex: h.id
         }));
     });
@@ -143,7 +143,13 @@ App.supa.loadSettings = function() {
                 telegramToken: us.data ? us.data.telegram_token || '' : '',
                 telegramChatId: us.data ? us.data.telegram_chat_id || '' : '',
                 notificationMethod: us.data ? us.data.notification_method || 'telegram' : 'telegram',
-                reminderDays: us.data ? us.data.reminder_days || '7,2' : '7,2'
+                reminderDays: us.data ? us.data.reminder_days || '7,2' : '7,2',
+                // Новые поля автомобиля
+                carBrand: vs.data?.car_brand || '',
+                carModel: vs.data?.car_model || '',
+                carYear: vs.data?.car_year || null,
+                plateNumber: vs.data?.plate_number || '',
+                vin: vs.data?.vin || ''
             };
         });
     });
@@ -277,7 +283,13 @@ App.supa.saveVehicleState = async function(state) {
         current_mileage: state.currentMileage,
         current_motohours: state.currentMotohours,
         avg_daily_mileage: state.avgDailyMileage,
-        avg_daily_motohours: state.avgDailyMotohours
+        avg_daily_motohours: state.avgDailyMotohours,
+        // Новые поля автомобиля
+        car_brand: state.carBrand,
+        car_model: state.carModel,
+        car_year: state.carYear,
+        plate_number: state.plateNumber,
+        vin: state.vin
     };
     return App.supabase.from('vehicle_state').upsert(record, { onConflict: 'car_id' }).select();
 };
@@ -293,28 +305,6 @@ App.supa.saveUserSettings = async function(settingsObj) {
         reminder_days: settingsObj.reminderDays || '7,2'
     };
     return App.supabase.from('user_settings').upsert(record, { onConflict: 'user_id, car_id' }).select();
-};
-
-App.supa.loadSettings = function() {
-    if (!App.store.activeCarId) return Promise.resolve(null);
-    return App.supa.getCurrentUserId().then(function(userId) {
-        if (!userId) return null;
-        return Promise.all([
-            App.supabase.from('vehicle_state').select('*').eq('car_id', App.store.activeCarId).maybeSingle(),
-            App.supabase.from('user_settings').select('*').eq('user_id', userId).eq('car_id', App.store.activeCarId).maybeSingle()
-        ]).then(function([vs, us]) {
-            return {
-                currentMileage: vs.data ? parseFloat(vs.data.current_mileage) || 0 : 0,
-                currentMotohours: vs.data ? parseFloat(vs.data.current_motohours) || 0 : 0,
-                avgDailyMileage: vs.data ? parseFloat(vs.data.avg_daily_mileage) || 45 : 45,
-                avgDailyMotohours: vs.data ? parseFloat(vs.data.avg_daily_motohours) || 1.8 : 1.8,
-                telegramToken: us.data ? us.data.telegram_token || '' : '',
-                telegramChatId: us.data ? us.data.telegram_chat_id || '' : '',
-                notificationMethod: us.data ? us.data.notification_method || 'telegram' : 'telegram',
-                reminderDays: us.data ? us.data.reminder_days || '7,2' : '7,2'
-            };
-        });
-    });
 };
 
 // ----- Загрузка фото в Supabase Storage -----
