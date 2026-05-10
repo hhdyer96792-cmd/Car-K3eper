@@ -369,10 +369,8 @@ App.ui.pages.renderCarTab = function() {
                     App.ui.pages.loadCarDetails(carId);
                     App.ui.pages.renderCarSelector();
                     App.ui.pages.updateCurrentCarName();
-                    // Обновляем совместный доступ при смене авто
-                    if (typeof App.ui.pages.renderSharingList === 'function') {
-                        App.ui.pages.renderSharingList();
-                    }
+                    // Обновляем совместный доступ
+                    App.ui.pages.renderSharingListForCarTab();
                 });
             }
         });
@@ -433,22 +431,86 @@ App.ui.pages.renderCarTab = function() {
         App.toast('Дата покупки сохранена', 'success');
     };
 
-    // Совместный доступ
-    if (typeof App.ui.pages.renderSharingList === 'function') {
-        App.ui.pages.renderSharingList();
-    }
+    // Совместный доступ – рендерим напрямую
+    App.ui.pages.renderSharingListForCarTab();
 
     App.initIcons();
 };
 
-// Загрузка деталей авто из App.store.settings
-App.ui.pages.loadCarDetails = function(carId) {
-    var s = App.store.settings;
-    document.getElementById('car-brand').value = s.carBrand || '';
-    document.getElementById('car-model').value = s.carModel || '';
-    document.getElementById('car-year').value = s.carYear || '';
-    document.getElementById('car-plate').value = s.plateNumber || '';
-    document.getElementById('car-vin').value = s.vin || '';
+// Вспомогательная функция для рендеринга совместного доступа из вкладки Автомобиль
+App.ui.pages.renderSharingListForCarTab = function() {
+    var container = document.getElementById('sharing-container');
+    if (!container) return;
+
+    var carId = App.store.activeCarId;
+    if (!carId) {
+        container.innerHTML = '<p class="hint">Выберите автомобиль</p>';
+        return;
+    }
+
+    App.supa.getCurrentUserId().then(function(userId) {
+        if (!userId) {
+            container.innerHTML = '<p class="hint">Не удалось определить пользователя</p>';
+            return;
+        }
+
+        App.supa.getCarShares(carId).then(function({ data, error }) {
+            if (error) {
+                container.innerHTML = '<p class="hint">Ошибка загрузки</p>';
+                return;
+            }
+
+            var car = App.store.cars.find(c => c.id == carId);
+            var isOwner = car && car.user_id === userId;
+
+            var shares = data || [];
+            if (!isOwner) {
+                shares = shares.filter(share => share.invited_user_id === userId);
+            }
+
+            if (shares.length === 0) {
+                container.innerHTML = '<p class="hint">Нет приглашённых пользователей</p>';
+                App.initIcons();
+                return;
+            }
+
+            var html = '<ul style="list-style:none; padding:0;">';
+            shares.forEach(function(share) {
+                var statusIcon = share.accepted ? '✅' : '⏳';
+                var statusText = share.accepted ? 'Принято' : 'Ожидает';
+                var emailOrId = share.invited_email || (share.invited_user_id ? 'ID: ' + share.invited_user_id.substring(0,8) : '—');
+                html += '<li style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">';
+                html += '<span>' + statusIcon + ' <strong>' + App.utils.escapeHtml(emailOrId) + '</strong> (' + statusText + ')</span>';
+                if (isOwner) {
+                    html += '<button class="icon-btn remove-share-btn" data-id="' + share.id + '" title="Удалить доступ"><i data-lucide="trash-2"></i></button>';
+                }
+                html += '</li>';
+            });
+            html += '</ul>';
+            container.innerHTML = html;
+
+            if (isOwner) {
+                container.querySelectorAll('.remove-share-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var shareId = btn.dataset.id;
+                        if (!confirm('Удалить доступ для этого пользователя?')) return;
+                        App.supa.deleteCarShare(shareId).then(function() {
+                            App.toast('Доступ удалён', 'success');
+                            App.ui.pages.renderSharingListForCarTab();
+                        }).catch(function(err) {
+                            console.error(err);
+                            App.toast('Ошибка удаления доступа', 'error');
+                        });
+                    });
+                });
+            }
+
+            App.initIcons();
+        });
+    }).catch(function(err) {
+        console.error(err);
+        container.innerHTML = '<p class="hint">Ошибка загрузки</p>';
+    });
 };
 
 // Проверка приглашений (без изменений)
@@ -520,4 +582,14 @@ App.ui.pages.checkPendingInvites = function() {
             }
         });
     });
+};
+
+// Загрузка деталей авто из App.store.settings
+App.ui.pages.loadCarDetails = function(carId) {
+    var s = App.store.settings;
+    document.getElementById('car-brand').value = s.carBrand || '';
+    document.getElementById('car-model').value = s.carModel || '';
+    document.getElementById('car-year').value = s.carYear || '';
+    document.getElementById('car-plate').value = s.plateNumber || '';
+    document.getElementById('car-vin').value = s.vin || '';
 };
