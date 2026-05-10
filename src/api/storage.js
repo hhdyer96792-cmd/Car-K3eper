@@ -70,13 +70,18 @@ App.storage.addMileageRecord = function(date, mileage, motohours) {
     });
 };
 
-// Сохранение настроек: общие показатели + персональные уведомления
+// Сохранение настроек: общие показатели + персональные уведомления + новые поля авто
 App.storage.saveSettings = function(settings) {
     var vehiclePromise = App.supa.saveVehicleState({
         currentMileage: settings.currentMileage,
         currentMotohours: settings.currentMotohours,
         avgDailyMileage: settings.avgDailyMileage,
-        avgDailyMotohours: settings.avgDailyMotohours
+        avgDailyMotohours: settings.avgDailyMotohours,
+        carBrand: settings.carBrand,
+        carModel: settings.carModel,
+        carYear: settings.carYear,
+        plateNumber: settings.plateNumber,
+        vin: settings.vin
     }).then(function(res) { checkResponse(res, 'save'); });
     
     var userPromise = App.supa.saveUserSettings({
