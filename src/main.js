@@ -63,6 +63,11 @@
         // ======================= АВТОРИЗАЦИЯ =======================
         var authPanel = document.getElementById('auth-panel');
         if (authPanel) authPanel.style.display = 'block';
+        // Скрываем мобильные элементы на странице авторизации при загрузке
+        var mobileRow = document.getElementById('mobile-header-row2');
+        if (mobileRow) mobileRow.style.display = 'none';
+        var syncIndicator = document.getElementById('sync-indicator');
+        if (syncIndicator) syncIndicator.style.display = 'none';
 
         var tabLogin = document.getElementById('tab-login');
         var tabSocial = document.getElementById('tab-social');
@@ -331,16 +336,23 @@
 
         // ===== Кнопка «Выйти» =====
         function doLogout() {
-            var loginForm = document.getElementById('login-form');
-            if (loginForm) loginForm.reset();
-            var usernameDisplay = document.getElementById('username-display');
-            if (usernameDisplay) usernameDisplay.textContent = '';
-            var carContainer = document.getElementById('car-selector-container');
-            if (carContainer) carContainer.innerHTML = '';
-            var authPanel = document.getElementById('auth-panel');
-            if (authPanel) authPanel.style.display = 'block';
-            var dataPanel = document.getElementById('data-panel');
-            if (dataPanel) dataPanel.style.display = 'none';
+            var loginFormEl = document.getElementById('login-form');
+            if (loginFormEl) loginFormEl.reset();
+            var usernameDisplayEl = document.getElementById('username-display');
+            if (usernameDisplayEl) usernameDisplayEl.textContent = '';
+            var sidebarUsernameEl = document.getElementById('sidebar-username');
+            if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
+            var carContainerEl = document.getElementById('car-selector-container');
+            if (carContainerEl) carContainerEl.innerHTML = '';
+            var authPanelEl = document.getElementById('auth-panel');
+            if (authPanelEl) authPanelEl.style.display = 'block';
+            var dataPanelEl = document.getElementById('data-panel');
+            if (dataPanelEl) dataPanelEl.style.display = 'none';
+            // Скрываем мобильные элементы при выходе
+            var mobileRowEl = document.getElementById('mobile-header-row2');
+            if (mobileRowEl) mobileRowEl.style.display = 'none';
+            var syncIndicatorEl = document.getElementById('sync-indicator');
+            if (syncIndicatorEl) syncIndicatorEl.style.display = 'none';
             App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
             isLoggedIn = false;
             setInstallButtonVisible(false);
@@ -360,17 +372,19 @@
                 var dp = document.getElementById('data-panel');
                 if (dp) dp.style.display = 'block';
                 // Показываем облачко после авторизации (офлайн)
-                var syncIndicator = document.getElementById('sync-indicator');
-                if (syncIndicator) syncIndicator.style.display = '';
+                var syncIndicatorOffline = document.getElementById('sync-indicator');
+                if (syncIndicatorOffline) syncIndicatorOffline.style.display = '';
                 // Показываем мобильные элементы после авторизации (офлайн)
-                var mobileRow = document.getElementById('mobile-header-row2');
-                if (mobileRow) mobileRow.style.display = 'flex';
+                var mobileRowOffline = document.getElementById('mobile-header-row2');
+                if (mobileRowOffline) mobileRowOffline.style.display = 'flex';
 
                 var cachedUsername = localStorage.getItem('vesta_username') || '';
-                var display = document.getElementById('username-display');
-                if (display && cachedUsername) {
-                    display.textContent = '👤 ' + cachedUsername;
+                var displayElOffline = document.getElementById('username-display');
+                if (displayElOffline && cachedUsername) {
+                    displayElOffline.textContent = '👤 ' + cachedUsername;
                 }
+                var sidebarUsernameOffline = document.getElementById('sidebar-username');
+                if (sidebarUsernameOffline) sidebarUsernameOffline.textContent = cachedUsername ? '👤 ' + cachedUsername : '';
 
                 App.store.loadCars().then(function() {
                     App.ui.pages.renderCarSelector();
@@ -391,17 +405,21 @@
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'block';
                     // Показываем облачко после авторизации
-                    var syncIndicator = document.getElementById('sync-indicator');
-                    if (syncIndicator) syncIndicator.style.display = '';
+                    var syncIndicatorOnline = document.getElementById('sync-indicator');
+                    if (syncIndicatorOnline) syncIndicatorOnline.style.display = '';
                     // Показываем мобильные элементы после авторизации
-                    var mobileRow = document.getElementById('mobile-header-row2');
-                    if (mobileRow) mobileRow.style.display = 'flex';
+                    var mobileRowOnline = document.getElementById('mobile-header-row2');
+                    if (mobileRowOnline) mobileRowOnline.style.display = 'flex';
 
                     App.supabase.auth.getUser().then(function(userRes) {
-                        var display = document.getElementById('username-display');
-                        if (display && userRes.data.user && userRes.data.user.user_metadata && userRes.data.user.user_metadata.username) {
-                            display.textContent = '👤 ' + userRes.data.user.user_metadata.username;
+                        var displayEl = document.getElementById('username-display');
+                        if (displayEl && userRes.data.user && userRes.data.user.user_metadata && userRes.data.user.user_metadata.username) {
+                            displayEl.textContent = '👤 ' + userRes.data.user.user_metadata.username;
                             localStorage.setItem('vesta_username', userRes.data.user.user_metadata.username);
+                        }
+                        var sidebarUsernameEl = document.getElementById('sidebar-username');
+                        if (sidebarUsernameEl && userRes.data.user && userRes.data.user.user_metadata && userRes.data.user.user_metadata.username) {
+                            sidebarUsernameEl.textContent = '👤 ' + userRes.data.user.user_metadata.username;
                         }
                     });
 
@@ -459,15 +477,17 @@
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'none';
                     // Скрываем облачко на странице авторизации
-                    var syncIndicator = document.getElementById('sync-indicator');
-                    if (syncIndicator) syncIndicator.style.display = 'none';
+                    var syncIndicatorOff = document.getElementById('sync-indicator');
+                    if (syncIndicatorOff) syncIndicatorOff.style.display = 'none';
                     // Скрываем мобильные элементы на странице авторизации
-                    var mobileRow = document.getElementById('mobile-header-row2');
-                    if (mobileRow) mobileRow.style.display = 'none';
-                    var carContainer = document.getElementById('car-selector-container');
-                    if (carContainer) carContainer.innerHTML = '';
-                    var usernameDisplay = document.getElementById('username-display');
-                    if (usernameDisplay) usernameDisplay.textContent = '';
+                    var mobileRowOff = document.getElementById('mobile-header-row2');
+                    if (mobileRowOff) mobileRowOff.style.display = 'none';
+                    var carContainerEl = document.getElementById('car-selector-container');
+                    if (carContainerEl) carContainerEl.innerHTML = '';
+                    var usernameDisplayEl = document.getElementById('username-display');
+                    if (usernameDisplayEl) usernameDisplayEl.textContent = '';
+                    var sidebarUsernameEl = document.getElementById('sidebar-username');
+                    if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
                     if (App.realtime && App.realtime.unsubscribeAll) {
                         App.realtime.unsubscribeAll();
                     }
@@ -490,18 +510,22 @@
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'block';
                     // Показываем облачко после авторизации
-                    var syncIndicator = document.getElementById('sync-indicator');
-                    if (syncIndicator) syncIndicator.style.display = '';
+                    var syncIndicatorSess = document.getElementById('sync-indicator');
+                    if (syncIndicatorSess) syncIndicatorSess.style.display = '';
                     // Показываем мобильные элементы после авторизации
-                    var mobileRow = document.getElementById('mobile-header-row2');
-                    if (mobileRow) mobileRow.style.display = 'flex';
+                    var mobileRowSess = document.getElementById('mobile-header-row2');
+                    if (mobileRowSess) mobileRowSess.style.display = 'flex';
 
                     var user = sessionRes.data.session.user;
                     if (user) {
-                        var display = document.getElementById('username-display');
-                        if (display && user.user_metadata && user.user_metadata.username) {
-                            display.textContent = '👤 ' + user.user_metadata.username;
+                        var displayElSess = document.getElementById('username-display');
+                        if (displayElSess && user.user_metadata && user.user_metadata.username) {
+                            displayElSess.textContent = '👤 ' + user.user_metadata.username;
                             localStorage.setItem('vesta_username', user.user_metadata.username);
+                        }
+                        var sidebarUsernameSess = document.getElementById('sidebar-username');
+                        if (sidebarUsernameSess && user.user_metadata && user.user_metadata.username) {
+                            sidebarUsernameSess.textContent = '👤 ' + user.user_metadata.username;
                         }
                     }
 
