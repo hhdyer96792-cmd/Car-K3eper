@@ -22,7 +22,13 @@ App.store = {
         avgDailyMotohours: 1.8,
         telegramToken: '',
         telegramChatId: '',
-        notificationMethod: 'telegram'
+        notificationMethod: 'telegram',
+        // Новые поля автомобиля
+        carBrand: '',
+        carModel: '',
+        carYear: null,
+        plateNumber: '',
+        vin: ''
     },
 
     baseMileage: 0,
