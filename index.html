@@ -176,18 +176,34 @@
 
         <!-- 2. Панель обновления пробега и моточасов -->
         <div class="card" style="display:flex; gap:8px; align-items:center;">
-            <input type="number" id="dash-new-mileage" placeholder="Пробег, км" style="flex:1; max-width:160px;">
-            <input type="number" id="dash-new-motohours" placeholder="Моточасы, ч" style="flex:1; max-width:145px;">
+            <input type="number" id="dash-new-mileage" placeholder="Пробег, км" style="flex:1; max-width:170px;">
+            <input type="number" id="dash-new-motohours" placeholder="Моточасы, ч" style="flex:1; max-width:155px;">
             <button id="dash-update-mileage-btn" class="icon-btn primary-btn" style="width:40px; height:40px;" title="Обновить"><i data-lucide="refresh-cw"></i></button>
         </div>
 
-        <!-- 3. Четыре статистические карточки в одну строку -->
-        <div class="mobile-stats-row">
-            <div class="stat-card"><span class="stat-label">Пробег</span><span class="stat-value" id="mobile-dash-mileage">0</span><span class="stat-unit">км</span></div>
-            <div class="stat-card"><span class="stat-label">Моточасы</span><span class="stat-value" id="mobile-dash-motohours">0</span><span class="stat-unit">ч</span></div>
-            <div class="stat-card"><span class="stat-label">Ср. расход</span><span class="stat-value" id="mobile-dash-avg-consumption">0</span><span class="stat-unit">л/100км</span></div>
-            <div class="stat-card"><span class="stat-label">Затр/км</span><span class="stat-value" id="mobile-dash-cost-km">0</span><span class="stat-unit">₽/км</span></div>
-        </div>
+        <!-- 3. Сводка 2×2 -->
+<div class="card mobile-summary-grid">
+    <div class="summary-item">
+        <span class="summary-label">Пробег</span>
+        <span class="summary-value" id="mobile-dash-mileage">0</span>
+        <span class="summary-unit">км</span>
+    </div>
+    <div class="summary-item">
+        <span class="summary-label">Моточасы</span>
+        <span class="summary-value" id="mobile-dash-motohours">0</span>
+        <span class="summary-unit">ч</span>
+    </div>
+    <div class="summary-item">
+        <span class="summary-label">Ср. расход</span>
+        <span class="summary-value" id="mobile-dash-avg-consumption">0</span>
+        <span class="summary-unit">л/100км</span>
+    </div>
+    <div class="summary-item">
+        <span class="summary-label">Затр/км</span>
+        <span class="summary-value" id="mobile-dash-cost-km">0</span>
+        <span class="summary-unit">₽/км</span>
+    </div>
+</div>
 
         <!-- 4. Аккордеон "Все затраты на месяц" -->
         <div class="card accordion-card">
