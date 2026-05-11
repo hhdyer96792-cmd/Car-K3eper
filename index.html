@@ -534,80 +534,79 @@
                 <h3><i data-lucide="palette"></i> Тема</h3>
                 <button id="settings-theme-toggle" class="secondary-btn"><i data-lucide="moon"></i> Переключить тему</button>
             </div>
-            <!-- Настройки -->
-<div id="tab-settings" class="tab-content">
-     <div class="card">
-        <h3><i data-lucide="palette"></i> Тема</h3>
-        <button id="settings-theme-toggle" class="secondary-btn"><i data-lucide="moon"></i> Переключить тему</button>
-    </div>
-    <div class="card"><h3><i data-lucide="bell"></i> Уведомления</h3>
-        <label>Способ уведомлений:
-            <select id="notification-method">
-                <option value="telegram">Только Telegram</option>
-                <option value="push">Только браузер (Push)</option>
-                <option value="both">Telegram + браузер</option>
-            </select>
-        </label>
-        <div id="telegram-settings">
-            <label>Bot Token: <input type="text" id="telegram-token" placeholder="123456:ABCdef..."></label>
-            <label>Chat ID: <input type="text" id="telegram-chatid" placeholder="123456789"></label>
-        </div>
-        <label>Напомнить за (дней):</label>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="number" id="reminder-days-1" value="7" min="1" max="30" style="width: 80px;">
-            <span>и</span>
-            <input type="number" id="reminder-days-2" value="2" min="1" max="30" style="width: 80px;">
-        </div>
-        <small class="hint">Уведомления будут приходить за указанное количество дней до плановой даты.</small>
-        <div id="push-settings">
-            <p id="push-status">Push-уведомления не настроены.</p>
-            <button id="subscribe-push-btn" class="secondary-btn"><i data-lucide="bell"></i> Подписаться на уведомления</button>
-            <button id="unsubscribe-push-btn" class="secondary-btn" style="display:none;"><i data-lucide="bell-off"></i> Отписаться от уведомлений</button>
-        </div>
-        <button id="save-settings-btn" class="primary-btn"><i data-lucide="save"></i> Сохранить настройки</button>
-        <div id="settings-result"></div>
-    </div>
-    <div class="card">
-        <h3><i data-lucide="download"></i> Экспорт данных</h3>
-        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-            <label style="flex: 1; min-width: 180px;">Тип данных:
-                <select id="export-type-select" style="width: 100%;">
-                    <option value="to"> Журнал ТО</option>
-                    <option value="fuel"> Топливо</option>
-                    <option value="tires"> Шины</option>
-                    <option value="parts"> Запчасти</option>
-                    <option value="history"> История ТО</option>
-                    <option value="all"> Все данные</option>
-                </select>
-            </label>
-            <label style="flex: 0 0 auto;">Формат:
-                <select id="export-format-select" style="width: auto;">
-                    <option value="csv">CSV (csv)</option>
-                    <option value="xlsx">Excel (XLSX)</option>
-                </select>
-            </label>
-            <button id="export-data-btn" class="primary-btn"><i data-lucide="download"></i> Экспорт данных</button>
-        </div>
-        <p class="hint">CSV – подходит для просмотра в таблицах, Excel – полная резервная копия (много листов).</p>
+            <!-- Настройки (единый блок, без дублирования) -->
+        <div id="tab-settings" class="tab-content">
+            <div class="card">
+                <h3><i data-lucide="palette"></i> Тема</h3>
+                <button id="settings-theme-toggle" class="secondary-btn"><i data-lucide="moon"></i> Переключить тему</button>
+            </div>
+            <div class="card"><h3><i data-lucide="bell"></i> Уведомления</h3>
+                <label>Способ уведомлений:
+                    <select id="notification-method">
+                        <option value="telegram">Только Telegram</option>
+                        <option value="push">Только браузер (Push)</option>
+                        <option value="both">Telegram + браузер</option>
+                    </select>
+                </label>
+                <div id="telegram-settings">
+                    <label>Bot Token: <input type="text" id="telegram-token" placeholder="123456:ABCdef..."></label>
+                    <label>Chat ID: <input type="text" id="telegram-chatid" placeholder="123456789"></label>
+                </div>
+                <label>Напомнить за (дней):</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="number" id="reminder-days-1" value="7" min="1" max="30" style="width: 80px;">
+                    <span>и</span>
+                    <input type="number" id="reminder-days-2" value="2" min="1" max="30" style="width: 80px;">
+                </div>
+                <small class="hint">Уведомления будут приходить за указанное количество дней до плановой даты.</small>
+                <div id="push-settings">
+                    <p id="push-status">Push-уведомления не настроены.</p>
+                    <button id="subscribe-push-btn" class="secondary-btn"><i data-lucide="bell"></i> Подписаться на уведомления</button>
+                    <button id="unsubscribe-push-btn" class="secondary-btn" style="display:none;"><i data-lucide="bell-off"></i> Отписаться от уведомлений</button>
+                </div>
+                <button id="save-settings-btn" class="primary-btn"><i data-lucide="save"></i> Сохранить настройки</button>
+                <div id="settings-result"></div>
+            </div>
+            <div class="card">
+                <h3><i data-lucide="download"></i> Экспорт данных</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+                    <label style="flex: 1; min-width: 180px;">Тип данных:
+                        <select id="export-type-select" style="width: 100%;">
+                            <option value="to">📋 Журнал ТО</option>
+                            <option value="fuel">⛽ Топливо</option>
+                            <option value="tires">🛞 Шины</option>
+                            <option value="parts">📦 Запчасти</option>
+                            <option value="history">📜 История ТО</option>
+                            <option value="all">📁 Все данные</option>
+                        </select>
+                    </label>
+                    <label style="flex: 0 0 auto;">Формат:
+                        <select id="export-format-select" style="width: auto;">
+                            <option value="csv">CSV (csv)</option>
+                            <option value="xlsx">Excel (XLSX)</option>
+                        </select>
+                    </label>
+                    <button id="export-data-btn" class="primary-btn"><i data-lucide="download"></i> Экспорт данных</button>
+                </div>
+                <p class="hint">CSV – подходит для просмотра в таблицах, Excel – полная резервная копия (много листов).</p>
 
-        <!-- Импорт -->
-        <hr style="margin: 12px 0;">
-        <h3><i data-lucide="upload"></i> Импорт данных</h3>
-        <div id="csv-import-container"><p class="hint">Загрузка...</p></div>
-    </div>
-    
-    <div class="card">
-        <h3><i data-lucide="key"></i> Резервные коды</h3>
-        <div id="recovery-codes-container">
-            <button id="show-recovery-btn" class="secondary-btn">Показать неиспользованные коды</button>
-            <button id="gen-new-codes-btn" class="secondary-btn" style="margin-left:8px;">Сгенерировать новые</button>
-            <div id="recovery-codes-list" style="margin-top:12px;"></div>
+                <!-- Импорт -->
+                <hr style="margin: 12px 0;">
+                <h3><i data-lucide="upload"></i> Импорт данных</h3>
+                <div id="csv-import-container"><p class="hint">Загрузка...</p></div>
+            </div>
+            
+            <div class="card">
+                <h3><i data-lucide="key"></i> Резервные коды</h3>
+                <div id="recovery-codes-container">
+                    <button id="show-recovery-btn" class="secondary-btn">Показать неиспользованные коды</button>
+                    <button id="gen-new-codes-btn" class="secondary-btn" style="margin-left:8px;">Сгенерировать новые</button>
+                    <div id="recovery-codes-list" style="margin-top:12px;"></div>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-        </div>
-    </div>
-</div>
+    </div>   <!-- конец data-panel -->
+</div>   <!-- конец app-container -->
 
 <div class="mobile-bottom-nav">
     <button class="bottom-nav-item active" data-tab="dashboard"><i data-lucide="layout-dashboard"></i><span>Дашборд</span></button>
