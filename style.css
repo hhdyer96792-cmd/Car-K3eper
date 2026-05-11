@@ -585,28 +585,30 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     .mobile-only { display: block; }
 
     /* Статистические карточки в одну строку (крупнее) */
-    .mobile-stats-row {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
-    }
-    .mobile-stats-row .stat-card {
-        flex: 1;
-        padding: 12px 8px;
-        min-width: 0;
-    }
-    .mobile-stats-row .stat-value {
-        font-size: 1.4rem;
-        font-weight: 700;
-    }
-    .mobile-stats-row .stat-label {
-        font-size: 0.8rem;
-        opacity: 0.8;
-    }
-    .mobile-stats-row .stat-unit {
-        font-size: 0.8rem;
-        opacity: 0.7;
-    }
+    .mobile-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.summary-item {
+    text-align: center;
+}
+.summary-label {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+.summary-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+.summary-unit {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    display: block;
+    margin-top: 2px;
+}
 
     /* Аккордеоны */
     .accordion-card {
