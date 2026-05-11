@@ -176,13 +176,13 @@
 
         <!-- 2. Панель обновления пробега и моточасов -->
         <div class="card" style="display:flex; gap:8px; align-items:center;">
-            <input type="number" id="dash-new-mileage" placeholder="Пробег, км" style="flex:1; max-width:100px;">
-            <input type="number" id="dash-new-motohours" placeholder="Моточасы, ч" style="flex:1; max-width:100px;">
+            <input type="number" id="dash-new-mileage" placeholder="Пробег, км" style="flex:1; max-width:115px;">
+            <input type="number" id="dash-new-motohours" placeholder="Моточасы, ч" style="flex:1; max-width:115px;">
             <button id="dash-update-mileage-btn" class="icon-btn primary-btn" style="width:40px; height:40px;" title="Обновить"><i data-lucide="refresh-cw"></i></button>
         </div>
 
-        <!-- 3. Четыре статистические карточки в сетку 2×2 -->
-        <div class="mobile-stats-grid">
+        <!-- 3. Четыре статистические карточки в одну строку -->
+        <div class="mobile-stats-row">
             <div class="stat-card"><span class="stat-label">Пробег</span><span class="stat-value" id="mobile-dash-mileage">0</span><span class="stat-unit">км</span></div>
             <div class="stat-card"><span class="stat-label">Моточасы</span><span class="stat-value" id="mobile-dash-motohours">0</span><span class="stat-unit">ч</span></div>
             <div class="stat-card"><span class="stat-label">Ср. расход</span><span class="stat-value" id="mobile-dash-avg-consumption">0</span><span class="stat-unit">л/100км</span></div>
@@ -192,7 +192,7 @@
         <!-- 4. Аккордеон "Все затраты на месяц" -->
         <div class="card accordion-card">
             <div class="accordion-header" id="cost-accordion-header">
-                <span id="current-month-year"></span>
+                <span style="display:flex; align-items:center; gap:6px;"><i data-lucide="wallet"></i><span id="current-month-year" style="font-weight:600; font-size:1rem;"></span></span>
                 <i data-lucide="chevron-down" class="accordion-arrow"></i>
             </div>
             <div class="accordion-body" id="cost-accordion-body" style="display:none;">
@@ -208,7 +208,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
                 <h3 style="margin:0;"><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
                 <div style="display:flex; gap:8px;">
-                    <select id="dash-plan-period-select" style="width:auto; min-width:80px; padding:4px 6px; font-size:0.8rem;">
+                    <select id="dash-plan-period-select" style="width:auto; min-width:80px; padding:8px 6px; font-size:0.85rem;">
                         <option value="month">Месяц</option>
                         <option value="quarter">Квартал</option>
                         <option value="6months">6 месяцев</option>
