@@ -4,7 +4,7 @@ App.charts = App.charts || {};
 App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
-// === Десктопные функции (взяты из оригинального файла) ===
+// === Десктопные функции ===
 
 App.ui.pages.renderTireWearMini = function() {
     var container = document.getElementById('dash-tire-wear-container');
@@ -175,7 +175,8 @@ App.ui.pages.renderTop5Widget = function() {
 // ===== Главный рендер дашборда =====
 App.ui.pages.renderDashboard = function() {
     var dataPanel = document.getElementById('data-panel');
-    if (!dataPanel || dataPanel.style.display === 'none') return;
+    // Проверку на видимость убрали, чтобы дашборд заполнялся даже при скрытой панели
+    if (!dataPanel) return;
 
     // === Десктопная сводка ===
     var stats = App.logic.calculateStatistics('6months');
@@ -188,7 +189,6 @@ App.ui.pages.renderDashboard = function() {
     if (avgConsEl) avgConsEl.textContent = stats.avgFuelConsumption.toFixed(1);
     if (costKmEl) costKmEl.textContent = stats.costPerKm.toFixed(2);
 
-    // Режим эксплуатации (десктоп)
     var mode = App.logic.getDrivingMode();
     var modeTextEl = document.getElementById('dash-driving-mode-text');
     var modeDotEl = document.getElementById('mode-dot');
@@ -207,7 +207,6 @@ App.ui.pages.renderDashboard = function() {
         modeDotEl.className = 'mode-dot ' + modeClass;
     }
 
-    // Десктопные графики и виджеты
     if (typeof App.charts.renderMiniFuelConsumptionChart === 'function') App.charts.renderMiniFuelConsumptionChart();
     if (typeof App.charts.renderMiniCostsChart === 'function') App.charts.renderMiniCostsChart();
     if (typeof App.charts.renderMiniExpensePieChart === 'function') App.charts.renderMiniExpensePieChart();
@@ -245,7 +244,7 @@ App.ui.pages.renderDashboard = function() {
 
 // ===== Мобильный дашборд =====
 App.ui.pages.renderMobileDashboard = function() {
-    // 1. Режим эксплуатации (мобильный)
+    // 1. Режим
     var mode = App.logic.getDrivingMode();
     var modeTextMobile = document.getElementById('mobile-dash-driving-mode-text');
     var modeDotMobile = document.getElementById('mobile-mode-dot');
@@ -263,8 +262,6 @@ App.ui.pages.renderMobileDashboard = function() {
         else if (mode.text.indexOf('Смешанный') !== -1) cl = 'mixed';
         modeDotMobile.className = 'mode-dot ' + cl;
     }
-
-    // 2. Панель обновления пробега (обработчик вешается ниже)
 
     // 3. Статистические карточки
     var stats = App.logic.calculateStatistics('6months');
@@ -299,7 +296,7 @@ App.ui.pages.renderMobileDashboard = function() {
         };
     }
 
-    // 5. Планировщик ТО (мини-календарь)
+    // 5. Планировщик ТО
     var dashPlanContainer = document.getElementById('dash-plan-container');
     if (dashPlanContainer) {
         var period = document.getElementById('dash-plan-period-select')?.value || 'month';
@@ -413,7 +410,6 @@ App.ui.pages.renderMobileDashboard = function() {
         bindCalendarEvents();
         bindDayClickEvents(firstRender.eventMap);
 
-        // Кнопка "Действия"
         document.getElementById('dash-calendar-action-btn').addEventListener('click', function() {
             var period = document.getElementById('dash-plan-period-select')?.value || 'month';
             var modalContent = '<div style="display:flex; gap:12px; justify-content:center;">' +
@@ -504,7 +500,7 @@ App.ui.pages.renderMobileDashboard = function() {
         cost: function(r) { return (Number(r.parts_cost)+Number(r.work_cost)).toFixed(0) + ' ₽'; }
     }, 'to');
     renderAccordionBody('last-parts-body', App.store.parts, {
-        name: function(p) { return p.oem || p.analog || p.operation; },
+        name: function(p) { return p.oem || p.analog || p.operation || '—'; },
         cost: function(p) { return (p.price || '') + ' ₽'; }
     }, 'parts');
     renderAccordionBody('last-tires-body', App.store.tireLog, {
@@ -512,7 +508,6 @@ App.ui.pages.renderMobileDashboard = function() {
         cost: function(t) { return (Number(t.purchaseCost||0)+Number(t.mountCost||0)).toFixed(0) + ' ₽'; }
     }, 'tires');
 
-    // Обработчики аккордеонов
     document.querySelectorAll('.accordion-header[data-accordion]').forEach(function(header) {
         header.addEventListener('click', function() {
             var body = document.getElementById('last-' + header.dataset.accordion + '-body');
@@ -536,7 +531,6 @@ App.ui.pages.renderMobileDashboard = function() {
         }
     });
 
-    // Кнопка обновления пробега (мобильная)
     var updateBtn = document.getElementById('dash-update-mileage-btn');
     if (updateBtn) {
         updateBtn.removeEventListener('click', App.events.updateMileageAndAverages);
