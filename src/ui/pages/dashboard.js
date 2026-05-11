@@ -5,7 +5,6 @@ App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
 // === Десктопные функции ===
-
 App.ui.pages.renderTireWearMini = function() {
     var container = document.getElementById('dash-tire-wear-container');
     if (!container) return;
@@ -47,126 +46,83 @@ App.ui.pages.renderTireWearMini = function() {
 App.ui.pages.renderTop5Widget = function() {
     var container = document.getElementById('top5-container');
     if (!container) return;
-
     var candidates = App.store.operations.filter(function(op) {
         if (!op.intervalKm && !op.intervalMonths && !op.intervalMotohours) return false;
         var plan = App.logic.calculatePlan(op);
         return plan.daysLeft !== null && isFinite(plan.daysLeft) && plan.planDate;
     });
-
-    if (candidates.length === 0) {
-        container.innerHTML = '<p class="hint">Нет данных для отображения</p>';
-        return;
-    }
+    if (candidates.length === 0) { container.innerHTML = '<p class="hint">Нет данных</p>'; return; }
 
     var linkedPairs = App.config.LINKED_PAIRS || [];
     var groupedOps = [];
     var usedIds = new Set();
-
     candidates.forEach(function(op) {
         if (usedIds.has(op.id)) return;
         var isMainOfPair = false;
         var pair = null;
         for (var i = 0; i < linkedPairs.length; i++) {
-            if (op.name === linkedPairs[i].main) {
-                isMainOfPair = true;
-                pair = linkedPairs[i];
-                break;
-            }
+            if (op.name === linkedPairs[i].main) { isMainOfPair = true; pair = linkedPairs[i]; break; }
         }
         if (isMainOfPair) {
-            var linkedOp = candidates.find(function(o) {
-                return o.name === pair.linked && !usedIds.has(o.id);
-            });
+            var linkedOp = candidates.find(function(o) { return o.name === pair.linked && !usedIds.has(o.id); });
             if (linkedOp) {
                 var mainPlan = App.logic.calculatePlan(op);
                 var linkedPlan = App.logic.calculatePlan(linkedOp);
                 var primaryPlan = mainPlan.daysLeft <= linkedPlan.daysLeft ? mainPlan : linkedPlan;
                 var primaryOp = mainPlan.daysLeft <= linkedPlan.daysLeft ? op : linkedOp;
-                groupedOps.push({
-                    name: pair.combinedName,
-                    op: primaryOp,
-                    plan: primaryPlan,
-                    isGroup: true
-                });
-                usedIds.add(op.id);
-                usedIds.add(linkedOp.id);
-                return;
+                groupedOps.push({ name: pair.combinedName, op: primaryOp, plan: primaryPlan, isGroup: true });
+                usedIds.add(op.id); usedIds.add(linkedOp.id); return;
             }
         }
         var isLinkedInPair = false;
         for (var j = 0; j < linkedPairs.length; j++) {
-            if (op.name === linkedPairs[j].linked) {
-                isLinkedInPair = true;
-                break;
-            }
+            if (op.name === linkedPairs[j].linked) { isLinkedInPair = true; break; }
         }
         if (isLinkedInPair) {
             var mainOp = candidates.find(function(o) {
                 for (var k = 0; k < linkedPairs.length; k++) {
-                    if (linkedPairs[k].linked === op.name && o.name === linkedPairs[k].main && !usedIds.has(o.id)) {
-                        return true;
-                    }
+                    if (linkedPairs[k].linked === op.name && o.name === linkedPairs[k].main && !usedIds.has(o.id)) return true;
                 }
                 return false;
             });
             if (mainOp) return;
         }
         if (!usedIds.has(op.id)) {
-            groupedOps.push({
-                name: op.name,
-                op: op,
-                plan: App.logic.calculatePlan(op),
-                isGroup: false
-            });
+            groupedOps.push({ name: op.name, op: op, plan: App.logic.calculatePlan(op), isGroup: false });
             usedIds.add(op.id);
         }
     });
 
     var sorted = groupedOps.sort(function(a, b) { return a.plan.daysLeft - b.plan.daysLeft; });
     var top5 = sorted.slice(0, 5);
-
     var html = '';
     top5.forEach(function(item) {
-        var op = item.op;
-        var plan = item.plan;
+        var op = item.op, plan = item.plan;
         var motoFresh = true;
         if (op.name.indexOf('Масло') !== -1 && op.category.indexOf('ДВС') !== -1 && App.store.mileageHistory.length >= 1) {
             var lastEntry = App.store.mileageHistory[App.store.mileageHistory.length - 1];
             if ((App.store.settings.currentMotohours - lastEntry.motohours) > 20 ||
-                (App.store.settings.currentMileage - lastEntry.mileage) > 500) {
-                motoFresh = false;
-            }
+                (App.store.settings.currentMileage - lastEntry.mileage) > 500) motoFresh = false;
         }
         var percent = 0;
-        if (op.intervalKm && plan.planMileage > (op.lastMileage || 0)) {
+        if (op.intervalKm && plan.planMileage > (op.lastMileage || 0))
             percent = Math.min(100, Math.round((App.store.settings.currentMileage - (op.lastMileage || 0)) / (plan.planMileage - (op.lastMileage || 0)) * 100));
-        } else if (op.intervalMotohours && motoFresh && plan.recMotohours > (op.lastMotohours || 0)) {
+        else if (op.intervalMotohours && motoFresh && plan.recMotohours > (op.lastMotohours || 0))
             percent = Math.min(100, Math.round((App.store.settings.currentMotohours - (op.lastMotohours || 0)) / (plan.recMotohours - (op.lastMotohours || 0)) * 100));
-        } else if (op.intervalMonths) {
+        else if (op.intervalMonths) {
             var lastDate = op.lastDate ? new Date(op.lastDate) : new Date();
             var totalDays = op.intervalMonths * 30;
             var elapsed = Math.floor((new Date() - lastDate) / 86400000);
             percent = Math.min(100, Math.round((elapsed / totalDays) * 100));
         }
         if (percent < 0) percent = 0;
-
         var daysLeft = plan.daysLeft;
         var mileageLeft = plan.planMileage - App.store.settings.currentMileage;
         var motoLeft = plan.recMotohours ? (plan.recMotohours - App.store.settings.currentMotohours) : null;
         var statusText = daysLeft < 0 ? '⚠️ просрочено на ' + Math.abs(daysLeft) + ' дн.' : 'осталось ' + daysLeft + ' дн.';
         if (mileageLeft > 0 && op.intervalKm) statusText += ' / ' + mileageLeft + ' км';
         else if (motoLeft > 0 && op.intervalMotohours && motoFresh) statusText += ' / ' + motoLeft.toFixed(0) + ' м/ч';
-
-        html += '<div class="top5-item">' +
-            '<div class="top5-header">' +
-                '<span class="top5-name">' + App.utils.escapeHtml(item.name) + '</span>' +
-                '<span class="top5-stats">' + statusText + '</span>' +
-            '</div>' +
-            '<div class="top5-progress-container">' +
-                '<div class="top5-progress-bar" style="width: ' + percent + '%;"></div>' +
-            '</div>' +
-        '</div>';
+        html += '<div class="top5-item"><div class="top5-header"><span class="top5-name">' + App.utils.escapeHtml(item.name) + '</span><span class="top5-stats">' + statusText + '</span></div><div class="top5-progress-container"><div class="top5-progress-bar" style="width:' + percent + '%;"></div></div></div>';
     });
     container.innerHTML = html;
     App.initIcons();
@@ -177,7 +133,6 @@ App.ui.pages.renderDashboard = function() {
     var dataPanel = document.getElementById('data-panel');
     if (!dataPanel) return;
 
-    // === Десктопная сводка ===
     var stats = App.logic.calculateStatistics('6months');
     var mileageEl = document.getElementById('dash-mileage');
     var motoEl = document.getElementById('dash-motohours');
@@ -226,23 +181,23 @@ App.ui.pages.renderDashboard = function() {
             btn.className = 'icon-btn execute-dash-btn';
             btn.innerHTML = '<i data-lucide="check-circle"></i>';
             btn.title = 'Выполнить';
-            btn.addEventListener('click', function() {
-                App.ui.pages.openServiceModal(op.id, op.name);
-            });
+            btn.addEventListener('click', function() { App.ui.pages.openServiceModal(op.id, op.name); });
             item.appendChild(btn);
         });
     }
 
-    // === Мобильный дашборд ===
     if (window.innerWidth <= 767) {
         App.ui.pages.renderMobileDashboard();
     }
-
     App.initIcons();
 };
 
 // ===== Мобильный дашборд =====
 App.ui.pages.renderMobileDashboard = function() {
+    // Сбрасываем все аккордеоны
+    document.querySelectorAll('.accordion-body').forEach(function(b) { b.style.display = 'none'; });
+    document.querySelectorAll('.accordion-arrow').forEach(function(a) { a.style.transform = 'rotate(0deg)'; });
+
     // 1. Режим
     var mode = App.logic.getDrivingMode();
     var modeTextMobile = document.getElementById('mobile-dash-driving-mode-text');
@@ -295,7 +250,7 @@ App.ui.pages.renderMobileDashboard = function() {
         };
     }
 
-    // 5. Планировщик ТО
+    // 5. Планировщик ТО (календарь с пересчётом событий для выбранного месяца)
     var dashPlanContainer = document.getElementById('dash-plan-container');
     if (dashPlanContainer) {
         var period = document.getElementById('dash-plan-period-select')?.value || 'month';
@@ -305,16 +260,24 @@ App.ui.pages.renderMobileDashboard = function() {
         var displayMonth = currentDate.getMonth();
         var displayYear = currentDate.getFullYear();
 
-        function renderCalendar(year, month) {
-            var eventMap = {};
-            plan.forEach(function(op) {
+        // Функция для построения карты событий на конкретный месяц (year, month)
+        function getEventMapForMonth(year, month) {
+            var map = {};
+            App.store.operations.forEach(function(op) {
                 var pd = App.logic.calculatePlan(op);
                 if (!pd.planDate) return;
-                var key = pd.planDate;
-                if (!eventMap[key]) eventMap[key] = [];
-                eventMap[key].push({ op: op, plan: pd });
+                var d = new Date(pd.planDate);
+                if (d.getFullYear() === year && d.getMonth() === month) {
+                    var key = pd.planDate;
+                    if (!map[key]) map[key] = [];
+                    map[key].push({ op: op, plan: pd });
+                }
             });
+            return map;
+        }
 
+        function renderCalendar(year, month) {
+            var eventMap = getEventMapForMonth(year, month);
             var firstDay = new Date(year, month, 1).getDay();
             var daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -349,7 +312,7 @@ App.ui.pages.renderMobileDashboard = function() {
         var firstRender = renderCalendar(displayYear, displayMonth);
         dashPlanContainer.innerHTML = firstRender.html;
 
-        // Ближайшие события
+        // Ближайшие события (из исходного plan для периода)
         var upcomingContainer = document.getElementById('dash-upcoming-events');
         if (upcomingContainer) {
             var sortedPlan = plan.slice().sort(function(a,b) { return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft; });
@@ -369,7 +332,6 @@ App.ui.pages.renderMobileDashboard = function() {
         function bindCalendarEvents() {
             var prevBtn = dashPlanContainer.querySelector('.cal-prev-btn');
             var nextBtn = dashPlanContainer.querySelector('.cal-next-btn');
-
             if (prevBtn) {
                 prevBtn.onclick = function() {
                     if (currentMonth === 0) { currentMonth = 11; currentYear--; } else currentMonth--;
@@ -458,7 +420,6 @@ App.ui.pages.renderMobileDashboard = function() {
         return { op: op, percent: percent };
     }).filter(function(item) { return item.percent > 0; }).sort(function(a,b) { return b.percent - a.percent; });
     var top3 = withPercents.slice(0,3);
-
     var resourceContainer = document.getElementById('resource-bars-container');
     if (resourceContainer) {
         var html = '';
@@ -518,11 +479,8 @@ App.ui.pages.renderMobileDashboard = function() {
         };
     });
 
-    // Обработчики для кнопок "Больше данных"
     document.querySelectorAll('.more-btn').forEach(function(btn) {
-        btn.onclick = function() {
-            App.events.switchToTab(btn.dataset.tab);
-        };
+        btn.onclick = function() { App.events.switchToTab(btn.dataset.tab); };
     });
 
     // 8. Прогноз
@@ -543,10 +501,7 @@ App.ui.pages.renderMobileDashboard = function() {
         updateBtn.onclick = function() {
             var newMileage = parseFloat(document.getElementById('dash-new-mileage').value);
             var newMotohours = parseFloat(document.getElementById('dash-new-motohours').value);
-            if (isNaN(newMileage) || isNaN(newMotohours)) {
-                App.toast('Введите пробег и моточасы', 'warning');
-                return;
-            }
+            if (isNaN(newMileage) || isNaN(newMotohours)) { App.toast('Введите пробег и моточасы', 'warning'); return; }
             App.store.settings.currentMileage = newMileage;
             App.store.settings.currentMotohours = newMotohours;
             App.events.updateMileageAndAverages();
