@@ -162,7 +162,7 @@
         </div>
     </div>
 
-    <!-- ========== МОБИЛЬНАЯ ВЕРСИЯ (видна только на мобильных) ========== -->
+    <!-- ========== МОБИЛЬНАЯ ВЕРСИЯ ========== -->
     <div class="mobile-only" id="mobile-dashboard">
         <!-- 1. Карточка режима эксплуатации -->
         <div class="card mode-card-mobile">
@@ -208,13 +208,13 @@
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
                 <h3 style="margin:0;"><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
                 <div style="display:flex; gap:8px;">
-                    <select id="dash-plan-period-select" style="width:auto; padding:6px 8px; font-size:0.85rem;">
+                    <select id="dash-plan-period-select" style="width:auto; min-width:90px; padding:6px 8px; font-size:0.85rem;">
                         <option value="month">Месяц</option>
                         <option value="quarter">Квартал</option>
                         <option value="6months">6 месяцев</option>
                         <option value="year">Год</option>
                     </select>
-                    <button id="dash-calendar-action-btn" class="secondary-btn" style="padding:6px 10px; font-size:0.85rem;"><i data-lucide="calendar"></i> Действия</button>
+                    <button id="dash-calendar-action-btn" class="secondary-btn" style="padding:4px 8px; font-size:0.8rem;"><i data-lucide="calendar"></i> Действия</button>
                 </div>
             </div>
             <div id="dash-plan-container" style="max-height:none; overflow-y:visible;"></div>
@@ -230,19 +230,19 @@
         <!-- 7. Последние операции (четыре аккордеона) -->
         <div class="accordion-card card">
             <div class="accordion-header" data-accordion="fuel"><i data-lucide="fuel"></i> Топливо <i data-lucide="chevron-down" class="accordion-arrow"></i></div>
-            <div class="accordion-body" id="last-fuel-body"></div>
+            <div class="accordion-body" id="last-fuel-body" style="display:none;"></div>
         </div>
         <div class="accordion-card card">
             <div class="accordion-header" data-accordion="to"><i data-lucide="wrench"></i> ТО <i data-lucide="chevron-down" class="accordion-arrow"></i></div>
-            <div class="accordion-body" id="last-to-body"></div>
+            <div class="accordion-body" id="last-to-body" style="display:none;"></div>
         </div>
         <div class="accordion-card card">
             <div class="accordion-header" data-accordion="parts"><i data-lucide="package"></i> Запчасти <i data-lucide="chevron-down" class="accordion-arrow"></i></div>
-            <div class="accordion-body" id="last-parts-body"></div>
+            <div class="accordion-body" id="last-parts-body" style="display:none;"></div>
         </div>
         <div class="accordion-card card">
             <div class="accordion-header" data-accordion="tires"><i data-lucide="circle"></i> Шины <i data-lucide="chevron-down" class="accordion-arrow"></i></div>
-            <div class="accordion-body" id="last-tires-body"></div>
+            <div class="accordion-body" id="last-tires-body" style="display:none;"></div>
         </div>
 
         <!-- 8. Прогноз пробега -->
