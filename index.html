@@ -102,6 +102,7 @@
     <div id="data-panel" style="display:none;">
         <!-- Дашборд -->
 <div id="tab-dashboard" class="tab-content active">
+    <div class="desktop-only">
     <div class="dashboard-grid">
         <!-- Сводка – единицы вынесены под цифры -->
         <div class="dash-widget" id="widget-summary">
@@ -154,7 +155,93 @@
         <button id="dash-add-service-btn" class="primary-btn" title="ТО"><i data-lucide="wrench"></i></button>
     </div>
 </div>
+</div>
+<!-- ===== МОБИЛЬНЫЕ ВИДЖЕТЫ ===== -->
+            <div class="mobile-only" id="mobile-dashboard">
+                <!-- 1. Карточка режима эксплуатации (уже есть, просто перемещаем сюда) -->
+                <div class="dash-widget" id="widget-driving-mode-mobile">
+                    <div class="mode-indicator-compact" id="dash-driving-mode-compact">
+                        <div class="mode-dot" id="mode-dot"></div>
+                        <span id="dash-driving-mode-text">—</span>
+                    </div>
+                </div>
 
+                <!-- 2. Панель обновления пробега и моточасов -->
+                <div class="card" style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px;">
+                    <input type="number" id="dash-new-mileage" placeholder="Пробег, км" style="width:120px;">
+                    <input type="number" id="dash-new-motohours" placeholder="Моточасы, ч" style="width:120px;">
+                    <button id="dash-update-mileage-btn" class="icon-btn primary-btn" style="width:40px; height:40px;" title="Обновить"><i data-lucide="refresh-cw"></i></button>
+                </div>
+
+                <!-- 3. Четыре статистические карточки в горизонтальный ряд -->
+                <div class="stats-row" id="mobile-stats-row">
+                    <div class="stat-card"><span class="stat-label">Пробег</span><span class="stat-value" id="dash-mileage">0</span><span class="stat-unit">км</span></div>
+                    <div class="stat-card"><span class="stat-label">Моточасы</span><span class="stat-value" id="dash-motohours">0</span><span class="stat-unit">ч</span></div>
+                    <div class="stat-card"><span class="stat-label">Ср. расход</span><span class="stat-value" id="dash-avg-consumption">0</span><span class="stat-unit">л/100км</span></div>
+                    <div class="stat-card"><span class="stat-label">Затраты/км</span><span class="stat-value" id="dash-cost-km">0</span><span class="stat-unit">₽/км</span></div>
+                </div>
+
+                <!-- 4. Карточка «Все затраты в месяц» (аккордеон) -->
+                <div class="card accordion-card">
+                    <div class="accordion-header" id="cost-accordion-header">
+                        <span id="current-month-year"></span>
+                        <i data-lucide="chevron-down" class="accordion-arrow"></i>
+                    </div>
+                    <div class="accordion-body" id="cost-accordion-body" style="display: none;">
+                        <div class="cost-row"><span>Топливо</span><span id="total-fuel-cost-mobile">0 ₽</span></div>
+                        <div class="cost-row"><span>ТО</span><span id="total-maint-cost-mobile">0 ₽</span></div>
+                        <div class="cost-row"><span>Запчасти</span><span id="total-parts-cost-mobile">0 ₽</span></div>
+                        <div class="cost-row"><span>Шины</span><span id="total-tires-cost-mobile">0 ₽</span></div>
+                    </div>
+                </div>
+
+                <!-- 5. Планировщик ТО на дашборде -->
+                <div class="card planner-card">
+                    <h3><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
+                    <div style="display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
+                        <label style="flex:1; min-width:150px;">Период:
+                            <select id="dash-plan-period-select" style="width:100%">
+                                <option value="month">Месяц</option>
+                                <option value="quarter">Квартал</option>
+                                <option value="6months">6 месяцев</option>
+                                <option value="year">Год</option>
+                            </select>
+                        </label>
+                        <button id="dash-calendar-action-btn" class="primary-btn" style="padding:10px 14px; font-size:0.9rem;"><i data-lucide="calendar"></i> Действия</button>
+                    </div>
+                    <div id="dash-plan-container" style="max-height: 400px; overflow-y: auto;">
+                        <p class="hint">Выберите период, календарь обновится автоматически.</p>
+                    </div>
+                    <!-- Блок «Ближайшие» (до трёх событий) -->
+                    <div id="dash-upcoming-events" style="margin-top: 12px;"></div>
+                </div>
+
+                <!-- 6. Ресурс частей (три узла с прогресс-барами) -->
+                <div class="card" id="resource-widget">
+                    <h3><i data-lucide="activity"></i> Ресурс деталей</h3>
+                    <div id="resource-bars-container"></div>
+                </div>
+
+                <!-- 7. Последние операции (четыре аккордеона) -->
+                <div class="accordion-card card">
+                    <div class="accordion-header" data-accordion="fuel"><i data-lucide="fuel"></i> Топливо</div>
+                    <div class="accordion-body" id="last-fuel-body"></div>
+                </div>
+                <div class="accordion-card card">
+                    <div class="accordion-header" data-accordion="to"><i data-lucide="wrench"></i> ТО</div>
+                    <div class="accordion-body" id="last-to-body"></div>
+                </div>
+                <div class="accordion-card card">
+                    <div class="accordion-header" data-accordion="parts"><i data-lucide="package"></i> Запчасти</div>
+                    <div class="accordion-body" id="last-parts-body"></div>
+                </div>
+                <div class="accordion-card card">
+                    <div class="accordion-header" data-accordion="tires"><i data-lucide="circle"></i> Шины</div>
+                    <div class="accordion-body" id="last-tires-body"></div>
+                </div>
+            </div>
+        </div>
+        
         <!-- ТО -->
 <div id="tab-to" class="tab-content">
     <div class="stats-grid" id="stats-grid-skeleton">
