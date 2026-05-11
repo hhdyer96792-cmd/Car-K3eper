@@ -194,7 +194,9 @@ App.ui.pages.renderDashboard = function() {
 
 // ===== Мобильный дашборд =====
 App.ui.pages.renderMobileDashboard = function() {
-    // Сбрасываем все аккордеоны
+    // Восстанавливаем скролл
+    document.body.style.overflow = '';
+    // Сворачиваем все аккордеоны
     document.querySelectorAll('.accordion-body').forEach(function(b) { b.style.display = 'none'; });
     document.querySelectorAll('.accordion-arrow').forEach(function(a) { a.style.transform = 'rotate(0deg)'; });
 
@@ -217,7 +219,7 @@ App.ui.pages.renderMobileDashboard = function() {
         modeDotMobile.className = 'mode-dot ' + cl;
     }
 
-    // 3. Статистические карточки
+    // 3. Сводка
     var stats = App.logic.calculateStatistics('6months');
     document.getElementById('mobile-dash-mileage').textContent = App.store.settings.currentMileage.toLocaleString();
     document.getElementById('mobile-dash-motohours').textContent = App.store.settings.currentMotohours.toLocaleString();
@@ -250,7 +252,7 @@ App.ui.pages.renderMobileDashboard = function() {
         };
     }
 
-    // 5. Планировщик ТО (календарь с пересчётом событий для выбранного месяца)
+    // 5. Планировщик ТО
     var dashPlanContainer = document.getElementById('dash-plan-container');
     if (dashPlanContainer) {
         var period = document.getElementById('dash-plan-period-select')?.value || 'month';
@@ -260,7 +262,7 @@ App.ui.pages.renderMobileDashboard = function() {
         var displayMonth = currentDate.getMonth();
         var displayYear = currentDate.getFullYear();
 
-        // Функция для построения карты событий на конкретный месяц (year, month)
+        // Функция получения событий для конкретного месяца (year, month)
         function getEventMapForMonth(year, month) {
             var map = {};
             App.store.operations.forEach(function(op) {
@@ -312,7 +314,7 @@ App.ui.pages.renderMobileDashboard = function() {
         var firstRender = renderCalendar(displayYear, displayMonth);
         dashPlanContainer.innerHTML = firstRender.html;
 
-        // Ближайшие события (из исходного plan для периода)
+        // Ближайшие события
         var upcomingContainer = document.getElementById('dash-upcoming-events');
         if (upcomingContainer) {
             var sortedPlan = plan.slice().sort(function(a,b) { return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft; });
@@ -435,7 +437,7 @@ App.ui.pages.renderMobileDashboard = function() {
     }
 
     // 7. Последние операции
-    function renderAccordionBody(id, data, fields, tab) {
+    function renderAccordionBody(id, data, fields, tab, showDate) {
         var body = document.getElementById(id);
         if (!body) return;
         var latest = data.slice().sort(function(a,b) { return new Date(b.date) - new Date(a.date); }).slice(0,3);
@@ -444,7 +446,8 @@ App.ui.pages.renderMobileDashboard = function() {
             html = '<p class="hint">Нет данных</p>';
         } else {
             latest.forEach(function(rec) {
-                html += '<div class="last-row"><span>' + rec.date + '</span><span>' + fields.name(rec) + '</span><span>' + (fields.cost(rec) || '') + '</span></div>';
+                var dateHtml = (showDate !== false) ? '<span>' + (rec.date || '') + '</span>' : '';
+                html += '<div class="last-row">' + dateHtml + '<span>' + fields.name(rec) + '</span><span>' + (fields.cost(rec) || '') + '</span></div>';
             });
             html += '<button class="secondary-btn more-btn" data-tab="' + tab + '">Больше данных</button>';
         }
@@ -459,10 +462,11 @@ App.ui.pages.renderMobileDashboard = function() {
         name: function(r) { var op = App.store.operations.find(function(o) { return o.id == r.operation_id; }); return op ? op.name : 'Неизвестно'; },
         cost: function(r) { return (Number(r.parts_cost)+Number(r.work_cost)).toFixed(0) + ' ₽'; }
     }, 'to');
+    // Запчасти без даты
     renderAccordionBody('last-parts-body', App.store.parts, {
         name: function(p) { return p.oem || p.analog || p.operation || '—'; },
         cost: function(p) { return (p.price || '') + ' ₽'; }
-    }, 'parts');
+    }, 'parts', false);
     renderAccordionBody('last-tires-body', App.store.tireLog, {
         name: function(t) { return t.type || 'Шины'; },
         cost: function(t) { return (Number(t.purchaseCost||0)+Number(t.mountCost||0)).toFixed(0) + ' ₽'; }
@@ -495,8 +499,8 @@ App.ui.pages.renderMobileDashboard = function() {
         }
     };
 
-    // Кнопка обновления пробега
-    var updateBtn = document.getElementById('dash-update-mileage-btn');
+    // Кнопка обновления пробега (мобильная, уникальный ID)
+    var updateBtn = document.getElementById('mobile-dash-update-mileage-btn');
     if (updateBtn) {
         updateBtn.onclick = function() {
             var newMileage = parseFloat(document.getElementById('dash-new-mileage').value);
