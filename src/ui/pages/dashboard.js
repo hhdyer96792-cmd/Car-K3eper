@@ -8,7 +8,7 @@ App.ui.pages.renderDashboard = function() {
     var dataPanel = document.getElementById('data-panel');
     if (!dataPanel || dataPanel.style.display === 'none') return;
 
-    // ===== Десктопная сводка (без изменений) =====
+    // ===== Десктопная сводка =====
     var stats = App.logic.calculateStatistics('6months');
     var mileageEl = document.getElementById('dash-mileage');
     var motoEl = document.getElementById('dash-motohours');
@@ -42,7 +42,6 @@ App.ui.pages.renderDashboard = function() {
     if (typeof App.charts.renderMiniFuelConsumptionChart === 'function') App.charts.renderMiniFuelConsumptionChart();
     if (typeof App.charts.renderMiniCostsChart === 'function') App.charts.renderMiniCostsChart();
     if (typeof App.charts.renderMiniExpensePieChart === 'function') App.charts.renderMiniExpensePieChart();
-    App.ui.pages.renderTireWearMini();
     App.ui.pages.renderTop5Widget();
     var top5Container = document.getElementById('top5-container');
     var dashUpcoming = document.getElementById('dash-upcoming-container');
@@ -128,7 +127,7 @@ App.ui.pages.renderMobileDashboard = function() {
         };
     }
 
-    // 5. Планировщик ТО (мини-календарь) – полная реализация без сокращений
+    // 5. Планировщик ТО (мини-календарь)
     var dashPlanContainer = document.getElementById('dash-plan-container');
     if (dashPlanContainer) {
         var period = document.getElementById('dash-plan-period-select')?.value || 'month';
@@ -196,7 +195,6 @@ App.ui.pages.renderMobileDashboard = function() {
             upcomingContainer.innerHTML = upcomingHtml;
         }
 
-        // Навигация календаря (ПОЛНАЯ РЕАЛИЗАЦИЯ, без сокращений)
         var currentYear = displayYear;
         var currentMonth = displayMonth;
 
@@ -209,7 +207,7 @@ App.ui.pages.renderMobileDashboard = function() {
                     if (currentMonth === 0) { currentMonth = 11; currentYear--; } else currentMonth--;
                     var rend = renderCalendar(currentYear, currentMonth);
                     dashPlanContainer.innerHTML = rend.html;
-                    bindCalendarEvents(); // перепривязываем события
+                    bindCalendarEvents();
                     bindDayClickEvents(rend.eventMap);
                 });
             }
@@ -243,7 +241,7 @@ App.ui.pages.renderMobileDashboard = function() {
         bindCalendarEvents();
         bindDayClickEvents(firstRender.eventMap);
 
-        // Кнопка "Действия" (календарь)
+        // Кнопка "Действия"
         document.getElementById('dash-calendar-action-btn').addEventListener('click', function() {
             var period = document.getElementById('dash-plan-period-select')?.value || 'month';
             var modalContent = '<div style="display:flex; gap:12px; justify-content:center;">' +
@@ -271,9 +269,8 @@ App.ui.pages.renderMobileDashboard = function() {
             });
         });
 
-        // Обработчик изменения периода
         document.getElementById('dash-plan-period-select').addEventListener('change', function() {
-            App.ui.pages.renderMobileDashboard(); // перерисовать весь мобильный дашборд
+            App.ui.pages.renderMobileDashboard();
         });
     }
 
