@@ -175,7 +175,6 @@ App.ui.pages.renderTop5Widget = function() {
 // ===== Главный рендер дашборда =====
 App.ui.pages.renderDashboard = function() {
     var dataPanel = document.getElementById('data-panel');
-    // Проверку на видимость убрали, чтобы дашборд заполнялся даже при скрытой панели
     if (!dataPanel) return;
 
     // === Десктопная сводка ===
@@ -372,28 +371,28 @@ App.ui.pages.renderMobileDashboard = function() {
             var nextBtn = dashPlanContainer.querySelector('.cal-next-btn');
 
             if (prevBtn) {
-                prevBtn.addEventListener('click', function() {
+                prevBtn.onclick = function() {
                     if (currentMonth === 0) { currentMonth = 11; currentYear--; } else currentMonth--;
                     var rend = renderCalendar(currentYear, currentMonth);
                     dashPlanContainer.innerHTML = rend.html;
                     bindCalendarEvents();
                     bindDayClickEvents(rend.eventMap);
-                });
+                };
             }
             if (nextBtn) {
-                nextBtn.addEventListener('click', function() {
+                nextBtn.onclick = function() {
                     if (currentMonth === 11) { currentMonth = 0; currentYear++; } else currentMonth++;
                     var rend = renderCalendar(currentYear, currentMonth);
                     dashPlanContainer.innerHTML = rend.html;
                     bindCalendarEvents();
                     bindDayClickEvents(rend.eventMap);
-                });
+                };
             }
         }
 
         function bindDayClickEvents(eventMap) {
             dashPlanContainer.querySelectorAll('.cal-day:not(.empty)').forEach(function(dayEl) {
-                dayEl.addEventListener('click', function() {
+                dayEl.onclick = function() {
                     var date = dayEl.dataset.date;
                     var events = eventMap[date] || [];
                     if (events.length === 0) return;
@@ -403,21 +402,21 @@ App.ui.pages.renderMobileDashboard = function() {
                     });
                     listHtml += '</ul>';
                     App.ui.createModal('События на ' + App.utils.isoToDDMMYYYY(date), listHtml);
-                });
+                };
             });
         }
 
         bindCalendarEvents();
         bindDayClickEvents(firstRender.eventMap);
 
-        document.getElementById('dash-calendar-action-btn').addEventListener('click', function() {
+        document.getElementById('dash-calendar-action-btn').onclick = function() {
             var period = document.getElementById('dash-plan-period-select')?.value || 'month';
             var modalContent = '<div style="display:flex; gap:12px; justify-content:center;">' +
                 '<button id="modal-download-ics" class="primary-btn"><i data-lucide="download"></i> Скачать</button>' +
                 '<button id="modal-subscribe-cal" class="secondary-btn"><i data-lucide="calendar-plus"></i> Подписаться</button>' +
                 '</div>';
             var modal = App.ui.createModal('Выберите действие', modalContent);
-            document.getElementById('modal-download-ics').addEventListener('click', function() {
+            document.getElementById('modal-download-ics').onclick = function() {
                 modal.remove();
                 var plan = App.logic.generateMaintenancePlan(period);
                 var icsContent = generateICS(plan);
@@ -429,17 +428,17 @@ App.ui.pages.renderMobileDashboard = function() {
                 link.click();
                 document.body.removeChild(link);
                 App.toast('Календарь скачан', 'success');
-            });
-            document.getElementById('modal-subscribe-cal').addEventListener('click', function() {
+            };
+            document.getElementById('modal-subscribe-cal').onclick = function() {
                 modal.remove();
                 if (typeof App.ui.pages.subscribeToCalendar === 'function') App.ui.pages.subscribeToCalendar();
                 else App.toast('Функция подписки недоступна', 'error');
-            });
-        });
+            };
+        };
 
-        document.getElementById('dash-plan-period-select').addEventListener('change', function() {
+        document.getElementById('dash-plan-period-select').onchange = function() {
             App.ui.pages.renderMobileDashboard();
-        });
+        };
     }
 
     // 6. Ресурс деталей
@@ -509,18 +508,25 @@ App.ui.pages.renderMobileDashboard = function() {
     }, 'tires');
 
     document.querySelectorAll('.accordion-header[data-accordion]').forEach(function(header) {
-        header.addEventListener('click', function() {
+        header.onclick = function() {
             var body = document.getElementById('last-' + header.dataset.accordion + '-body');
             if (!body) return;
             var visible = body.style.display === 'block';
             body.style.display = visible ? 'none' : 'block';
             var arrow = header.querySelector('.accordion-arrow');
             if (arrow) arrow.style.transform = visible ? 'rotate(0deg)' : 'rotate(180deg)';
-        });
+        };
+    });
+
+    // Обработчики для кнопок "Больше данных"
+    document.querySelectorAll('.more-btn').forEach(function(btn) {
+        btn.onclick = function() {
+            App.events.switchToTab(btn.dataset.tab);
+        };
     });
 
     // 8. Прогноз
-    document.getElementById('calc-prediction-btn-mobile').addEventListener('click', function() {
+    document.getElementById('calc-prediction-btn-mobile').onclick = function() {
         var target = parseFloat(document.getElementById('prediction-target-mobile')?.value);
         if (isNaN(target)) return;
         var result = App.logic.predictMileageDate(target);
@@ -529,12 +535,12 @@ App.ui.pages.renderMobileDashboard = function() {
             if (result) resultEl.textContent = 'Ожидаемая дата: ' + result.toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' });
             else resultEl.textContent = 'Недостаточно данных или некорректный пробег.';
         }
-    });
+    };
 
+    // Кнопка обновления пробега
     var updateBtn = document.getElementById('dash-update-mileage-btn');
     if (updateBtn) {
-        updateBtn.removeEventListener('click', App.events.updateMileageAndAverages);
-        updateBtn.addEventListener('click', function() {
+        updateBtn.onclick = function() {
             var newMileage = parseFloat(document.getElementById('dash-new-mileage').value);
             var newMotohours = parseFloat(document.getElementById('dash-new-motohours').value);
             if (isNaN(newMileage) || isNaN(newMotohours)) {
@@ -544,6 +550,6 @@ App.ui.pages.renderMobileDashboard = function() {
             App.store.settings.currentMileage = newMileage;
             App.store.settings.currentMotohours = newMotohours;
             App.events.updateMileageAndAverages();
-        });
+        };
     }
 };
