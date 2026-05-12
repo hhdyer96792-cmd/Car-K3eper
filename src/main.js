@@ -562,27 +562,35 @@
             });
         }
 
-        window.addEventListener('online', function() {
-            App.toast('Сеть восстановлена', 'success');
-            if (App.store.pendingActions.length > 0) {
-                App.toast('Синхронизация офлайн-изменений...', 'info');
-                App.store.pendingActions.forEach(function(action) {
-                    if (action.type === 'service') {
-                        App.logic.addServiceRecord(
-                            action.opId, action.date, action.mileage, action.motohours,
-                            action.partsCost, action.workCost, action.isDIY, action.notes, action.photoUrl
-                        );
-                    }
-                });
-                App.store.clearPendingActions();
-            }
-            handleOnlineSession();
-        });
-        window.addEventListener('offline', function() {
-            App.toast('Вы офлайн', 'warning');
-        });
+        var isInitialized = false;
 
+    window.addEventListener('online', function() {
+        if (isInitialized) return;
+        isInitialized = true;
+        App.toast('Сеть восстановлена', 'success');
+        if (App.store.pendingActions.length > 0) {
+            App.toast('Синхронизация офлайн-изменений...', 'info');
+            App.store.pendingActions.forEach(function(action) {
+                if (action.type === 'service') {
+                    App.logic.addServiceRecord(
+                        action.opId, action.date, action.mileage, action.motohours,
+                        action.partsCost, action.workCost, action.isDIY, action.notes, action.photoUrl
+                    );
+                }
+            });
+            App.store.clearPendingActions();
+        }
         handleOnlineSession();
+    });
+
+    window.addEventListener('offline', function() {
+        App.toast('Вы офлайн', 'warning');
+    });
+
+    if (!isInitialized) {
+        isInitialized = true;
+        handleOnlineSession();
+    }
 
         // ==================== РЕГИСТРАЦИЯ СЕРВИС‑ВОРКЕРА ====================
         if ('serviceWorker' in navigator) {
