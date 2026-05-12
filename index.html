@@ -262,7 +262,12 @@
 
    <!-- ТО (переработан) -->
 <div id="tab-to" class="tab-content">
-    <!-- 1. Объединённая статистика 2×2 -->
+    <!-- 1. Блок: всего затрат и статистика (в ряд на десктопе) -->
+<div class="to-top-row">
+    <div class="card to-total-cost-card" id="to-total-cost-card">
+        <h3><i data-lucide="dollar-sign"></i> Всего затрат на ТО</h3>
+        <div class="total-cost-value" id="to-total-cost-value">0 ₽</div>
+    </div>
     <div class="card to-stats-card" id="to-stats-card">
         <div class="to-stats-grid">
             <div class="stat-item"><span class="stat-label">Пробег</span><span class="stat-value" id="to-mileage">0</span><span class="stat-unit">км</span></div>
@@ -271,6 +276,7 @@
             <div class="stat-item"><span class="stat-label">Ср. м/ч/день</span><span class="stat-value" id="to-avg-motohours">1.65</span><span class="stat-unit">ч</span></div>
         </div>
     </div>
+</div>
 
     <!-- 2. Прогресс-бары ресурса деталей -->
     <div class="card" id="to-resource-bars">
