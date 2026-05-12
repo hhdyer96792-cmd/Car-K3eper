@@ -591,3 +591,51 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
         margin-bottom: 16px;
     }
 }
+/* ==================== Вкладка ТО ==================== */
+.to-stats-card {
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.to-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+}
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+.stat-item .stat-label {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    margin-bottom: 2px;
+}
+.stat-item .stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+.stat-item .stat-unit {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+#to-resource-bars .progress-bar-container {
+    height: 10px;
+    margin: 8px 0;
+}
+#to-resource-bars .resource-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+#to-resource-bars .resource-name {
+    flex: 1;
+}
+#to-resource-bars .resource-percent {
+    margin-left: 12px;
+    font-weight: 600;
+}
+
