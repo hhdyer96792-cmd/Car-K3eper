@@ -329,7 +329,7 @@ App.ui.pages.renderFuelConsumptionHistogram = function(period) {
     });
 };
 
-// ---------- Круговая: затраты по типу ----------
+// Круговая: затраты по типу топлива
 App.ui.pages.renderFuelCostPie = function(period) {
     var canvas = document.getElementById('fuelCostPieChart');
     if (!canvas) return;
@@ -346,14 +346,21 @@ App.ui.pages.renderFuelCostPie = function(period) {
     });
     var labels = Object.keys(typeCost);
     var data = labels.map(function(l) { return typeCost[l]; });
-    var colors = ['#E53935', '#FF8C00', '#0072CE', '#A6CE39'];
+    // Фиксированное соответствие цветов
+    var colorMap = {
+        'Бензин': '#E53935',
+        'Дизель': '#FF8C00',
+        'Газ (ГБО)': '#0072CE',
+        'Электричество': '#A6CE39'
+    };
+    var backgroundColor = labels.map(function(l) { return colorMap[l] || '#888'; });
     if (labels.length === 0) return;
     var ctx = canvas.getContext('2d');
     App.charts._fuelCostPie = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: labels,
-            datasets: [{ data: data, backgroundColor: colors.slice(0, labels.length) }]
+            datasets: [{ data: data, backgroundColor: backgroundColor }]
         },
         options: {
             responsive: true,
@@ -363,7 +370,7 @@ App.ui.pages.renderFuelCostPie = function(period) {
     });
 };
 
-// ---------- Круговая: расход (литры) по типу ----------
+// Круговая: расход (литры) по типу топлива
 App.ui.pages.renderFuelVolumePie = function(period) {
     var canvas = document.getElementById('fuelVolumePieChart');
     if (!canvas) return;
@@ -380,14 +387,20 @@ App.ui.pages.renderFuelVolumePie = function(period) {
     });
     var labels = Object.keys(typeLiters);
     var data = labels.map(function(l) { return typeLiters[l]; });
-    var colors = ['#E53935', '#FF8C00', '#0072CE', '#A6CE39'];
+    var colorMap = {
+        'Бензин': '#E53935',
+        'Дизель': '#FF8C00',
+        'Газ (ГБО)': '#0072CE',
+        'Электричество': '#A6CE39'
+    };
+    var backgroundColor = labels.map(function(l) { return colorMap[l] || '#888'; });
     if (labels.length === 0) return;
     var ctx = canvas.getContext('2d');
     App.charts._fuelVolumePie = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: labels,
-            datasets: [{ data: data, backgroundColor: colors.slice(0, labels.length) }]
+            datasets: [{ data: data, backgroundColor: backgroundColor }]
         },
         options: {
             responsive: true,
