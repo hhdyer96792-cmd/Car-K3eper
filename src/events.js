@@ -223,12 +223,17 @@ App.events.switchToTab = function(tabId) {
             if (typeof App.ui.pages.renderDashboard === 'function') App.ui.pages.renderDashboard();
             break;
         case 'to':
-    if (typeof App.ui.pages.renderTOStats === 'function') App.ui.pages.renderTOStats();
-    if (typeof App.ui.pages.renderResourceBars === 'function') App.ui.pages.renderResourceBars();
-    if (typeof App.ui.pages.renderTOCostChart === 'function') App.ui.pages.renderTOCostChart();
-    if (typeof App.ui.pages.renderTOCategoryPieChart === 'function') App.ui.pages.renderTOCategoryPieChart();
-    if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
-    break;
+            (async function() {
+                if (!App.store.operations || App.store.operations.length === 0) {
+                    await App.storage.loadAllData();
+                }
+                if (typeof App.ui.pages.renderTOStats === 'function') App.ui.pages.renderTOStats();
+                if (typeof App.ui.pages.renderResourceBars === 'function') App.ui.pages.renderResourceBars();
+                if (typeof App.ui.pages.renderTOCostChart === 'function') App.ui.pages.renderTOCostChart();
+                if (typeof App.ui.pages.renderTOCategoryPieChart === 'function') App.ui.pages.renderTOCategoryPieChart();
+                if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
+            })();
+            break;
         case 'stats':
             if (typeof App.ui.pages.renderStats === 'function') App.ui.pages.renderStats();
             if (typeof App.ui.pages.renderFuelAnalytics === 'function') App.ui.pages.renderFuelAnalytics();
@@ -246,7 +251,7 @@ App.events.switchToTab = function(tabId) {
         case 'parts':
             if (typeof App.ui.pages.renderPartsTable === 'function') App.ui.pages.renderPartsTable();
             break;
-        case 'car':                               // Новая вкладка
+        case 'car':
             if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
             break;
         case 'settings':
@@ -315,12 +320,6 @@ App.events.toggleTheme = function() {
 App.events.initDirectListeners = function() {
     var addOperationBtn = document.getElementById('add-operation-btn');
     if (addOperationBtn) addOperationBtn.addEventListener('click', function() { App.ui.pages.openOperationForm(null); });
-
-    var recalculateBtn = document.getElementById('recalculate-btn');
-    if (recalculateBtn) recalculateBtn.addEventListener('click', function() {
-        App.ui.pages.renderTOTable();
-        App.ui.pages.renderResourceBars();
-    });
 
     var exportBtn = document.getElementById('export-btn');
     if (exportBtn) exportBtn.addEventListener('click', App.ui.pages.exportToExcelAll);
@@ -412,44 +411,6 @@ App.events.initDirectListeners = function() {
             if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
         });
     });
-
-    // Кнопка "Календарь" на вкладке ТО (ICS)
-    var calendarActionBtn = document.getElementById('calendar-action-btn');
-    if (calendarActionBtn) {
-        calendarActionBtn.addEventListener('click', function() {
-            // period по умолчанию месяц (можно взять из селекта, если есть)
-            var periodSelect = document.getElementById('plan-period-select');
-            var period = periodSelect ? periodSelect.value : 'month';
-            var modalContent = '<div style="display:flex; gap:12px; justify-content:center;">' +
-                '<button id="modal-download-ics" class="primary-btn"><i data-lucide="download"></i> Скачать</button>' +
-                '<button id="modal-subscribe-cal" class="secondary-btn"><i data-lucide="calendar-plus"></i> Подписаться</button>' +
-                '</div>';
-            var modal = App.ui.createModal('Выберите действие', modalContent);
-
-            document.getElementById('modal-download-ics').addEventListener('click', function() {
-                modal.remove();
-                var plan = App.logic.generateMaintenancePlan(period);
-                var icsContent = generateICS(plan);
-                var blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                var link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = 'vesta_plan_' + new Date().toISOString().slice(0,10) + '.ics';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                App.toast('Календарь скачан', 'success');
-            });
-
-            document.getElementById('modal-subscribe-cal').addEventListener('click', function() {
-                modal.remove();
-                if (typeof App.ui.pages.subscribeToCalendar === 'function') {
-                    App.ui.pages.subscribeToCalendar();
-                } else {
-                    App.toast('Функция подписки недоступна', 'error');
-                }
-            });
-        });
-    }
 
     // Слушатель периода гистограммы затрат на ТО
     var toCostPeriod = document.getElementById('to-cost-period');
