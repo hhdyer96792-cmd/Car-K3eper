@@ -63,17 +63,23 @@ App.ui.pages.renderResourceBars = function() {
 };
 
 // 3. Гистограмма затрат на ТО
-App.ui.pages.renderTOCostChart = function() {
+ App.ui.pages.renderTOCostChart = function() {
     var period = document.getElementById('to-cost-period')?.value || 'month';
     var canvas = document.getElementById('toCostChart');
     if (!canvas) return;
     if (App.charts._toCostChart) App.charts._toCostChart.destroy();
 
+    var records = App.store.serviceRecords.slice().filter(function(r) { return r.date; });
+    if (records.length === 0) {
+        var chartCard = canvas.closest('.chart-card');
+        if (chartCard) chartCard.innerHTML = '<h3><i data-lucide="bar-chart-3"></i> Затраты на ТО</h3><p class="hint">Нет данных</p>';
+        App.initIcons();
+        return;
+    }
+
     var now = new Date();
     var data = [];
     var labels = [];
-    var records = App.store.serviceRecords.slice().filter(function(r) { return r.date; });
-
     if (period === 'month') {
         for (var w = 0; w < 4; w++) {
             var start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() || 7) + 1 - (3 - w) * 7);
@@ -130,6 +136,13 @@ App.ui.pages.renderTOCategoryPieChart = function() {
     var canvas = document.getElementById('toCategoryPieChart');
     if (!canvas) return;
     if (App.charts._toCategoryPieChart) App.charts._toCategoryPieChart.destroy();
+
+    if (App.store.serviceRecords.length === 0) {
+        var chartCard = canvas.closest('.chart-card');
+        if (chartCard) chartCard.innerHTML = '<h3><i data-lucide="pie-chart"></i> Затраты по категориям</h3><p class="hint">Нет данных</p>';
+        App.initIcons();
+        return;
+    }
 
     var categoryCosts = {};
     App.store.serviceRecords.forEach(function(rec) {
