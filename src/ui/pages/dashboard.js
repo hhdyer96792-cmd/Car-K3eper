@@ -438,54 +438,59 @@ App.ui.pages.renderMobileDashboard = function() {
     }
 
     // 7. Последние операции
-    function renderAccordionBody(id, data, fields, tab, showDate) {
-        var body = document.getElementById(id);
-        if (!body) return;
-        var latest = data.slice().sort(function(a,b) { return new Date(b.date) - new Date(a.date); }).slice(0,3);
-        var html = '';
-        if (latest.length === 0) {
-            html = '<p class="hint">Нет данных</p>';
-        } else {
-            latest.forEach(function(rec) {
-                var dateHtml = (showDate !== false) ? '<span>' + (rec.date || '') + '</span>' : '';
-                html += '<div class="last-row">' + dateHtml + '<span>' + fields.name(rec) + '</span><span>' + (fields.cost(rec) || '') + '</span></div>';
-            });
-            html += '<button class="secondary-btn more-btn" data-tab="' + tab + '">Больше данных</button>';
-        }
-        body.innerHTML = html;
+function renderAccordionBody(id, data, fields, tab, showDate, dateField) {
+    dateField = dateField || 'date';
+    var body = document.getElementById(id);
+    if (!body) return;
+    var latest = data.slice().sort(function(a, b) {
+        var da = new Date(a[dateField]);
+        var db = new Date(b[dateField]);
+        return db - da;
+    }).slice(0, 3);
+    var html = '';
+    if (latest.length === 0) {
+        html = '<p class="hint">Нет данных</p>';
+    } else {
+        latest.forEach(function(rec) {
+            var dateHtml = (showDate !== false) ? '<span>' + (rec[dateField] || '') + '</span>' : '';
+            html += '<div class="last-row">' + dateHtml + '<span>' + fields.name(rec) + '</span><span>' + (fields.cost(rec) || '') + '</span></div>';
+        });
+        html += '<button class="secondary-btn more-btn" data-tab="' + tab + '">Больше данных</button>';
     }
+    body.innerHTML = html;
+}
 
-    renderAccordionBody('last-fuel-body', App.store.fuelLog, {
-        name: function(f) { return f.fuelType || 'Бензин'; },
-        cost: function(f) { return (f.liters * f.pricePerLiter).toFixed(0) + ' ₽'; }
-    }, 'fuel');
-    renderAccordionBody('last-to-body', App.store.serviceRecords, {
-        name: function(r) { var op = App.store.operations.find(function(o) { return o.id == r.operation_id; }); return op ? op.name : 'Неизвестно'; },
-        cost: function(r) { return (Number(r.parts_cost)+Number(r.work_cost)).toFixed(0) + ' ₽'; }
-    }, 'to');
-    renderAccordionBody('last-parts-body', App.store.parts, {
-        name: function(p) { return p.oem || p.analog || p.operation || '—'; },
-        cost: function(p) { return (p.price || '') + ' ₽'; }
-    }, 'parts', false);
-    renderAccordionBody('last-tires-body', App.store.tireLog, {
-        name: function(t) { return t.type || 'Шины'; },
-        cost: function(t) { return (Number(t.purchaseCost||0)+Number(t.mountCost||0)).toFixed(0) + ' ₽'; }
-    }, 'tires');
+renderAccordionBody('last-fuel-body', App.store.fuelLog, {
+    name: function(f) { return f.fuelType || 'Бензин'; },
+    cost: function(f) { return (f.liters * f.pricePerLiter).toFixed(0) + ' ₽'; }
+}, 'fuel');
+renderAccordionBody('last-to-body', App.store.serviceRecords, {
+    name: function(r) { var op = App.store.operations.find(function(o) { return o.id == r.operation_id; }); return op ? op.name : 'Неизвестно'; },
+    cost: function(r) { return (Number(r.parts_cost)+Number(r.work_cost)).toFixed(0) + ' ₽'; }
+}, 'to');
+renderAccordionBody('last-parts-body', App.store.parts, {
+    name: function(p) { return p.oem || p.analog || p.operation || '—'; },
+    cost: function(p) { return (p.price || '') + ' ₽'; }
+}, 'parts', true, 'dateAdded');   // ← показываем дату, поле даты — dateAdded
+renderAccordionBody('last-tires-body', App.store.tireLog, {
+    name: function(t) { return t.type || 'Шины'; },
+    cost: function(t) { return (Number(t.purchaseCost||0)+Number(t.mountCost||0)).toFixed(0) + ' ₽'; }
+}, 'tires');
 
-    document.querySelectorAll('.accordion-header[data-accordion]').forEach(function(header) {
-        header.onclick = function() {
-            var body = document.getElementById('last-' + header.dataset.accordion + '-body');
-            if (!body) return;
-            var visible = body.style.display === 'block';
-            body.style.display = visible ? 'none' : 'block';
-            var arrow = header.querySelector('.accordion-arrow');
-            if (arrow) arrow.style.transform = visible ? 'rotate(0deg)' : 'rotate(180deg)';
-        };
-    });
+document.querySelectorAll('.accordion-header[data-accordion]').forEach(function(header) {
+    header.onclick = function() {
+        var body = document.getElementById('last-' + header.dataset.accordion + '-body');
+        if (!body) return;
+        var visible = body.style.display === 'block';
+        body.style.display = visible ? 'none' : 'block';
+        var arrow = header.querySelector('.accordion-arrow');
+        if (arrow) arrow.style.transform = visible ? 'rotate(0deg)' : 'rotate(180deg)';
+    };
+});
 
-    document.querySelectorAll('.more-btn').forEach(function(btn) {
-        btn.onclick = function() { App.events.switchToTab(btn.dataset.tab); };
-    });
+document.querySelectorAll('.more-btn').forEach(function(btn) {
+    btn.onclick = function() { App.events.switchToTab(btn.dataset.tab); };
+});
 
     // 8. Прогноз
     document.getElementById('calc-prediction-btn-mobile').onclick = function() {
