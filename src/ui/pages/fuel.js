@@ -5,10 +5,9 @@ App.ui.pages = App.ui.pages || {};
 
 App.ui.pages._fuelPeriod = 'month';
 
+// ---------- Главная точка входа ----------
 App.ui.pages.renderFuelTab = function() {
-    // Проверка наличия данных
     if (!App.store.fuelLog || App.store.fuelLog.length === 0) {
-        // Скрываем аналитические блоки
         ['fuel-summary-card', 'fuel-period-switch'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -24,7 +23,6 @@ App.ui.pages.renderFuelTab = function() {
         if (cardsContainer) cardsContainer.innerHTML = '<p class="hint">Нет данных</p>';
         return;
     } else {
-        // Показать скрытые ранее блоки
         ['fuel-summary-card', 'fuel-period-switch'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = '';
@@ -44,7 +42,7 @@ App.ui.pages.renderFuelTab = function() {
     App.ui.pages.renderFuelCards();
 };
 
-// Сводная карточка 2×2
+// ---------- Сводка 2×2 ----------
 App.ui.pages.renderFuelSummary = function() {
     var logs = App.store.fuelLog || [];
     if (logs.length === 0) {
@@ -63,14 +61,13 @@ App.ui.pages.renderFuelSummary = function() {
         var mileage = parseFloat(f.mileage) || 0;
         totalLiters += lit;
         totalCost += lit * price;
-        if (mileage > totalMileage) totalMileage = mileage; // общий пробег = максимальный встреченный (упрощение)
+        if (mileage > totalMileage) totalMileage = mileage;
         var t = f.fuelType || 'Бензин';
         if (!typeLiters[t]) { typeLiters[t] = 0; typeCost[t] = 0; }
         typeLiters[t] += lit;
         typeCost[t] += lit * price;
     });
 
-    // Средний расход (среднее арифметическое по типам)
     var sumConsumption = 0, typeCount = 0;
     for (var t in typeLiters) {
         if (typeLiters[t] > 0 && totalMileage > 0) {
@@ -87,7 +84,7 @@ App.ui.pages.renderFuelSummary = function() {
     document.getElementById('fuel-cost-per-km').textContent = costPerKm;
 };
 
-// Переключатель периода
+// ---------- Переключатель периода ----------
 App.ui.pages.renderFuelPeriodSwitch = function() {
     var container = document.getElementById('fuel-period-switch');
     if (!container) return;
@@ -105,7 +102,7 @@ App.ui.pages.renderFuelPeriodSwitch = function() {
     });
 };
 
-// Обновление всех графиков
+// ---------- Все графики ----------
 App.ui.pages.renderFuelCharts = function(period) {
     App.ui.pages.renderFuelPriceHistogram(period);
     App.ui.pages.renderFuelConsumptionHistogram(period);
@@ -113,12 +110,12 @@ App.ui.pages.renderFuelCharts = function(period) {
     App.ui.pages.renderFuelVolumePie(period);
 };
 
-// Вспомогательные функции для группировки по периодам
+// ---------- Вспомогательные функции для периодов ----------
 function getIntervalStart(period) {
     var now = new Date();
     switch (period) {
         case 'week':
-            var day = now.getDay(); // 0=вс, 1=пн...
+            var day = now.getDay();
             var diffToMonday = (day === 0 ? 6 : day - 1);
             var monday = new Date(now);
             monday.setDate(now.getDate() - diffToMonday);
@@ -156,7 +153,6 @@ function generateIntervals(period) {
             intervals.push({ start: d, end: new Date(d.getTime() + 86400000 - 1) });
         }
     } else if (period === 'month') {
-        // 4 недели текущего месяца
         var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         for (var w = 0; w < 4; w++) {
             var weekStart = new Date(monthStart);
@@ -194,24 +190,23 @@ function generateIntervals(period) {
     return { labels: labels, intervals: intervals };
 }
 
-// Гистограмма средней цены топлива
+// ---------- Гистограмма средней цены ----------
 App.ui.pages.renderFuelPriceHistogram = function(period) {
     var canvas = document.getElementById('fuelPriceHistogram');
     if (!canvas) return;
     if (App.charts._fuelPriceHist) App.charts._fuelPriceHist.destroy();
-    var { labels, intervals } = generateIntervals(period);
-    if (labels.length === 0) return;
-
+    var res = generateIntervals(period);
+    if (res.labels.length === 0) return;
     var logs = App.store.fuelLog || [];
     var datasets = {}, allTypes = [];
     logs.forEach(function(f) {
         var t = f.fuelType || 'Бензин';
         if (allTypes.indexOf(t) === -1) allTypes.push(t);
     });
-    allTypes.forEach(function(t) { datasets[t] = new Array(labels.length).fill(null); });
+    allTypes.forEach(function(t) { datasets[t] = new Array(res.labels.length).fill(null); });
 
-    for (var i = 0; i < intervals.length; i++) {
-        var intv = intervals[i];
+    for (var i = 0; i < res.intervals.length; i++) {
+        var intv = res.intervals[i];
         var summed = {};
         allTypes.forEach(function(t) { summed[t] = { totalCost: 0, totalLiters: 0 }; });
         logs.forEach(function(f) {
@@ -229,7 +224,12 @@ App.ui.pages.renderFuelPriceHistogram = function(period) {
         });
     }
 
-    var colors = { 'Бензин': '#E53935', 'Дизель': '#FF8C00', 'Газ (ГБО)': '#0072CE', 'Электричество': '#A6CE39' };
+    var colors = {
+        'Бензин': '#E53935',
+        'Дизель': '#FF8C00',
+        'Газ (ГБО)': '#0072CE',
+        'Электричество': '#A6CE39'
+    };
     var ds = allTypes.map(function(t) {
         return {
             label: t,
@@ -243,7 +243,7 @@ App.ui.pages.renderFuelPriceHistogram = function(period) {
     var ctx = canvas.getContext('2d');
     App.charts._fuelPriceHist = new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: ds },
+        data: { labels: res.labels, datasets: ds },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -256,42 +256,36 @@ App.ui.pages.renderFuelPriceHistogram = function(period) {
     });
 };
 
-// Гистограмма расхода топлива л/100 км
+// ---------- Гистограмма расхода ----------
 App.ui.pages.renderFuelConsumptionHistogram = function(period) {
     var canvas = document.getElementById('fuelConsumptionHistogram');
     if (!canvas) return;
     if (App.charts._fuelConsHist) App.charts._fuelConsHist.destroy();
-    var { labels, intervals } = generateIntervals(period);
-    if (labels.length === 0) return;
-
+    var res = generateIntervals(period);
+    if (res.labels.length === 0) return;
     var logs = App.store.fuelLog || [];
-    // Сортируем по дате для вычисления пробега между заправками
     var sorted = logs.filter(function(f) { return f.date && f.mileage; }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
     var allTypes = [];
     logs.forEach(function(f) {
         var t = f.fuelType || 'Бензин';
         if (allTypes.indexOf(t) === -1) allTypes.push(t);
     });
-
     var datasets = {};
-    allTypes.forEach(function(t) { datasets[t] = new Array(labels.length).fill(null); });
+    allTypes.forEach(function(t) { datasets[t] = new Array(res.labels.length).fill(null); });
 
-    for (var i = 0; i < intervals.length; i++) {
-        var intv = intervals[i];
-        var typeConsumptions = {}; // { 'Бензин': [consumption1, consumption2] }
+    for (var i = 0; i < res.intervals.length; i++) {
+        var intv = res.intervals[i];
+        var typeConsumptions = {};
         allTypes.forEach(function(t) { typeConsumptions[t] = []; });
         for (var j = 1; j < sorted.length; j++) {
-            var curr = sorted[j];
-            var prev = sorted[j-1];
+            var curr = sorted[j], prev = sorted[j-1];
             var d = new Date(curr.date);
             if (d >= intv.start && d <= intv.end) {
                 var dist = curr.mileage - prev.mileage;
                 if (dist > 0) {
                     var cons = (curr.liters / dist) * 100;
                     var t = curr.fuelType || 'Бензин';
-                    if (allTypes.indexOf(t) >= 0) {
-                        typeConsumptions[t].push(cons);
-                    }
+                    if (allTypes.indexOf(t) >= 0) typeConsumptions[t].push(cons);
                 }
             }
         }
@@ -303,7 +297,12 @@ App.ui.pages.renderFuelConsumptionHistogram = function(period) {
         });
     }
 
-    var colors = { 'Бензин': '#E53935', 'Дизель': '#FF8C00', 'Газ (ГБО)': '#0072CE', 'Электричество': '#A6CE39' };
+    var colors = {
+        'Бензин': '#E53935',
+        'Дизель': '#FF8C00',
+        'Газ (ГБО)': '#0072CE',
+        'Электричество': '#A6CE39'
+    };
     var ds = allTypes.map(function(t) {
         return {
             label: t,
@@ -317,7 +316,7 @@ App.ui.pages.renderFuelConsumptionHistogram = function(period) {
     var ctx = canvas.getContext('2d');
     App.charts._fuelConsHist = new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: ds },
+        data: { labels: res.labels, datasets: ds },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -330,17 +329,17 @@ App.ui.pages.renderFuelConsumptionHistogram = function(period) {
     });
 };
 
-// Круговая диаграмма затрат по типу топлива
+// ---------- Круговая: затраты по типу ----------
 App.ui.pages.renderFuelCostPie = function(period) {
     var canvas = document.getElementById('fuelCostPieChart');
     if (!canvas) return;
     if (App.charts._fuelCostPie) App.charts._fuelCostPie.destroy();
-    var { intervals } = generateIntervals(period);
+    var res = generateIntervals(period);
     var logs = App.store.fuelLog || [];
     var typeCost = {};
     logs.forEach(function(f) {
         var d = new Date(f.date);
-        if (intervals.some(function(intv) { return d >= intv.start && d <= intv.end; })) {
+        if (res.intervals.some(function(intv) { return d >= intv.start && d <= intv.end; })) {
             var t = f.fuelType || 'Бензин';
             typeCost[t] = (typeCost[t] || 0) + (f.liters || 0) * (f.pricePerLiter || 0);
         }
@@ -348,10 +347,7 @@ App.ui.pages.renderFuelCostPie = function(period) {
     var labels = Object.keys(typeCost);
     var data = labels.map(function(l) { return typeCost[l]; });
     var colors = ['#E53935', '#FF8C00', '#0072CE', '#A6CE39'];
-    if (labels.length === 0) {
-        // Нет данных
-        return;
-    }
+    if (labels.length === 0) return;
     var ctx = canvas.getContext('2d');
     App.charts._fuelCostPie = new Chart(ctx, {
         type: 'doughnut',
@@ -362,24 +358,22 @@ App.ui.pages.renderFuelCostPie = function(period) {
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
+            plugins: { legend: { position: 'bottom' } }
         }
     });
 };
 
-// Круговая диаграмма расхода (литры) по типу топлива
+// ---------- Круговая: расход (литры) по типу ----------
 App.ui.pages.renderFuelVolumePie = function(period) {
     var canvas = document.getElementById('fuelVolumePieChart');
     if (!canvas) return;
     if (App.charts._fuelVolumePie) App.charts._fuelVolumePie.destroy();
-    var { intervals } = generateIntervals(period);
+    var res = generateIntervals(period);
     var logs = App.store.fuelLog || [];
     var typeLiters = {};
     logs.forEach(function(f) {
         var d = new Date(f.date);
-        if (intervals.some(function(intv) { return d >= intv.start && d <= intv.end; })) {
+        if (res.intervals.some(function(intv) { return d >= intv.start && d <= intv.end; })) {
             var t = f.fuelType || 'Бензин';
             typeLiters[t] = (typeLiters[t] || 0) + (f.liters || 0);
         }
@@ -398,14 +392,12 @@ App.ui.pages.renderFuelVolumePie = function(period) {
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
+            plugins: { legend: { position: 'bottom' } }
         }
     });
 };
 
-// Карточки заправок – аккордеоны по годам
+// ---------- Карточки заправок (аккордеоны по годам) ----------
 App.ui.pages.renderFuelCards = function() {
     var container = document.getElementById('fuel-cards-container');
     if (!container) return;
@@ -423,7 +415,7 @@ App.ui.pages.renderFuelCards = function() {
     });
     var years = Object.keys(byYear).sort().reverse();
     var html = '';
-    years.forEach(function(year, idx) {
+    years.forEach(function(year) {
         var records = byYear[year];
         var totalLiters = records.reduce(function(s, r) { return s + (Number(r.liters) || 0); }, 0);
         var totalCost = records.reduce(function(s, r) { return s + (Number(r.liters) || 0) * (Number(r.pricePerLiter) || 0); }, 0);
@@ -483,7 +475,201 @@ App.ui.pages.renderFuelCards = function() {
     App.initIcons();
 };
 
-// Поддержка старого вызова из events.js: теперь просто запускает новый рендер
+// ---------- Старая точка входа ----------
 App.ui.pages.renderFuelTable = function() {
     App.ui.pages.renderFuelTab();
+};
+
+// ======== УПРАВЛЕНИЕ ЗАПРАВКАМИ (восстановлено) ========
+App.ui.pages.checkFuelOrderConflicts = function(dateISO, mileage, excludeRowIndex) {
+    var sorted = App.store.fuelLog.filter(function(_, idx) {
+        return (idx + 2) !== excludeRowIndex;
+    }).sort(function(a, b) {
+        if (a.date === b.date) return a.mileage - b.mileage;
+        return (a.date || '').localeCompare(b.date || '');
+    });
+
+    var prev = null, next = null;
+    for (var i = 0; i < sorted.length; i++) {
+        var r = sorted[i];
+        if (!r.date) continue;
+        if (r.date < dateISO) {
+            prev = r;
+        } else if (r.date === dateISO && r.mileage <= mileage) {
+            prev = r;
+        } else {
+            next = r;
+            break;
+        }
+    }
+
+    var conflict = false;
+    var message = '';
+    if (prev && prev.mileage > mileage) {
+        conflict = true;
+        message += '⚠️ Пробег (' + mileage + ' км) меньше предыдущей заправки от ' + prev.date + ' (' + prev.mileage + ' км). ';
+    }
+    if (next && next.mileage < mileage) {
+        conflict = true;
+        message += '⚠️ Пробег (' + mileage + ' км) больше следующей заправки от ' + next.date + ' (' + next.mileage + ' км). ';
+    }
+    if (prev && prev.date > dateISO) {
+        conflict = true;
+        message += '⚠️ Дата (' + dateISO + ') раньше предыдущей заправки от ' + prev.date + '. ';
+    }
+    if (next && next.date < dateISO) {
+        conflict = true;
+        message += '⚠️ Дата (' + dateISO + ') позже следующей заправки от ' + next.date + '. ';
+    }
+    return { hasConflict: conflict, message: message, prevRecord: prev, nextRecord: next };
+};
+
+App.ui.pages.openFuelModal = function(record) {
+    var isEdit = !!(record && record.id);
+    var defaultDate = record && record.date
+        ? App.utils.isoToDDMMYYYY(record.date)
+        : App.utils.isoToDDMMYYYY(new Date().toISOString().split('T')[0]);
+    var currentMileage = App.store.settings.currentMileage;
+
+    var content =
+        '<form id="fuel-form">' +
+            (isEdit ? '<input type="hidden" name="id" value="' + record.id + '">' : '') +
+            '<label>Дата (ДД-ММ-ГГГГ)</label>' +
+            '<input type="text" name="date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" required oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + App.utils.escapeHtml(defaultDate) + '">' +
+            '<label>Пробег</label>' +
+            '<input type="number" name="mileage" value="' + (record ? record.mileage : currentMileage) + '" required>' +
+            '<label>Литры</label>' +
+            '<input type="number" name="liters" step="0.01" value="' + (record ? record.liters : '') + '" required>' +
+            '<label>Цена/л</label>' +
+            '<input type="number" name="pricePerLiter" step="0.01" value="' + (record ? record.pricePerLiter : '') + '">' +
+            '<label>Тип топлива</label>' +
+            '<select name="fuelType">' +
+                '<option value="Бензин" ' + (record && record.fuelType === 'Бензин' ? 'selected' : '') + '>Бензин</option>' +
+                '<option value="Дизель" ' + (record && record.fuelType === 'Дизель' ? 'selected' : '') + '>Дизель</option>' +
+                '<option value="Газ (ГБО)" ' + (record && record.fuelType === 'Газ (ГБО)' ? 'selected' : '') + '>Газ (ГБО)</option>' +
+                '<option value="Электричество" ' + (record && record.fuelType === 'Электричество' ? 'selected' : '') + '>Электричество</option>' +
+            '</select>' +
+            '<label>Примечание</label>' +
+            '<input type="text" name="notes" value="' + App.utils.escapeHtml(record ? (record.notes || '') : '') + '">' +
+            '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
+        '</form>';
+
+    var modal = App.ui.createModal(isEdit ? ' Редактировать заправку' : ' Добавить заправку', content);
+    var form = modal.querySelector('#fuel-form');
+
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        var formEl = e.target;
+        var dateStr = formEl.querySelector('[name="date"]').value.trim();
+        var dateISO = App.utils.ddmmYYYYtoISO(dateStr);
+        var mileage = App.utils.validateNumberInput(formEl.querySelector('[name="mileage"]'), false);
+        var liters = App.utils.validateNumberInput(formEl.querySelector('[name="liters"]'), true);
+        var pricePerLiter = App.utils.validateNumberInput(formEl.querySelector('[name="pricePerLiter"]'), true, true);
+        if (mileage === null || liters === null) return;
+
+        var d = Object.fromEntries(new FormData(formEl));
+        var id = d.id || null;
+        var conflict = App.ui.pages.checkFuelOrderConflicts(dateISO, mileage, id ? null : null);
+        if (conflict.hasConflict) {
+            if (!confirm(conflict.message + '\n\nСохранить, несмотря на нарушение порядка?')) return;
+        }
+
+        modal.remove();
+
+        var existingUuid = (record && record.uuid) ? record.uuid : crypto.randomUUID();
+        var existingUpdatedAt = (record && record.updated_at) ? record.updated_at : new Date().toISOString();
+
+        var recordData = {
+            id: id,
+            uuid: existingUuid,
+            updated_at: existingUpdatedAt,
+            date: dateISO,
+            mileage: mileage,
+            liters: liters,
+            pricePerLiter: pricePerLiter,
+            fullTank: false,
+            fuelType: d.fuelType,
+            notes: d.notes || ''
+        };
+
+        if (App.config.USE_SUPABASE) {
+            App.storage.saveFuelRecord(id, recordData)
+                .then(function(res) {
+                    if (res && res.data && res.data.length > 0) recordData.id = res.data[0].id;
+                    if (isEdit) {
+                        var idx = App.store.fuelLog.findIndex(function(f) { return f.id == id; });
+                        if (idx !== -1) App.store.fuelLog[idx] = recordData;
+                    } else {
+                        App.store.fuelLog.push(recordData);
+                    }
+                    App.store.saveToLocalStorage();
+                    App.ui.pages.renderFuelTab();
+                    App.toast(isEdit ? 'Заправка обновлена' : 'Заправка добавлена', 'success');
+                }).catch(function(err) {
+                    console.error(err);
+                    App.toast('Ошибка сохранения в Supabase', 'error');
+                });
+        } else {
+            if (isEdit) {
+                var idx = App.store.fuelLog.findIndex(function(f) { return f.id == id; });
+                if (idx !== -1) App.store.fuelLog[idx] = recordData;
+            } else {
+                App.store.fuelLog.push(recordData);
+            }
+            App.store.saveToLocalStorage();
+            App.ui.pages.renderFuelTab();
+            App.toast(isEdit ? 'Заправка обновлена' : 'Заправка добавлена', 'success');
+        }
+    };
+
+    modal.querySelector('.cancel-btn').onclick = function() { modal.remove(); };
+};
+
+App.ui.pages.deleteFuelEntry = function(idx) {
+    var fuel = App.store.fuelLog[idx];
+    if (!fuel || !fuel.id) { App.toast('Запись не найдена', 'error'); return; }
+    App.storage.deleteFuelRecord(fuel.id).then(function() {
+        App.storage.loadAllData().then(function() {
+            App.ui.pages.renderFuelTab();
+        });
+        App.toast('Запись о заправке удалена', 'success');
+    }).catch(function(err) {
+        console.error(err);
+        App.toast('Не удалось удалить заправку (возможно, недостаточно прав)', 'error');
+    });
+};
+
+App.ui.pages.startVoiceFuelInput = function() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        alert('Распознавание речи не поддерживается в этом браузере');
+        return;
+    }
+    var rec = new SR();
+    rec.lang = 'ru-RU';
+    rec.interimResults = false;
+    var voiceBtn = document.getElementById('voice-fuel-btn');
+    if (voiceBtn) voiceBtn.classList.add('recording');
+    rec.start();
+    rec.onresult = function(e) {
+        var text = e.results[0][0].transcript;
+        App.ui.pages.parseFuelVoice(text);
+        if (voiceBtn) voiceBtn.classList.remove('recording');
+    };
+    rec.onerror = function(e) {
+        if (voiceBtn) voiceBtn.classList.remove('recording');
+        alert(e.error === 'not-allowed' ? 'Доступ к микрофону запрещён.' : 'Ошибка распознавания: ' + e.error);
+    };
+};
+
+App.ui.pages.parseFuelVoice = function(text) {
+    var nums = text.match(/\d+(?:[.,]\d+)?/g);
+    if (!nums || nums.length < 2) {
+        alert('Скажите пробег и литры. Например: "пробег двенадцать тысяч литров сорок два"');
+        return;
+    }
+    var mileage = parseInt(nums[0]);
+    var liters = parseFloat(nums[1].replace(',', '.'));
+    var pricePerLiter = nums[2] ? parseFloat(nums[2].replace(',', '.')) : null;
+    App.ui.pages.openFuelModal({ mileage: mileage, liters: liters, pricePerLiter: pricePerLiter });
 };
