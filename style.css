@@ -858,7 +858,16 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     }
 }
 
-.fuel-type-dot.petrol { background: #E53935; }
-.fuel-type-dot.diesel { background: #FF8C00; }
-.fuel-type-dot.gas    { background: #0072CE; }
-.fuel-type-dot.electric { background: #A6CE39; }
+.fuel-type-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.fuel-type-dot.petrol   { background: #E53935; }   /* бензин */
+.fuel-type-dot.diesel   { background: #FF8C00; }   /* дизель */
+.fuel-type-dot.gas      { background: #0072CE; }   /* газ */
+.fuel-type-dot.electric { background: #A6CE39; }   /* электро */
