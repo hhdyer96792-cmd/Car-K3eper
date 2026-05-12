@@ -3,6 +3,15 @@ window.App = window.App || {};
 App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
+// 0. Карточка «Всего затрат на ТО»
+App.ui.pages.renderTotalCost = function() {
+    var total = App.store.serviceRecords.reduce(function(sum, r) {
+        return sum + (Number(r.parts_cost) || 0) + (Number(r.work_cost) || 0);
+    }, 0);
+    var el = document.getElementById('to-total-cost-value');
+    if (el) el.textContent = total.toLocaleString() + ' ₽';
+};
+
 // 1. Объединённая статистика 2×2
 App.ui.pages.renderTOStats = function() {
     document.getElementById('to-mileage').textContent = App.store.settings.currentMileage.toLocaleString();
