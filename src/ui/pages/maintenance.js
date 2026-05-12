@@ -107,9 +107,7 @@ App.ui.pages.renderTOCostChart = function() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true }
-            }
+            scales: { y: { beginAtZero: true } }
         }
     });
 };
@@ -162,10 +160,11 @@ App.ui.pages.renderTOCategoryPieChart = function() {
     });
 };
 
-// 5. Карточки операций (аккордеоны с раскрытием)
+// 5. Карточки операций (аккордеоны по категориям, Вариант Д)
 App.ui.pages.renderTOTable = function() {
     var container = document.getElementById('to-cards-container');
     if (!container) return;
+
     var grouped = {};
     App.store.operations.forEach(function(op) {
         if (!grouped[op.category]) grouped[op.category] = [];
@@ -195,31 +194,21 @@ App.ui.pages.renderTOTable = function() {
     };
 
     var html = '';
-    var hasOverdue = false;
-    categories.forEach(function(cat) {
-        var ops = grouped[cat].sort(function(a, b) {
-            return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft;
-        });
-        if (ops.some(function(op) { return App.logic.calculatePlan(op).daysLeft < 0; })) {
-            hasOverdue = true;
-        }
-    });
-
     categories.forEach(function(cat, catIndex) {
         var ops = grouped[cat].sort(function(a, b) {
             return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft;
         });
-        var openAccordion = (catIndex === 0 && hasOverdue && ops.some(function(op) { return App.logic.calculatePlan(op).daysLeft < 0; }))
-            ? ' open' : '';
+        var hasOverdue = ops.some(function(op) { return App.logic.calculatePlan(op).daysLeft < 0; });
+        // Открыть первый аккордеон, если он содержит просроченные, или просто первый
+        var openClass = (catIndex === 0 && hasOverdue) || (catIndex === 0 && !hasOverdue) ? ' open' : '';
 
         html += '<div class="accordion-group">';
-        html += '<div class="accordion-header' + (openAccordion ? ' active' : '') + '">';
+        html += '<div class="accordion-header' + openClass + '">';
         html += '<i data-lucide="' + (categoryIcons[cat] || 'folder') + '"></i>';
-        html += '<span>' + App.utils.escapeHtml(cat) + '</span>';
-        html += '<span class="badge">' + ops.length + '</span>';
+        html += '<span>' + App.utils.escapeHtml(cat) + ' (' + ops.length + ')</span>';
         html += '<i data-lucide="chevron-down" class="accordion-arrow" style="margin-left:auto;"></i>';
         html += '</div>';
-        html += '<div class="accordion-body' + openAccordion + '">';
+        html += '<div class="accordion-body' + openClass + '">';
 
         ops.forEach(function(op) {
             var plan = App.logic.calculatePlan(op);
@@ -264,7 +253,7 @@ App.ui.pages.renderTOTable = function() {
             if (daysLeft < 0) html += ' <span class="text-danger">просрочено на ' + Math.abs(daysLeft) + ' дн.</span>';
             else html += ' осталось ' + daysLeft + ' дн.';
             html += '</div>';
-            html += '</div>';
+            html += '</div>'; // card-summary
             html += '<div class="card-actions">';
             html += '<button class="icon-btn" data-action="add-record" data-op-id="' + op.id + '" data-op-name="' + App.utils.escapeHtml(op.name) + '"><i data-lucide="check"></i></button>';
             html += '<button class="icon-btn card-toggle-btn"><i data-lucide="more-vertical"></i></button>';
@@ -287,12 +276,13 @@ App.ui.pages.renderTOTable = function() {
 
     container.innerHTML = html;
 
-    // Обработчики аккордеонов и раскрытия карточек
+    // Обработчики аккордеонов
     container.querySelectorAll('.accordion-header').forEach(function(header) {
         header.addEventListener('click', function() {
             var body = header.nextElementSibling;
             if (body && body.classList.contains('accordion-body')) {
                 body.classList.toggle('open');
+                header.classList.toggle('open');
                 var arrow = header.querySelector('.accordion-arrow');
                 if (arrow) {
                     arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
@@ -301,6 +291,7 @@ App.ui.pages.renderTOTable = function() {
         });
     });
 
+    // Раскрытие карточек
     container.querySelectorAll('.card-toggle-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -318,6 +309,24 @@ App.ui.pages.renderTOTable = function() {
 
     App.initIcons();
 };
+
+// ---- Существующие функции (без изменений) ----
+App.ui.pages.openServiceModal = function(opId, opName) {
+    // Вставьте сюда текущую реализацию из вашего maintenance.js
+};
+
+App.ui.pages.openOperationForm = function(op) {
+    // Вставьте сюда текущую реализацию из вашего maintenance.js
+};
+
+App.ui.pages.generateShoppingList = function(opId) {
+    // Вставьте сюда текущую реализацию из вашего maintenance.js
+};
+
+// Глобальная функция генерации ICS (используется в events.js и других местах)
+function generateICS(plan) {
+    // Вставьте сюда текущую реализацию из вашего maintenance.js
+}
 
 App.ui.pages.openServiceModal = function(opId, opName) {
     var op = App.store.operations.find(function(o) { return o.id == opId; });
