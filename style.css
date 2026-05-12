@@ -654,3 +654,89 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     height: 200px;
     max-height: 200px;
 }
+/* Аккордеоны */
+.accordion-group {
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+.accordion-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    cursor: pointer;
+    font-weight: 600;
+    user-select: none;
+    transition: background var(--transition);
+}
+.accordion-header:hover {
+    background: var(--bg);
+}
+.accordion-body {
+    display: none;
+    padding: 0 12px 12px;
+    background: var(--bg);
+}
+.accordion-body.open {
+    display: block;
+}
+.accordion-arrow {
+    transition: transform 0.2s;
+}
+
+/* Карточки операций */
+.card-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+    overflow: hidden;
+}
+.card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+}
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+.status-dot.ok { background: var(--success); }
+.status-dot.critical { background: var(--warning); }
+.status-dot.overdue { background: var(--danger); }
+.card-summary { flex: 1; min-width: 0; }
+.card-summary strong { display: block; font-size: 0.95rem; }
+.card-meta { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
+.card-plan { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+.card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.card-details { display: none; padding: 0 12px 12px; border-top: 1px solid var(--border); }
+.card-item.expanded .card-details { display: block; }
+.card-detail-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+/* Прогресс-бары */
+.progress-bar-container {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    margin: 8px 0;
+}
+.progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* Кнопка-действие панели ТО */
+.to-actions-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0;
+}
