@@ -262,51 +262,54 @@
 
         <!-- ТО (полный блок) -->
         <div id="tab-to" class="tab-content">
-            <div class="stats-grid" id="stats-grid-skeleton">
-                <div class="stat-card"><span class="stat-label">Пробег</span><span class="stat-value" id="display-mileage">0</span><span class="stat-unit">км</span></div>
-                <div class="stat-card"><span class="stat-label">Ср. пробег/день</span><span class="stat-value" id="display-avg-mileage">20</span><span class="stat-unit">км</span></div>
-                <div class="stat-card"><span class="stat-label">Моточасы</span><span class="stat-value" id="display-motohours">0</span><span class="stat-unit">ч</span></div>
-                <div class="stat-card"><span class="stat-label">Ср. м/ч/день</span><span class="stat-value" id="display-avg-motohours">1.65</span><span class="stat-unit">ч</span></div>
-            </div>
-            <div class="card" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <input type="number" id="new-mileage" placeholder="Пробег, км" style="width:140px;">
-                <input type="number" id="new-motohours" placeholder="Моточасы, ч" style="width:140px;">
-                <button id="update-mileage-btn" class="icon-btn primary-btn" style="width:40px; height:40px;" title="Обновить"><i data-lucide="refresh-cw"></i></button>
-            </div>
-            <div class="card top5-widget"><h3><i data-lucide="arrow-up"></i> Ближайшие работы</h3><div id="top5-container"></div></div>
-            <div class="card planner-card">
-                <h3><i data-lucide="calendar-range"></i> Планировщик ТО</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
-                    <label style="flex:1; min-width:200px;">Период:
-                        <select id="plan-period-select" style="width:100%">
-                            <option value="month">Месяц</option>
-                            <option value="quarter">Квартал</option>
-                            <option value="6months">6 месяцев</option>
-                            <option value="year">Год</option>
-                        </select>
-                    </label>
-                    <div style="display: flex; gap: 8px;">
-                       <button id="calendar-action-btn" class="primary-btn" style="padding:10px 12px; font-size:0.9rem;"><i data-lucide="calendar"></i> Действия с календарём</button>
-                    </div>
-                </div>
-                <div id="plan-container" style="max-height: 400px; overflow-y: auto;">
-                    <p class="hint">Выберите период, календарь обновится автоматически.</p>
-                </div>
-            </div>
-            <div class="action-bar">
-                <button id="add-operation-btn" class="primary-btn"><i data-lucide="plus"></i> Операция</button>
-                <button id="recalculate-btn" class="secondary-btn"><i data-lucide="refresh-ccw"></i> Пересчитать</button>
-                <button id="export-btn" class="secondary-btn"><i data-lucide="download"></i> Экспорт</button>
-                <button id="import-btn" class="secondary-btn"><i data-lucide="upload"></i> Импорт</button>
-                <input type="file" id="import-file" accept=".json" style="display:none;">
-            </div>
-            <div class="table-wrapper" id="table-skeleton">
-                <table id="maintenance-table">
-                    <thead><tr><th>Операция</th><th>Последнее ТО</th><th>Пробег</th><th>М/ч</th><th>План</th><th>Статус</th><th></th></tr></thead>
-                    <tbody id="table-body"></tbody>
-                </table>
-            </div>
+    <!-- Объединённая статистика 2×2 -->
+    <div class="card to-stats-card" id="to-stats-card">
+        <div class="to-stats-grid">
+            <div class="stat-item"><span class="stat-label">Пробег</span><span class="stat-value" id="to-mileage">0</span><span class="stat-unit">км</span></div>
+            <div class="stat-item"><span class="stat-label">Ср. пробег/день</span><span class="stat-value" id="to-avg-mileage">20</span><span class="stat-unit">км</span></div>
+            <div class="stat-item"><span class="stat-label">Моточасы</span><span class="stat-value" id="to-motohours">0</span><span class="stat-unit">ч</span></div>
+            <div class="stat-item"><span class="stat-label">Ср. м/ч/день</span><span class="stat-value" id="to-avg-motohours">1.65</span><span class="stat-unit">ч</span></div>
         </div>
+    </div>
+
+    <!-- Прогресс-бары ресурса деталей -->
+    <div class="card" id="to-resource-bars">
+        <h3><i data-lucide="activity"></i> Ресурс деталей</h3>
+        <div id="to-resource-bars-container"></div>
+    </div>
+
+    <!-- Гистограмма затрат на ТО -->
+    <div class="card chart-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <h3 style="margin:0;"><i data-lucide="bar-chart-3"></i> Затраты на ТО</h3>
+            <select id="to-cost-period">
+                <option value="month">Месяц</option>
+                <option value="quarter">3 месяца</option>
+                <option value="6months">6 месяцев</option>
+                <option value="year">Год</option>
+            </select>
+        </div>
+        <canvas id="toCostChart" height="120"></canvas>
+    </div>
+
+    <!-- Круговая диаграмма категорий ТО -->
+    <div class="card chart-card">
+        <h3><i data-lucide="pie-chart"></i> Затраты по категориям</h3>
+        <canvas id="toCategoryPieChart" height="200"></canvas>
+    </div>
+
+    <!-- Карточки операций (аккордеоны) -->
+    <div id="to-cards-container" class="cards-container"></div>
+
+    <!-- Панель действий (без изменений) -->
+    <div class="action-bar">
+        <button id="add-operation-btn" class="primary-btn"><i data-lucide="plus"></i> Операция</button>
+        <button id="recalculate-btn" class="secondary-btn"><i data-lucide="refresh-ccw"></i> Пересчитать</button>
+        <button id="export-btn" class="secondary-btn"><i data-lucide="download"></i> Экспорт</button>
+        <button id="import-btn" class="secondary-btn"><i data-lucide="upload"></i> Импорт</button>
+        <input type="file" id="import-file" accept=".json" style="display:none;">
+    </div>
+</div>
 
         <!-- Статистика (полный блок) -->
         <div id="tab-stats" class="tab-content">
