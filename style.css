@@ -858,8 +858,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     }
 }
 
-/* Цветные индикаторы типа топлива */
-.fuel-type-dot.petrol { background: #3498db; }
-.fuel-type-dot.diesel { background: #2ecc71; }
-.fuel-type-dot.gas { background: #f39c12; }
-.fuel-type-dot.electric { background: #9b59b6; }
+.fuel-type-dot.petrol { background: #E53935; }
+.fuel-type-dot.diesel { background: #FF8C00; }
+.fuel-type-dot.gas    { background: #0072CE; }
+.fuel-type-dot.electric { background: #A6CE39; }
