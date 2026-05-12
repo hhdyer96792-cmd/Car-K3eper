@@ -763,3 +763,38 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     color: var(--text-muted);
     margin-bottom: 4px;
 }
+
+/* Ряд "Всего затрат" + сводная */
+.to-top-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.to-top-row > .card {
+    flex: 1 1 0;                /* равная ширина */
+    min-width: 250px;           /* чтобы на маленьких экранах не сжимались слишком сильно */
+}
+
+.to-total-cost-card h3 {
+    margin-bottom: 12px;
+}
+
+.total-cost-value {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--primary);
+}
+
+/* Мобильная версия: карточки в столбик и на всю ширину */
+@media (max-width: 767px) {
+    .to-top-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    .to-top-row > .card {
+        min-width: 100%;
+    }
+}
