@@ -841,20 +841,20 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 /* Две круговые диаграммы в ряд */
 .fuel-pie-row {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     margin-bottom: 16px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;          /* всегда одна строка */
 }
 .fuel-pie-card {
-    flex: 1 1 0;
-    min-width: 250px;
+    flex: 1 1 50%;              /* каждой – половина ширины */
+    min-width: 0;               /* можно сжиматься */
+}
+.fuel-pie-card canvas {
+    max-height: 180px;          /* ограничение высоты */
 }
 @media (max-width: 767px) {
-    .fuel-pie-row {
-        flex-direction: column;
-    }
-    .fuel-pie-card {
-        min-width: 100%;
+    .fuel-pie-card canvas {
+        max-height: 140px;      /* меньше на мобильных */
     }
 }
 
