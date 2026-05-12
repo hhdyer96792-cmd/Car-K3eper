@@ -521,60 +521,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-bottom: 8px;
 }
 
-/* ==================== Мобильный дашборд ==================== */
-.desktop-only { display: block; }
-.mobile-only { display: none; }
-
-@media (max-width: 767px) {
-    .desktop-only { display: none; }
-    .mobile-only { display: block; }
-
-    /* Горизонтальная строка статистических карточек */
-    .stats-row {
-        display: flex;
-        gap: 8px;
-        overflow-x: auto;
-        padding-bottom: 8px;
-        margin-bottom: 16px;
-    }
-    .stats-row .stat-card {
-        flex: 0 0 auto;
-        min-width: 80px;
-        padding: 10px 12px;
-    }
-
-    /* Аккордеоны */
-    .accordion-card {
-        padding: 12px 16px;
-    }
-    .accordion-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-    }
-    .accordion-arrow {
-        transition: transform 0.2s;
-    }
-    .accordion-body {
-        margin-top: 12px;
-    }
-    .cost-row,
-    .last-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 0;
-        border-bottom: 1px solid var(--border);
-    }
-    .last-row span {
-        font-size: 0.85rem;
-    }
-    .more-btn {
-        width: 100%;
-        margin-top: 8px;
-        font-size: 0.85rem;
-    }
-}
 
 /* ==================== Мобильный дашборд ==================== */
 .desktop-only { display: block; }
