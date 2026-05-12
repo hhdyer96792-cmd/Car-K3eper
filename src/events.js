@@ -244,8 +244,8 @@ App.events.switchToTab = function(tabId) {
             if (typeof App.ui.pages.populateHistoryOperationFilter === 'function') App.ui.pages.populateHistoryOperationFilter();
             break;
         case 'fuel':
-            if (typeof App.ui.pages.renderFuelTable === 'function') App.ui.pages.renderFuelTable();
-            break;
+    if (typeof App.ui.pages.renderFuelTab === 'function') App.ui.pages.renderFuelTab();
+    break;
         case 'tires':
             if (typeof App.ui.pages.renderTiresTable === 'function') App.ui.pages.renderTiresTable();
             break;
