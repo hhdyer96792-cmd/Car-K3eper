@@ -43,7 +43,7 @@ App.ui.pages.renderResourceBars = function() {
     var html = '';
     top3.forEach(function(item) {
         var p = item.percent;
-        var color = p > 70 ? 'var(--success)' : (p > 30 ? 'var(--warning)' : 'var(--danger)');
+        var color = p > 70 ? 'var(--danger)' : (p > 30 ? 'var(--warning)' : 'var(--success)');
         html += '<div class="resource-row">';
         html += '<span class="resource-name">' + App.utils.escapeHtml(item.name) + '</span>';
         html += '<span class="resource-percent">' + p + '%</span>';
@@ -230,9 +230,9 @@ App.ui.pages.renderTOTable = function() {
 
             var daysLeft = plan.daysLeft;
             var statusClass = '', statusDot = '';
-            if (daysLeft < 0) { statusClass = 'overdue'; statusDot = '🔴'; }
-            else if (daysLeft <= 10) { statusClass = 'critical'; statusDot = '🟡'; }
-            else { statusClass = 'ok'; statusDot = '🟢'; }
+            if (daysLeft < 0) { statusClass = 'overdue'; }
+            else if (daysLeft <= 10) { statusClass = 'critical'; }
+            else { statusClass = 'ok'; }
 
             var percent = 0;
             if (op.intervalKm && plan.planMileage > (op.lastMileage || 0))
@@ -248,7 +248,7 @@ App.ui.pages.renderTOTable = function() {
 
             html += '<div class="card-item expandable" data-op-id="' + op.id + '">';
             html += '<div class="card-header">';
-            html += '<span class="status-dot ' + statusClass + '">' + statusDot + '</span>';
+            html += '<span class="status-dot ' + statusClass + '"></span>';
             html += '<div class="card-summary">';
             html += '<strong>' + App.utils.escapeHtml(op.name) + '</strong>';
             html += '<div class="card-meta">' +
