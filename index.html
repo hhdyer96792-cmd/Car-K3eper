@@ -260,9 +260,9 @@
             </div>
         </div>
 
-        <!-- ТО (полный блок) -->
-        <div id="tab-to" class="tab-content">
-    <!-- Объединённая статистика 2×2 -->
+   <!-- ТО (переработан) -->
+<div id="tab-to" class="tab-content">
+    <!-- 1. Объединённая статистика 2×2 -->
     <div class="card to-stats-card" id="to-stats-card">
         <div class="to-stats-grid">
             <div class="stat-item"><span class="stat-label">Пробег</span><span class="stat-value" id="to-mileage">0</span><span class="stat-unit">км</span></div>
@@ -272,17 +272,17 @@
         </div>
     </div>
 
-    <!-- Прогресс-бары ресурса деталей -->
+    <!-- 2. Прогресс-бары ресурса деталей -->
     <div class="card" id="to-resource-bars">
         <h3><i data-lucide="activity"></i> Ресурс деталей</h3>
         <div id="to-resource-bars-container"></div>
     </div>
 
-    <!-- Гистограмма затрат на ТО -->
+    <!-- 3. Гистограмма затрат на ТО -->
     <div class="card chart-card">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
             <h3 style="margin:0;"><i data-lucide="bar-chart-3"></i> Затраты на ТО</h3>
-            <select id="to-cost-period">
+            <select id="to-cost-period" style="width:auto;">
                 <option value="month">Месяц</option>
                 <option value="quarter">3 месяца</option>
                 <option value="6months">6 месяцев</option>
@@ -292,23 +292,24 @@
         <canvas id="toCostChart" height="120"></canvas>
     </div>
 
-    <!-- Круговая диаграмма категорий ТО -->
+    <!-- 4. Круговая диаграмма категорий ТО -->
     <div class="card chart-card">
         <h3><i data-lucide="pie-chart"></i> Затраты по категориям</h3>
         <canvas id="toCategoryPieChart" height="200"></canvas>
     </div>
 
-    <!-- Карточки операций (аккордеоны) -->
-    <div id="to-cards-container" class="cards-container"></div>
-
-    <!-- Панель действий (без изменений) -->
-    <div class="action-bar">
+    <!-- 5. Панель действий перед карточками -->
+    <div class="to-actions-bar">
         <button id="add-operation-btn" class="primary-btn"><i data-lucide="plus"></i> Операция</button>
+        <button id="calendar-action-btn" class="secondary-btn"><i data-lucide="calendar"></i> Календарь</button>
         <button id="recalculate-btn" class="secondary-btn"><i data-lucide="refresh-ccw"></i> Пересчитать</button>
         <button id="export-btn" class="secondary-btn"><i data-lucide="download"></i> Экспорт</button>
         <button id="import-btn" class="secondary-btn"><i data-lucide="upload"></i> Импорт</button>
         <input type="file" id="import-file" accept=".json" style="display:none;">
     </div>
+
+    <!-- 6. Карточки операций (аккордеоны) -->
+    <div id="to-cards-container" class="cards-container"></div>
 </div>
 
         <!-- Статистика (полный блок) -->
