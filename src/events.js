@@ -223,17 +223,18 @@ App.events.switchToTab = function(tabId) {
             if (typeof App.ui.pages.renderDashboard === 'function') App.ui.pages.renderDashboard();
             break;
         case 'to':
-            (async function() {
-                if (!App.store.operations || App.store.operations.length === 0) {
-                    await App.storage.loadAllData();
-                }
-                if (typeof App.ui.pages.renderTOStats === 'function') App.ui.pages.renderTOStats();
-                if (typeof App.ui.pages.renderResourceBars === 'function') App.ui.pages.renderResourceBars();
-                if (typeof App.ui.pages.renderTOCostChart === 'function') App.ui.pages.renderTOCostChart();
-                if (typeof App.ui.pages.renderTOCategoryPieChart === 'function') App.ui.pages.renderTOCategoryPieChart();
-                if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
-            })();
-            break;
+    (async function() {
+        if (!App.store.operations || App.store.operations.length === 0) {
+            await App.storage.loadAllData();
+        }
+        if (typeof App.ui.pages.renderTotalCost === 'function') App.ui.pages.renderTotalCost();
+        if (typeof App.ui.pages.renderTOStats === 'function') App.ui.pages.renderTOStats();
+        if (typeof App.ui.pages.renderResourceBars === 'function') App.ui.pages.renderResourceBars();
+        if (typeof App.ui.pages.renderTOCostChart === 'function') App.ui.pages.renderTOCostChart();
+        if (typeof App.ui.pages.renderTOCategoryPieChart === 'function') App.ui.pages.renderTOCategoryPieChart();
+        if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
+    })();
+    break;
         case 'stats':
             if (typeof App.ui.pages.renderStats === 'function') App.ui.pages.renderStats();
             if (typeof App.ui.pages.renderFuelAnalytics === 'function') App.ui.pages.renderFuelAnalytics();
