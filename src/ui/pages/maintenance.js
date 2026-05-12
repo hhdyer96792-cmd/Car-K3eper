@@ -206,8 +206,8 @@ App.ui.pages.renderTOTable = function() {
         var ops = grouped[cat].sort(function(a, b) {
             return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft;
         });
-        // Первый аккордеон открыт всегда, остальные свёрнуты
-        var openClass = (catIndex === 0) ? ' open' : '';
+
+        var openClass = '';
 
         html += '<div class="accordion-group">';
         html += '<div class="accordion-header' + openClass + '">';
