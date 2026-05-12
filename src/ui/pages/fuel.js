@@ -229,7 +229,7 @@ App.ui.pages.renderFuelPriceHistogram = function(period) {
         });
     }
 
-    var colors = { 'Бензин': '#3498db', 'Дизель': '#2ecc71', 'Газ (ГБО)': '#f39c12', 'Электричество': '#9b59b6' };
+    var colors = { 'Бензин': '#E53935', 'Дизель': '#FF8C00', 'Газ (ГБО)': '#0072CE', 'Электричество': '#A6CE39' };
     var ds = allTypes.map(function(t) {
         return {
             label: t,
@@ -303,7 +303,7 @@ App.ui.pages.renderFuelConsumptionHistogram = function(period) {
         });
     }
 
-    var colors = { 'Бензин': '#3498db', 'Дизель': '#2ecc71', 'Газ (ГБО)': '#f39c12', 'Электричество': '#9b59b6' };
+    var colors = { 'Бензин': '#E53935', 'Дизель': '#FF8C00', 'Газ (ГБО)': '#0072CE', 'Электричество': '#A6CE39' };
     var ds = allTypes.map(function(t) {
         return {
             label: t,
@@ -347,7 +347,7 @@ App.ui.pages.renderFuelCostPie = function(period) {
     });
     var labels = Object.keys(typeCost);
     var data = labels.map(function(l) { return typeCost[l]; });
-    var colors = ['#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
+    var colors = ['#E53935', '#FF8C00', '#0072CE', '#A6CE39'];
     if (labels.length === 0) {
         // Нет данных
         return;
@@ -386,7 +386,7 @@ App.ui.pages.renderFuelVolumePie = function(period) {
     });
     var labels = Object.keys(typeLiters);
     var data = labels.map(function(l) { return typeLiters[l]; });
-    var colors = ['#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
+    var colors = ['#E53935', '#FF8C00', '#0072CE', '#A6CE39'];
     if (labels.length === 0) return;
     var ctx = canvas.getContext('2d');
     App.charts._fuelVolumePie = new Chart(ctx, {
