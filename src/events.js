@@ -471,6 +471,17 @@ App.events.initDirectListeners = function() {
     }
 };
 
+ // Слушатель периода гистограммы затрат на ТО
+    var toCostPeriod = document.getElementById('to-cost-period');
+    if (toCostPeriod) {
+        toCostPeriod.addEventListener('change', function() {
+            if (document.getElementById('tab-to')?.classList.contains('active')) {
+                App.ui.pages.renderTOCostChart();
+            }
+        });
+    }
+};
+
 App.events.initHistoryFilters = function() {
     ['history-period-select', 'history-operation-filter', 'history-search', 'history-diy-only', 'history-cost-min', 'history-cost-max'].forEach(function(id) {
         var el = document.getElementById(id);
