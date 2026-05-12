@@ -798,3 +798,68 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
         min-width: 100%;
     }
 }
+
+/* ==================== Вкладка Топливо ==================== */
+.fuel-actions-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.fuel-summary-card {
+    margin-bottom: 16px;
+}
+.fuel-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* Переключатель периода */
+.fuel-period-switch {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.period-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+}
+.period-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+/* Две круговые диаграммы в ряд */
+.fuel-pie-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.fuel-pie-card {
+    flex: 1 1 0;
+    min-width: 250px;
+}
+@media (max-width: 767px) {
+    .fuel-pie-row {
+        flex-direction: column;
+    }
+    .fuel-pie-card {
+        min-width: 100%;
+    }
+}
+
+/* Цветные индикаторы типа топлива */
+.fuel-type-dot.petrol { background: #3498db; }
+.fuel-type-dot.diesel { background: #2ecc71; }
+.fuel-type-dot.gas { background: #f39c12; }
+.fuel-type-dot.electric { background: #9b59b6; }
