@@ -262,7 +262,6 @@ App.ui.pages.renderMobileDashboard = function() {
         var displayMonth = currentDate.getMonth();
         var displayYear = currentDate.getFullYear();
 
-        // Функция получения событий для конкретного месяца (year, month)
         function getEventMapForMonth(year, month) {
             var map = {};
             App.store.operations.forEach(function(op) {
@@ -313,8 +312,8 @@ App.ui.pages.renderMobileDashboard = function() {
 
         var firstRender = renderCalendar(displayYear, displayMonth);
         dashPlanContainer.innerHTML = firstRender.html;
+        App.initIcons();   // инициализируем иконки сразу
 
-        // Ближайшие события
         var upcomingContainer = document.getElementById('dash-upcoming-events');
         if (upcomingContainer) {
             var sortedPlan = plan.slice().sort(function(a,b) { return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft; });
@@ -339,6 +338,7 @@ App.ui.pages.renderMobileDashboard = function() {
                     if (currentMonth === 0) { currentMonth = 11; currentYear--; } else currentMonth--;
                     var rend = renderCalendar(currentYear, currentMonth);
                     dashPlanContainer.innerHTML = rend.html;
+                    App.initIcons();   // иконки после перерисовки
                     bindCalendarEvents();
                     bindDayClickEvents(rend.eventMap);
                 };
@@ -348,6 +348,7 @@ App.ui.pages.renderMobileDashboard = function() {
                     if (currentMonth === 11) { currentMonth = 0; currentYear++; } else currentMonth++;
                     var rend = renderCalendar(currentYear, currentMonth);
                     dashPlanContainer.innerHTML = rend.html;
+                    App.initIcons();
                     bindCalendarEvents();
                     bindDayClickEvents(rend.eventMap);
                 };
@@ -462,7 +463,6 @@ App.ui.pages.renderMobileDashboard = function() {
         name: function(r) { var op = App.store.operations.find(function(o) { return o.id == r.operation_id; }); return op ? op.name : 'Неизвестно'; },
         cost: function(r) { return (Number(r.parts_cost)+Number(r.work_cost)).toFixed(0) + ' ₽'; }
     }, 'to');
-    // Запчасти без даты
     renderAccordionBody('last-parts-body', App.store.parts, {
         name: function(p) { return p.oem || p.analog || p.operation || '—'; },
         cost: function(p) { return (p.price || '') + ' ₽'; }
@@ -499,7 +499,7 @@ App.ui.pages.renderMobileDashboard = function() {
         }
     };
 
-    // Кнопка обновления пробега (мобильная, уникальный ID)
+    // Кнопка обновления пробега (мобильная)
     var updateBtn = document.getElementById('mobile-dash-update-mileage-btn');
     if (updateBtn) {
         updateBtn.onclick = function() {
