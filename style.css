@@ -740,3 +740,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     gap: 8px;
     margin: 16px 0;
 }
+.progress-percent {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
