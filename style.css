@@ -639,3 +639,13 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     font-weight: 600;
 }
 
+.to-actions-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0;
+    align-items: center;
+}
+.to-actions-bar button {
+    white-space: nowrap;
+}
