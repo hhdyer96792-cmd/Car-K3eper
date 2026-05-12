@@ -243,6 +243,7 @@ App.supa.savePart = async function(part) {
         comment: part.comment || '',
         in_stock: part.inStock || 0,
         location: part.location || '',
+        purchase_date: part.purchaseDate || null,  // ← новая строка
         user_id: userId,
         car_id: App.store.activeCarId
     };
