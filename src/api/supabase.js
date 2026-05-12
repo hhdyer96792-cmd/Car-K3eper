@@ -103,6 +103,7 @@ App.supa.loadParts = function() {
             comment: p.comment || '',
             inStock: parseFloat(p.in_stock) || 0,
             location: p.location || ''
+            dateAdded: p.purchase_date || ''   // ← новая строка
         }));
     });
 };
