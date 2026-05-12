@@ -3,11 +3,169 @@ window.App = window.App || {};
 App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
-App.ui.pages.renderTOTable = function() {
-    var tbody = document.getElementById('table-body');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+// 1. Объединённая статистика 2×2
+App.ui.pages.renderTOStats = function() {
+    document.getElementById('to-mileage').textContent = App.store.settings.currentMileage.toLocaleString();
+    document.getElementById('to-motohours').textContent = App.store.settings.currentMotohours.toLocaleString();
+    document.getElementById('to-avg-mileage').textContent = (App.store.settings.avgDailyMileage || 0).toFixed(1);
+    document.getElementById('to-avg-motohours').textContent = (App.store.settings.avgDailyMotohours || 1.65).toFixed(2);
+};
 
+// 2. Прогресс-бары ресурса (три наиболее изношенные операции)
+App.ui.pages.renderResourceBars = function() {
+    var container = document.getElementById('to-resource-bars-container');
+    if (!container) return;
+
+    var candidates = App.store.operations.filter(function(op) {
+        return op.intervalKm || op.intervalMonths || op.intervalMotohours;
+    });
+
+    var withPercents = candidates.map(function(op) {
+        var plan = App.logic.calculatePlan(op);
+        var percent = 0;
+        if (op.intervalKm && plan.planMileage > (op.lastMileage || 0))
+            percent = Math.min(100, Math.round((App.store.settings.currentMileage - (op.lastMileage || 0)) / (plan.planMileage - (op.lastMileage || 0)) * 100));
+        else if (op.intervalMotohours && plan.recMotohours > (op.lastMotohours || 0))
+            percent = Math.min(100, Math.round((App.store.settings.currentMotohours - (op.lastMotohours || 0)) / (plan.recMotohours - (op.lastMotohours || 0)) * 100));
+        else if (op.intervalMonths && op.lastDate) {
+            var totalDays = op.intervalMonths * 30;
+            var elapsed = Math.floor((new Date() - new Date(op.lastDate)) / 86400000);
+            percent = Math.min(100, Math.round((elapsed / totalDays) * 100));
+        }
+        return { name: op.name, percent: percent };
+    }).filter(function(item) { return item.percent > 0; }).sort(function(a, b) { return b.percent - a.percent; });
+
+    var top3 = withPercents.slice(0, 3);
+    var html = '';
+    top3.forEach(function(item) {
+        var p = item.percent;
+        var color = p > 70 ? 'var(--success)' : (p > 30 ? 'var(--warning)' : 'var(--danger)');
+        html += '<div class="resource-row">';
+        html += '<span class="resource-name">' + App.utils.escapeHtml(item.name) + '</span>';
+        html += '<span class="resource-percent">' + p + '%</span>';
+        html += '</div>';
+        html += '<div class="progress-bar-container"><div class="progress-bar" style="width:' + p + '%; background:' + color + ';"></div></div>';
+    });
+    container.innerHTML = html || '<p class="hint">Нет данных</p>';
+};
+
+// 3. Гистограмма затрат на ТО
+App.ui.pages.renderTOCostChart = function() {
+    var period = document.getElementById('to-cost-period')?.value || 'month';
+    var canvas = document.getElementById('toCostChart');
+    if (!canvas) return;
+    if (App.charts._toCostChart) App.charts._toCostChart.destroy();
+
+    var now = new Date();
+    var data = [];
+    var labels = [];
+    var records = App.store.serviceRecords.slice().filter(function(r) { return r.date; });
+
+    if (period === 'month') {
+        for (var w = 0; w < 4; w++) {
+            var start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() || 7) + 1 - (3 - w) * 7);
+            var end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            labels.push((w + 1).toString());
+            var sum = 0;
+            records.forEach(function(r) {
+                var d = new Date(r.date);
+                if (d >= start && d <= end) sum += (Number(r.parts_cost) || 0) + (Number(r.work_cost) || 0);
+            });
+            data.push(sum);
+        }
+    } else {
+        var monthsCount = period === 'quarter' ? 3 : (period === '6months' ? 6 : 12);
+        var currentMonth = now.getMonth();
+        var currentYear = now.getFullYear();
+        for (var i = monthsCount - 1; i >= 0; i--) {
+            var m = currentMonth - i;
+            var y = currentYear;
+            if (m < 0) { m += 12; y--; }
+            labels.push(new Date(y, m, 1).toLocaleString('ru', { month: 'short', year: '2-digit' }));
+            var sum = 0;
+            records.forEach(function(r) {
+                var d = new Date(r.date);
+                if (d.getMonth() === m && d.getFullYear() === y) sum += (Number(r.parts_cost) || 0) + (Number(r.work_cost) || 0);
+            });
+            data.push(sum);
+        }
+    }
+
+    var ctx = canvas.getContext('2d');
+    App.charts._toCostChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Затраты на ТО (₽)',
+                data: data,
+                backgroundColor: 'rgba(231, 76, 60, 0.7)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+};
+
+// 4. Круговая диаграмма категорий ТО
+App.ui.pages.renderTOCategoryPieChart = function() {
+    var canvas = document.getElementById('toCategoryPieChart');
+    if (!canvas) return;
+    if (App.charts._toCategoryPieChart) App.charts._toCategoryPieChart.destroy();
+
+    var categoryCosts = {};
+    App.store.serviceRecords.forEach(function(rec) {
+        var op = App.store.operations.find(function(o) { return o.id == rec.operation_id; });
+        if (!op) return;
+        var cat = op.category || 'Прочее';
+        var cost = (Number(rec.parts_cost) || 0) + (Number(rec.work_cost) || 0);
+        categoryCosts[cat] = (categoryCosts[cat] || 0) + cost;
+    });
+
+    var labels = Object.keys(categoryCosts);
+    var data = labels.map(function(cat) { return categoryCosts[cat]; });
+    var total = data.reduce(function(a, b) { return a + b; }, 0);
+
+    var ctx = canvas.getContext('2d');
+    App.charts._toCategoryPieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            var value = context.raw;
+                            var percent = ((value / total) * 100).toFixed(1);
+                            return context.label + ': ' + value.toFixed(0) + ' ₽ (' + percent + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+// 5. Карточки операций (аккордеоны с раскрытием)
+App.ui.pages.renderTOTable = function() {
+    var container = document.getElementById('to-cards-container');
+    if (!container) return;
     var grouped = {};
     App.store.operations.forEach(function(op) {
         if (!grouped[op.category]) grouped[op.category] = [];
@@ -20,230 +178,146 @@ App.ui.pages.renderTOTable = function() {
         return a.localeCompare(b);
     });
 
-    categories.forEach(function(cat) {
-        var headerRow = document.createElement('tr');
-        headerRow.className = 'category-row';
-        headerRow.innerHTML = '<td colspan="7">' + App.utils.escapeHtml(cat) + '</td>';
-        tbody.appendChild(headerRow);
+    var categoryIcons = {
+        'ДВС': 'settings',
+        'Вариатор': 'git-branch',
+        'Тормозная система': 'disc',
+        'Подвеска': 'activity',
+        'Зажигание': 'zap',
+        'Охлаждение': 'thermometer',
+        'ГРМ': 'clock',
+        'Навесное': 'pocket',
+        'Трансмиссия': 'git-merge',
+        'Топливная система': 'fuel',
+        'Сезонное': 'sun',
+        'Документы': 'file-text',
+        'Прочее': 'more-horizontal'
+    };
 
-        var opsInCat = grouped[cat].sort(function(a, b) {
+    var html = '';
+    var hasOverdue = false;
+    categories.forEach(function(cat) {
+        var ops = grouped[cat].sort(function(a, b) {
             return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft;
         });
+        if (ops.some(function(op) { return App.logic.calculatePlan(op).daysLeft < 0; })) {
+            hasOverdue = true;
+        }
+    });
 
-        opsInCat.forEach(function(op) {
+    categories.forEach(function(cat, catIndex) {
+        var ops = grouped[cat].sort(function(a, b) {
+            return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft;
+        });
+        var openAccordion = (catIndex === 0 && hasOverdue && ops.some(function(op) { return App.logic.calculatePlan(op).daysLeft < 0; }))
+            ? ' open' : '';
+
+        html += '<div class="accordion-group">';
+        html += '<div class="accordion-header' + (openAccordion ? ' active' : '') + '">';
+        html += '<i data-lucide="' + (categoryIcons[cat] || 'folder') + '"></i>';
+        html += '<span>' + App.utils.escapeHtml(cat) + '</span>';
+        html += '<span class="badge">' + ops.length + '</span>';
+        html += '<i data-lucide="chevron-down" class="accordion-arrow" style="margin-left:auto;"></i>';
+        html += '</div>';
+        html += '<div class="accordion-body' + openAccordion + '">';
+
+        ops.forEach(function(op) {
             var plan = App.logic.calculatePlan(op);
-            var statusClass = '';
-            var statusText = '';
-            if (plan.daysLeft < 0) {
-                statusClass = 'overdue';
-                statusText = '<i data-lucide="alert-triangle"></i> ' + Math.abs(plan.daysLeft) + ' дн.';
-            } else if (plan.daysLeft <= 10) {
-                statusClass = 'critical';
-                statusText = plan.daysLeft + ' дн.';
-            } else if (plan.daysLeft <= 20) {
-                statusClass = 'warning';
-                statusText = plan.daysLeft + ' дн.';
-            } else if (plan.daysLeft <= 30) {
-                statusClass = 'attention';
-                statusText = plan.daysLeft + ' дн.';
-            } else {
-                statusText = plan.daysLeft + ' дн.';
+            var motoFresh = true;
+            if (op.name.indexOf('Масло') !== -1 && op.category.indexOf('ДВС') !== -1 && App.store.mileageHistory.length >= 1) {
+                var lastEntry = App.store.mileageHistory[App.store.mileageHistory.length - 1];
+                if ((App.store.settings.currentMotohours - lastEntry.motohours) > 20 ||
+                    (App.store.settings.currentMileage - lastEntry.mileage) > 500) {
+                    motoFresh = false;
+                }
             }
 
-            var tr = document.createElement('tr');
-            tr.dataset.rowIndex = op.rowIndex;
-            tr.dataset.operationId = op.id;
-            tr.innerHTML =
-                '<td><strong>' + App.utils.escapeHtml(op.name) + '</strong></td>' +
-                '<td>' + (op.lastDate ? App.utils.isoToDDMMYYYY(op.lastDate) : '—') + '</td>' +
-                '<td>' + (op.lastMileage || '—') + '</td>' +
-                '<td>' + (op.lastMotohours || '—') + '</td>' +
-                '<td><strong>' + App.utils.isoToDDMMYYYY(plan.planDate) + '</strong><br><small>' + plan.planMileage + ' км</small></td>' +
-                '<td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td>' +
-                '<td>' +
-                    '<button class="icon-btn" data-action="add-record" data-op-id="' + op.id + '" data-op-name="' + App.utils.escapeHtml(op.name) + '"><i data-lucide="plus"></i></button>' +
-                    '<button class="icon-btn" data-action="edit-op" data-op-id="' + op.id + '"><i data-lucide="pencil"></i></button>' +
-                    '<button class="icon-btn" data-action="shopping-list" data-op-id="' + op.id + '"><i data-lucide="shopping-cart"></i></button>' +
-                    '<button class="icon-btn" data-action="delete-op" data-op-id="' + op.id + '"><i data-lucide="trash-2"></i></button>' +
-                '</td>';
-            tbody.appendChild(tr);
-        });
-    });
+            var daysLeft = plan.daysLeft;
+            var statusClass = '', statusDot = '';
+            if (daysLeft < 0) { statusClass = 'overdue'; statusDot = '🔴'; }
+            else if (daysLeft <= 10) { statusClass = 'critical'; statusDot = '🟡'; }
+            else { statusClass = 'ok'; statusDot = '🟢'; }
 
-    App.initIcons();
-};
-
-App.ui.pages.renderMaintenancePlan = function() {
-    var container = document.getElementById('plan-container');
-    if (!container) return;
-
-    var period = document.getElementById('plan-period-select')?.value || 'month';
-    var plan = App.logic.generateMaintenancePlan(period);
-    var interval = App.logic.getPlanPeriodDates(period);
-    var currentDate = new Date(interval.start);
-    var displayMonth = currentDate.getMonth();
-    var displayYear = currentDate.getFullYear();
-
-    function renderCalendar(year, month) {
-        var eventMap = {};
-        plan.forEach(function(op) {
-            var planData = App.logic.calculatePlan(op);
-            if (!planData.planDate) return;
-            var dateKey = planData.planDate;
-            if (!eventMap[dateKey]) eventMap[dateKey] = [];
-            eventMap[dateKey].push({ op: op, plan: planData });
-        });
-
-        var firstDay = new Date(year, month, 1).getDay();
-        var daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        var html = '<div class="plan-calendar">';
-        html += '<div class="cal-nav">';
-        html += '<button class="cal-nav-btn cal-prev-btn"><i data-lucide="chevron-left"></i></button>';
-        html += '<span class="cal-month">' + new Date(year, month).toLocaleString('ru', { month: 'long', year: 'numeric' }) + '</span>';
-        html += '<button class="cal-nav-btn cal-next-btn"><i data-lucide="chevron-right"></i></button>';
-        html += '</div>';
-        html += '<div class="cal-weekdays">';
-        ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'].forEach(function(d) {
-            html += '<div class="cal-weekday">' + d + '</div>';
-        });
-        html += '</div>';
-        html += '<div class="cal-grid">';
-
-        for (var i = 0; i < firstDay; i++) {
-            html += '<div class="cal-day empty"></div>';
-        }
-
-        for (var d = 1; d <= daysInMonth; d++) {
-            var dateISO = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-            var events = eventMap[dateISO] || [];
-            var hasEvents = events.length > 0;
-            var todayClass = (dateISO === new Date().toISOString().split('T')[0]) ? ' today' : '';
-
-            html += '<div class="cal-day' + todayClass + '" data-date="' + dateISO + '">';
-            html += '<span class="cal-day-num">' + d + '</span>';
-            if (hasEvents) {
-                html += '<div class="cal-events">';
-                events.forEach(function(ev) {
-                    html += '<span class="cal-event-dot" title="' + App.utils.escapeHtml(ev.op.name) + '"></span>';
-                });
-                html += '</div>';
+            var percent = 0;
+            if (op.intervalKm && plan.planMileage > (op.lastMileage || 0))
+                percent = Math.min(100, Math.round((App.store.settings.currentMileage - (op.lastMileage || 0)) / (plan.planMileage - (op.lastMileage || 0)) * 100));
+            else if (op.intervalMotohours && motoFresh && plan.recMotohours > (op.lastMotohours || 0))
+                percent = Math.min(100, Math.round((App.store.settings.currentMotohours - (op.lastMotohours || 0)) / (plan.recMotohours - (op.lastMotohours || 0)) * 100));
+            else if (op.intervalMonths && op.lastDate) {
+                var totalDays = op.intervalMonths * 30;
+                var elapsed = Math.floor((new Date() - new Date(op.lastDate)) / 86400000);
+                percent = Math.min(100, Math.round((elapsed / totalDays) * 100));
             }
+            var progressColor = percent > 70 ? 'var(--success)' : (percent > 30 ? 'var(--warning)' : 'var(--danger)');
+
+            html += '<div class="card-item expandable" data-op-id="' + op.id + '">';
+            html += '<div class="card-header">';
+            html += '<span class="status-dot ' + statusClass + '">' + statusDot + '</span>';
+            html += '<div class="card-summary">';
+            html += '<strong>' + App.utils.escapeHtml(op.name) + '</strong>';
+            html += '<div class="card-meta">' +
+                (op.lastDate ? App.utils.isoToDDMMYYYY(op.lastDate) : '—') + ' · ' +
+                (op.lastMileage || '—') + ' км · ' +
+                (op.lastMotohours || '—') + ' м/ч' +
+            '</div>';
+            html += '<div class="card-plan">План: ' + App.utils.isoToDDMMYYYY(plan.planDate) + ' (' + plan.planMileage + ' км)';
+            if (daysLeft < 0) html += ' <span class="text-danger">просрочено на ' + Math.abs(daysLeft) + ' дн.</span>';
+            else html += ' осталось ' + daysLeft + ' дн.';
             html += '</div>';
-        }
-        html += '</div>';
-        html += '</div>';
+            html += '</div>';
+            html += '<div class="card-actions">';
+            html += '<button class="icon-btn" data-action="add-record" data-op-id="' + op.id + '" data-op-name="' + App.utils.escapeHtml(op.name) + '"><i data-lucide="check"></i></button>';
+            html += '<button class="icon-btn card-toggle-btn"><i data-lucide="more-vertical"></i></button>';
+            html += '</div>';
+            html += '</div>'; // card-header
 
-        return { html: html, eventMap: eventMap };
-    }
-
-    var firstRender = renderCalendar(displayYear, displayMonth);
-    container.innerHTML = firstRender.html;
-
-    var currentYear = displayYear;
-    var currentMonth = displayMonth;
-    var currentEventMap = firstRender.eventMap;
-
-    function updateCalendar() {
-        var rend = renderCalendar(currentYear, currentMonth);
-        container.innerHTML = rend.html;
-        currentEventMap = rend.eventMap;
-        bindListeners();
-        App.initIcons();
-    }
-
-    function bindListeners() {
-        var prevBtn = container.querySelector('.cal-prev-btn');
-        var nextBtn = container.querySelector('.cal-next-btn');
-        if (prevBtn) {
-            prevBtn.addEventListener('click', function() {
-                if (currentMonth === 0) {
-                    currentMonth = 11;
-                    currentYear--;
-                } else {
-                    currentMonth--;
-                }
-                updateCalendar();
-            });
-        }
-        if (nextBtn) {
-            nextBtn.addEventListener('click', function() {
-                if (currentMonth === 11) {
-                    currentMonth = 0;
-                    currentYear++;
-                } else {
-                    currentMonth++;
-                }
-                updateCalendar();
-            });
-        }
-
-        var days = container.querySelectorAll('.cal-day:not(.empty)');
-        days.forEach(function(dayEl) {
-            dayEl.addEventListener('click', function() {
-                var date = dayEl.dataset.date;
-                var events = currentEventMap[date] || [];
-                if (events.length === 0) return;
-
-                var listHtml = '<ul style="margin-top:12px;">';
-                events.forEach(function(ev) {
-                    var op = ev.op;
-                    var planData = ev.plan;
-                    listHtml += '<li style="margin-bottom:8px;">';
-                    listHtml += '<strong>' + App.utils.escapeHtml(op.name) + '</strong> (' + App.utils.escapeHtml(op.category) + ')<br>';
-                    listHtml += 'План: ' + App.utils.isoToDDMMYYYY(planData.planDate) + ', ' + planData.planMileage + ' км';
-                    listHtml += ' <button class="icon-btn" data-action="execute-plan" data-op-id="' + op.id + '" data-op-name="' + App.utils.escapeHtml(op.name) + '"><i data-lucide="check-circle"></i></button>';
-                    listHtml += '</li>';
-                });
-                listHtml += '</ul>';
-                App.ui.createModal('События на ' + App.utils.isoToDDMMYYYY(date), listHtml);
-            });
+            html += '<div class="card-details">';
+            html += '<div class="progress-bar-container"><div class="progress-bar" style="width:' + percent + '%; background:' + progressColor + ';"></div></div>';
+            html += '<div class="card-detail-actions">';
+            html += '<button class="icon-btn" data-action="edit-op" data-op-id="' + op.id + '"><i data-lucide="pencil"></i></button>';
+            html += '<button class="icon-btn" data-action="shopping-list" data-op-id="' + op.id + '"><i data-lucide="shopping-cart"></i></button>';
+            html += '<button class="icon-btn" data-action="delete-op" data-op-id="' + op.id + '"><i data-lucide="trash-2"></i></button>';
+            html += '</div>';
+            html += '</div>'; // card-details
+            html += '</div>'; // card-item
         });
-    }
 
-    bindListeners();
+        html += '</div></div>'; // accordion-body, accordion-group
+    });
+
+    container.innerHTML = html;
+
+    // Обработчики аккордеонов и раскрытия карточек
+    container.querySelectorAll('.accordion-header').forEach(function(header) {
+        header.addEventListener('click', function() {
+            var body = header.nextElementSibling;
+            if (body && body.classList.contains('accordion-body')) {
+                body.classList.toggle('open');
+                var arrow = header.querySelector('.accordion-arrow');
+                if (arrow) {
+                    arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+            }
+        });
+    });
+
+    container.querySelectorAll('.card-toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var card = btn.closest('.card-item');
+            if (card) {
+                card.classList.toggle('expanded');
+                var icon = btn.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', card.classList.contains('expanded') ? 'more-horizontal' : 'more-vertical');
+                    App.initIcons();
+                }
+            }
+        });
+    });
+
     App.initIcons();
 };
-
-// Генерация ICS (глобальная функция, используется в events.js)
-function generateICS(plan) {
-    var now = new Date().toISOString().replace(/[-:]/g, '').slice(0,15) + 'Z';
-    var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Vesta Dashboard//RU\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
-    plan.forEach(function(op) {
-        var planData = App.logic.calculatePlan(op);
-        if (!planData.planDate) return;
-        var dtStart = planData.planDate.replace(/-/g, '') + 'T090000';
-        var dtEnd = planData.planDate.replace(/-/g, '') + 'T100000';
-        var uid = op.id + '-vesta-' + planData.planDate;
-        var summary = 'ТО: ' + op.name;
-
-        var parts = App.store.parts.filter(function(p) {
-            return p.operation === op.name || p.operation === op.category;
-        });
-        var partsList = '';
-        if (parts.length > 0) {
-            partsList = '\\n\\nСписок запчастей:\\n';
-            parts.forEach(function(p) {
-                var status = (p.inStock && p.inStock > 0) ? '✅' : '☐';
-                partsList += status + ' ' + (p.oem || p.analog || p.operation) + (p.price ? ' (' + p.price + '₽)' : '') + '\\n';
-            });
-        }
-
-        var description = 'Пробег: ' + planData.planMileage + ' км. Категория: ' + (op.category || '') + partsList;
-
-        ics += 'BEGIN:VEVENT\r\n';
-        ics += 'UID:' + uid + '\r\n';
-        ics += 'DTSTART:' + dtStart + '\r\n';
-        ics += 'DTEND:' + dtEnd + '\r\n';
-        ics += 'SUMMARY:' + summary + '\r\n';
-        ics += 'DESCRIPTION:' + description + '\r\n';
-        ics += 'DTSTAMP:' + now + '\r\n';
-        ics += 'END:VEVENT\r\n';
-    });
-    ics += 'END:VCALENDAR\r\n';
-    return ics;
-}
-
 
 App.ui.pages.openServiceModal = function(opId, opName) {
     var op = App.store.operations.find(function(o) { return o.id == opId; });
