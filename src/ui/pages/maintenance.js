@@ -283,6 +283,14 @@ App.ui.pages.renderTOTable = function() {
 
     container.innerHTML = html;
 
+// Гарантированно закрываем все аккордеоны при начальном рендере
+container.querySelectorAll('.accordion-body').forEach(function(body) {
+    body.classList.remove('open');
+});
+container.querySelectorAll('.accordion-header').forEach(function(header) {
+    header.classList.remove('open');
+});
+
     // Обработчики аккордеонов
     container.querySelectorAll('.accordion-header').forEach(function(header) {
         header.addEventListener('click', function() {
