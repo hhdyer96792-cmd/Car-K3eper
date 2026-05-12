@@ -223,19 +223,12 @@ App.events.switchToTab = function(tabId) {
             if (typeof App.ui.pages.renderDashboard === 'function') App.ui.pages.renderDashboard();
             break;
         case 'to':
-            var displayMileage = document.getElementById('display-mileage');
-            var displayMotohours = document.getElementById('display-motohours');
-            var displayAvgMileage = document.getElementById('display-avg-mileage');
-            var displayAvgMotohours = document.getElementById('display-avg-motohours');
-            if (displayMileage) displayMileage.textContent = App.store.settings.currentMileage;
-            if (displayMotohours) displayMotohours.textContent = App.store.settings.currentMotohours;
-            if (displayAvgMileage) displayAvgMileage.textContent = App.store.settings.avgDailyMileage;
-            if (displayAvgMotohours) displayAvgMotohours.textContent = App.store.settings.avgDailyMotohours;
-
-            if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
-            if (typeof App.ui.pages.renderTop5Widget === 'function') App.ui.pages.renderTop5Widget();
-            if (typeof App.ui.pages.renderMaintenancePlan === 'function') App.ui.pages.renderMaintenancePlan();
-            break;
+    if (typeof App.ui.pages.renderTOStats === 'function') App.ui.pages.renderTOStats();
+    if (typeof App.ui.pages.renderResourceBars === 'function') App.ui.pages.renderResourceBars();
+    if (typeof App.ui.pages.renderTOCostChart === 'function') App.ui.pages.renderTOCostChart();
+    if (typeof App.ui.pages.renderTOCategoryPieChart === 'function') App.ui.pages.renderTOCategoryPieChart();
+    if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
+    break;
         case 'stats':
             if (typeof App.ui.pages.renderStats === 'function') App.ui.pages.renderStats();
             if (typeof App.ui.pages.renderFuelAnalytics === 'function') App.ui.pages.renderFuelAnalytics();
