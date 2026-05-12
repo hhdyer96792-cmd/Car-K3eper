@@ -746,6 +746,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-bottom: 4px;
 }
 .to-actions-bar button {
-    font-size: 0.7rem;     /* размер текста */
-    padding: 4px 8px;      /* внутренние отступы */
+    font-size: 0.6rem;     /* размер текста */
+    padding: 2px 4px;      /* внутренние отступы */
 }
