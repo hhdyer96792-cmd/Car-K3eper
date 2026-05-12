@@ -244,8 +244,7 @@ App.ui.pages.renderTOTable = function() {
                 var elapsed = Math.floor((new Date() - new Date(op.lastDate)) / 86400000);
                 percent = Math.min(100, Math.round((elapsed / totalDays) * 100));
             }
-            var progressColor = percent > 70 ? 'var(--success)' : (percent > 30 ? 'var(--warning)' : 'var(--danger)');
-
+            var progressColor = percent > 70 ? 'var(--danger)' : (percent > 30 ? 'var(--warning)' : 'var(--success)');
             html += '<div class="card-item expandable" data-op-id="' + op.id + '">';
             html += '<div class="card-header">';
             html += '<span class="status-dot ' + statusClass + '"></span>';
@@ -268,6 +267,7 @@ App.ui.pages.renderTOTable = function() {
             html += '</div>'; // card-header
 
             html += '<div class="card-details">';
+            html += '<div class="progress-percent">Износ: ' + percent + '%</div>';
             html += '<div class="progress-bar-container"><div class="progress-bar" style="width:' + percent + '%; background:' + progressColor + ';"></div></div>';
             html += '<div class="card-detail-actions">';
             html += '<button class="icon-btn" data-action="edit-op" data-op-id="' + op.id + '"><i data-lucide="pencil"></i></button>';
