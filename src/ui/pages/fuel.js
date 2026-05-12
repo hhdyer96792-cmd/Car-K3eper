@@ -38,9 +38,6 @@ App.ui.pages.renderFuelTab = function() {
         });
     }
 
-
-// Главная точка входа при открытии вкладки
-App.ui.pages.renderFuelTab = function() {
     App.ui.pages.renderFuelSummary();
     App.ui.pages.renderFuelPeriodSwitch();
     App.ui.pages.renderFuelCharts(App.ui.pages._fuelPeriod);
