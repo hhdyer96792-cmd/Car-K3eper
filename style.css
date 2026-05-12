@@ -650,3 +650,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .to-actions-bar button {
     white-space: nowrap;
 }
+.chart-wrapper {
+    height: 200px;
+    max-height: 200px;
+}
