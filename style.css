@@ -734,18 +734,32 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 }
 
 /* Кнопка-действие панели ТО */
-.to-actions-bar {
+..to-actions-bar {
     display: flex;
-    flex-wrap: wrap;
     gap: 8px;
     margin: 16px 0;
+    justify-content: space-between;  /* равномерное распределение */
+    width: 100%;
+}
+.to-actions-bar button {
+    flex: 1 1 0;                    /* кнопки растягиваются на равную ширину */
+    font-size: 0.9rem;
+    padding: 8px 10px;
+    white-space: nowrap;            /* иконка и текст в одну строку */
+    text-align: center;
+    justify-content: center;        /* центрирование содержимого кнопки */
+}
+@media (max-width: 767px) {
+    .to-actions-bar {
+        gap: 4px;
+    }
+    .to-actions-bar button {
+        font-size: 0.8rem;
+        padding: 10px 4px;
+    }
 }
 .progress-percent {
     font-size: 0.8rem;
     color: var(--text-muted);
     margin-bottom: 4px;
-}
-.to-actions-bar button {
-    font-size: 0.9rem;     /* размер текста */
-    padding: 8px 10px;      /* внутренние отступы */
 }
