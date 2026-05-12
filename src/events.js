@@ -319,7 +319,7 @@ App.events.initDirectListeners = function() {
     var recalculateBtn = document.getElementById('recalculate-btn');
     if (recalculateBtn) recalculateBtn.addEventListener('click', function() {
         App.ui.pages.renderTOTable();
-        App.ui.pages.renderTop5Widget();
+        App.ui.pages.renderResourceBars();
     });
 
     var exportBtn = document.getElementById('export-btn');
@@ -413,21 +413,13 @@ App.events.initDirectListeners = function() {
         });
     });
 
-    // Автообновление календаря при изменении периода (Этап 2)
-    var planPeriodSelect = document.getElementById('plan-period-select');
-    if (planPeriodSelect) {
-        planPeriodSelect.addEventListener('change', function() {
-            if (document.getElementById('tab-to')?.classList.contains('active')) {
-                App.ui.pages.renderMaintenancePlan();
-            }
-        });
-    }
-
-     // Объединённая кнопка "Действия с календарём"
+    // Кнопка "Календарь" на вкладке ТО (ICS)
     var calendarActionBtn = document.getElementById('calendar-action-btn');
     if (calendarActionBtn) {
         calendarActionBtn.addEventListener('click', function() {
-            var period = document.getElementById('plan-period-select')?.value || 'month';
+            // period по умолчанию месяц (можно взять из селекта, если есть)
+            var periodSelect = document.getElementById('plan-period-select');
+            var period = periodSelect ? periodSelect.value : 'month';
             var modalContent = '<div style="display:flex; gap:12px; justify-content:center;">' +
                 '<button id="modal-download-ics" class="primary-btn"><i data-lucide="download"></i> Скачать</button>' +
                 '<button id="modal-subscribe-cal" class="secondary-btn"><i data-lucide="calendar-plus"></i> Подписаться</button>' +
@@ -459,7 +451,17 @@ App.events.initDirectListeners = function() {
         });
     }
 
-    // Кнопка темы на вкладке Настройки (п.2)
+    // Слушатель периода гистограммы затрат на ТО
+    var toCostPeriod = document.getElementById('to-cost-period');
+    if (toCostPeriod) {
+        toCostPeriod.addEventListener('change', function() {
+            if (document.getElementById('tab-to')?.classList.contains('active')) {
+                App.ui.pages.renderTOCostChart();
+            }
+        });
+    }
+
+    // Кнопка темы на вкладке Настройки
     var settingsThemeToggle = document.getElementById('settings-theme-toggle');
     if (settingsThemeToggle) {
         settingsThemeToggle.addEventListener('click', function() {
