@@ -15,6 +15,10 @@ App.ui.pages.renderTOStats = function() {
 App.ui.pages.renderResourceBars = function() {
     var container = document.getElementById('to-resource-bars-container');
     if (!container) return;
+    if (!App.store.operations || App.store.operations.length === 0) {
+        container.innerHTML = '<p class="hint">Нет данных</p>';
+        return;
+    }
 
     var candidates = App.store.operations.filter(function(op) {
         return op.intervalKm || op.intervalMonths || op.intervalMotohours;
@@ -164,6 +168,10 @@ App.ui.pages.renderTOCategoryPieChart = function() {
 App.ui.pages.renderTOTable = function() {
     var container = document.getElementById('to-cards-container');
     if (!container) return;
+    if (!App.store.operations || App.store.operations.length === 0) {
+        container.innerHTML = '<p class="hint">Нет данных</p>';
+        return;
+    }
 
     var grouped = {};
     App.store.operations.forEach(function(op) {
@@ -198,9 +206,8 @@ App.ui.pages.renderTOTable = function() {
         var ops = grouped[cat].sort(function(a, b) {
             return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft;
         });
-        var hasOverdue = ops.some(function(op) { return App.logic.calculatePlan(op).daysLeft < 0; });
-        // Открыть первый аккордеон, если он содержит просроченные, или просто первый
-        var openClass = (catIndex === 0 && hasOverdue) || (catIndex === 0 && !hasOverdue) ? ' open' : '';
+        // Первый аккордеон открыт всегда, остальные свёрнуты
+        var openClass = (catIndex === 0) ? ' open' : '';
 
         html += '<div class="accordion-group">';
         html += '<div class="accordion-header' + openClass + '">';
@@ -310,23 +317,7 @@ App.ui.pages.renderTOTable = function() {
     App.initIcons();
 };
 
-// ---- Существующие функции (без изменений) ----
-App.ui.pages.openServiceModal = function(opId, opName) {
-    // Вставьте сюда текущую реализацию из вашего maintenance.js
-};
-
-App.ui.pages.openOperationForm = function(op) {
-    // Вставьте сюда текущую реализацию из вашего maintenance.js
-};
-
-App.ui.pages.generateShoppingList = function(opId) {
-    // Вставьте сюда текущую реализацию из вашего maintenance.js
-};
-
-// Глобальная функция генерации ICS (используется в events.js и других местах)
-function generateICS(plan) {
-    // Вставьте сюда текущую реализацию из вашего maintenance.js
-}
+// === СУЩЕСТВУЮЩИЕ ФУНКЦИИ (БЕЗ ДУБЛИКАТОВ) ===
 
 App.ui.pages.openServiceModal = function(opId, opName) {
     var op = App.store.operations.find(function(o) { return o.id == opId; });
@@ -419,9 +410,9 @@ App.ui.pages.openServiceModal = function(opId, opName) {
             baseMotohours: App.store.baseMotohours || 0
         };
         var validationError = App.logic.validateMaintenanceRecord(
-    formattedDate, mileage, motohours, refPoint, App.store.serviceRecords,
-    opName, op.category
-);
+            formattedDate, mileage, motohours, refPoint, App.store.serviceRecords,
+            opName, op.category
+        );
         if (validationError) {
             App.toast(validationError, 'error');
             return;
@@ -443,7 +434,6 @@ App.ui.pages.openServiceModal = function(opId, opName) {
             }
         }
 
-        // === Офлайн-логика ===
         if (!navigator.onLine) {
             var offlineRecord = {
                 operation_id: op.id,
@@ -474,14 +464,10 @@ App.ui.pages.openServiceModal = function(opId, opName) {
             op.lastMotohours = motohours || 0;
             App.store.saveToLocalStorage();
             App.toast('Запись сохранена локально. Синхронизируется при подключении к сети.', 'warning');
-            // Обновляем все представления
             if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
-            if (typeof App.ui.pages.renderMaintenancePlan === 'function') App.ui.pages.renderMaintenancePlan();
-            if (typeof App.ui.pages.renderTop5Widget === 'function') App.ui.pages.renderTop5Widget();
             return;
         }
 
-        // Онлайн-сохранение
         Promise.all(uploadPromises).then(function(photoUrls) {
             var photoUrl = photoUrls.filter(function(url) { return url !== ''; })[0] || '';
             var fullNotes = notes;
@@ -510,8 +496,6 @@ App.ui.pages.openServiceModal = function(opId, opName) {
                     .then(function() {
                         App.toast('ТО успешно выполнено', 'success');
                         App.storage.loadAllData();
-                        if (typeof App.ui.pages.renderMaintenancePlan === 'function') App.ui.pages.renderMaintenancePlan();
-                        if (typeof App.ui.pages.renderTop5Widget === 'function') App.ui.pages.renderTop5Widget();
                     }).catch(function(err) {
                         console.error(err);
                         App.toast('Ошибка сохранения ТО', 'error');
@@ -533,8 +517,6 @@ App.ui.pages.openServiceModal = function(opId, opName) {
                         });
                         App.logic.addDependentOperations(opName, opId, formattedDate, mileage, motohours, 'Автоматически');
                         App.toast('ТО успешно выполнено', 'success');
-                        if (typeof App.ui.pages.renderMaintenancePlan === 'function') App.ui.pages.renderMaintenancePlan();
-                        if (typeof App.ui.pages.renderTop5Widget === 'function') App.ui.pages.renderTop5Widget();
                     })
                     .catch(function(error) {
                         console.error(error);
@@ -593,3 +575,42 @@ App.ui.pages.generateShoppingList = function(opId) {
     });
     alert(list);
 };
+
+// Глобальная функция генерации ICS (используется в events.js и dashboard.js)
+function generateICS(plan) {
+    var now = new Date().toISOString().replace(/[-:]/g, '').slice(0,15) + 'Z';
+    var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Vesta Dashboard//RU\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
+    plan.forEach(function(op) {
+        var planData = App.logic.calculatePlan(op);
+        if (!planData.planDate) return;
+        var dtStart = planData.planDate.replace(/-/g, '') + 'T090000';
+        var dtEnd = planData.planDate.replace(/-/g, '') + 'T100000';
+        var uid = op.id + '-vesta-' + planData.planDate;
+        var summary = 'ТО: ' + op.name;
+
+        var parts = App.store.parts.filter(function(p) {
+            return p.operation === op.name || p.operation === op.category;
+        });
+        var partsList = '';
+        if (parts.length > 0) {
+            partsList = '\\n\\nСписок запчастей:\\n';
+            parts.forEach(function(p) {
+                var status = (p.inStock && p.inStock > 0) ? '✅' : '☐';
+                partsList += status + ' ' + (p.oem || p.analog || p.operation) + (p.price ? ' (' + p.price + '₽)' : '') + '\\n';
+            });
+        }
+
+        var description = 'Пробег: ' + planData.planMileage + ' км. Категория: ' + (op.category || '') + partsList;
+
+        ics += 'BEGIN:VEVENT\r\n';
+        ics += 'UID:' + uid + '\r\n';
+        ics += 'DTSTART:' + dtStart + '\r\n';
+        ics += 'DTEND:' + dtEnd + '\r\n';
+        ics += 'SUMMARY:' + summary + '\r\n';
+        ics += 'DESCRIPTION:' + description + '\r\n';
+        ics += 'DTSTAMP:' + now + '\r\n';
+        ics += 'END:VEVENT\r\n';
+    });
+    ics += 'END:VCALENDAR\r\n';
+    return ics;
+}
