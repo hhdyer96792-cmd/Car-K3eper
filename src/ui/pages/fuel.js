@@ -428,11 +428,11 @@ App.ui.pages.renderFuelCards = function() {
         var totalLiters = records.reduce(function(s, r) { return s + (Number(r.liters) || 0); }, 0);
         var totalCost = records.reduce(function(s, r) { return s + (Number(r.liters) || 0) * (Number(r.pricePerLiter) || 0); }, 0);
         html += '<div class="accordion-group">';
-        html += '<div class="accordion-header' + (idx === 0 ? ' active' : '') + '">';
+        html += '<div class="accordion-header">';
         html += '<i data-lucide="calendar"></i> ' + year + ' (' + totalLiters.toFixed(1) + ' л, ' + totalCost.toFixed(0) + ' ₽)';
         html += '<i data-lucide="chevron-down" class="accordion-arrow" style="margin-left:auto;"></i>';
         html += '</div>';
-        html += '<div class="accordion-body' + (idx === 0 ? ' open' : '') + '">';
+        html += '<div class="accordion-body">';
 
         records.forEach(function(f) {
             var originalIndex = App.store.fuelLog.indexOf(f);
