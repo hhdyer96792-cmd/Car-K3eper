@@ -251,8 +251,8 @@ App.events.switchToTab = function(tabId) {
     if (typeof App.ui.pages.renderTiresTab === 'function') App.ui.pages.renderTiresTab();
     break;
         case 'parts':
-            if (typeof App.ui.pages.renderPartsTable === 'function') App.ui.pages.renderPartsTable();
-            break;
+    if (typeof App.ui.pages.renderPartsTab === 'function') App.ui.pages.renderPartsTab();
+    break;
         case 'car':
             if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
             break;
