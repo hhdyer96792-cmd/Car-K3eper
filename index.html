@@ -354,11 +354,17 @@
     </div>
 </div>
 
-    <!-- 3. Карточка прогноза -->
+    <!-- 3. Карточка прогноза и круговая диаграмма -->
+    <div class="finance-row">
     <div class="card forecast-card" id="finance-forecast">
         <h3><i data-lucide="trending-up"></i> Прогноз на следующий месяц</h3>
         <div id="finance-forecast-value">—</div>
     </div>
+    <div class="card chart-card finance-pie-card">
+        <h3><i data-lucide="pie-chart"></i> Распределение затрат</h3>
+        <canvas id="financePieChart"></canvas>
+    </div>
+</div>
 
     <!-- 4. Линейный график динамики с прогнозом -->
     <div class="card chart-card">
@@ -372,13 +378,8 @@
         <div class="chart-wrapper" style="height:200px;"><canvas id="financeCostHistogram"></canvas></div>
     </div>
 
-    <!-- 6. Круговая диаграмма распределения затрат -->
-    <div class="card chart-card">
-        <h3><i data-lucide="pie-chart"></i> Распределение затрат</h3>
-        <canvas id="financePieChart" height="200"></canvas>
-    </div>
 
-    <!-- 7. Блок сравнения периодов -->
+    <!-- 6. Блок сравнения периодов -->
     <div class="card comparison-card" id="finance-comparison">
         <h3><i data-lucide="git-compare"></i> Сравнение периодов</h3>
         <div class="comparison-selectors">
