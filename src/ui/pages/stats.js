@@ -128,39 +128,49 @@ App.ui.pages.updateFinanceMetrics = function() {
     var total = costs.fuel + costs.to + costs.parts + costs.tires;
     document.getElementById('finance-total').textContent = total.toLocaleString() + ' ₽';
 
-    // Дни в периоде
-    var days = Math.ceil((range.end - range.start) / (1000*60*60*24)) || 1;
+    // Дни в периоде (минимум 1, чтобы избежать деления на 0)
+    var days = Math.ceil((range.end - range.start) / (1000 * 60 * 60 * 24)) || 1;
     var dailyAvg = total / days;
     document.getElementById('finance-daily-avg').textContent = dailyAvg.toFixed(0) + ' ₽';
 
-    // Самый дорогой/дешёвый месяц в заданном периоде
+    // Самый дорогой/дешёвый месяц внутри выбранного периода
     var monthly = aggregateMonthlyCosts();
-    var best = { month: '', cost: Infinity };
-    var worst = { month: '', cost: -Infinity };
+    var best  = { monthKey: '', cost:  Infinity };
+    var worst = { monthKey: '', cost: -Infinity };
+
     for (var key in monthly) {
         var d = parseMonthKey(key);
         var date = new Date(d.year, d.month, 1);
         if (date >= range.start && date <= range.end) {
-            if (monthly[key] > worst.cost) { worst.cost = monthly[key]; worst.month = key; }
-            if (monthly[key] < best.cost) { best.cost = monthly[key]; best.month = key; }
+            if (monthly[key] > worst.cost) {
+                worst.cost = monthly[key];
+                worst.monthKey = key;
+            }
+            if (monthly[key] < best.cost) {
+                best.cost = monthly[key];
+                best.monthKey = key;
+            }
         }
     }
-    if (worst.month) {
-        document.getElementById('finance-expensive-month').textContent = worst.month;
+
+    // Отображаем самый дорогой месяц
+    if (worst.monthKey) {
+        document.getElementById('finance-expensive-month').textContent = worst.monthKey;
         document.getElementById('finance-expensive-amount').textContent = worst.cost.toLocaleString() + ' ₽';
     } else {
         document.getElementById('finance-expensive-month').textContent = '—';
         document.getElementById('finance-expensive-amount').textContent = '';
     }
-    if (best.month) {
-        document.getElementById('finance-cheap-month').textContent = best.month;
+
+    // Отображаем самый дешёвый месяц
+    if (best.monthKey) {
+        document.getElementById('finance-cheap-month').textContent = best.monthKey;
         document.getElementById('finance-cheap-amount').textContent = best.cost.toLocaleString() + ' ₽';
     } else {
         document.getElementById('finance-cheap-month').textContent = '—';
         document.getElementById('finance-cheap-amount').textContent = '';
     }
 };
-
 // ---------- Прогноз ----------
 App.ui.pages.updateFinanceForecast = function() {
     var monthly = aggregateMonthlyCosts();
@@ -171,14 +181,19 @@ App.ui.pages.updateFinanceForecast = function() {
         var key = getMonthKey(d);
         lastThree.push(monthly[key] || 0);
     }
-    var avg = lastThree.reduce(function(a,b){return a+b;},0) / 3;
-    var forecast = avg;
-    var fluctuation = lastThree.length ? Math.max(Math.abs(lastThree[0]-avg), Math.abs(lastThree[1]-avg), Math.abs(lastThree[2]-avg)) : 0;
-    var rangeText = (fluctuation/avg*100).toFixed(0);
-    document.getElementById('finance-forecast-value').innerHTML =
-        '<span style="font-size:1.8rem; font-weight:700;">' + forecast.toFixed(0) + ' ₽</span>' +
-        ' <span style="opacity:0.8;">±' + rangeText + '%</span>' +
-        '<div class="hint">(на основе среднего за последние 3 месяца)</div>';
+    if (lastThree.length < 3 || lastThree.every(function(v){ return v === 0; })) {
+    document.getElementById('finance-forecast-value').innerHTML = '<span class="hint">Недостаточно данных</span>';
+    return;
+}
+var avg = lastThree.reduce(function(a,b){return a+b;},0) / 3;
+var forecast = avg;
+var maxDiff = 0;
+lastThree.forEach(function(v) { maxDiff = Math.max(maxDiff, Math.abs(v - avg)); });
+var rangeText = avg ? (maxDiff / avg * 100).toFixed(0) : 0;
+document.getElementById('finance-forecast-value').innerHTML =
+    '<span style="font-size:1.8rem; font-weight:700;">' + forecast.toFixed(0) + ' ₽</span>' +
+    ' <span style="opacity:0.8;">±' + rangeText + '%</span>' +
+    '<div class="hint">(на основе среднего за последние 3 месяца)</div>';
 };
 
 // ---------- Линейный график динамики с прогнозом ----------
