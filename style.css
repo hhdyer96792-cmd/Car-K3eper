@@ -962,3 +962,27 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
         min-width: 100%;
     }
 }
+
+/* Карточка «Всего затрат на колёса» */
+.total-tires-card h3 {
+    margin-bottom: 12px;
+}
+.total-tires-card .total-cost-value {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--primary);
+}
+
+/* Элементы прогресс-бара износа */
+.wear-item {
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+.progress-label {
+    font-size: 0.8rem;
+    margin: 8px 0 2px;
+    color: var(--text-muted);
+}
