@@ -986,3 +986,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin: 8px 0 2px;
     color: var(--text-muted);
 }
+#tire-form label input[type="checkbox"] {
+    margin-right: 6px;
+    vertical-align: middle;
+}
