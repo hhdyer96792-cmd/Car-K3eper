@@ -1127,3 +1127,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     padding: 6px 12px;
     font-size: 0.8rem;
 }
+
+#history-cards-container {
+    margin-top: 20px;   /* отступ от фильтров */
+}
