@@ -68,13 +68,19 @@ App.ui.pages.bindHistoryFilterEvents = function() {
     filters.forEach(function(id) {
         var el = document.getElementById(id);
         if (el) {
-            el.addEventListener('change', App.ui.pages.renderHistoryCards);
+            el.addEventListener('change', function() {
+                App.ui.pages.renderHistoryCards();
+                App.ui.pages.updateMobilePills();
+            });
         }
     });
     ['history-search', 'history-cost-min', 'history-cost-max', 'history-mileage-min', 'history-mileage-max'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) {
-            el.addEventListener('input', App.ui.pages.renderHistoryCards);
+            el.addEventListener('input', function() {
+                App.ui.pages.renderHistoryCards();
+                App.ui.pages.updateMobilePills();
+            });
         }
     });
     var resetBtn = document.getElementById('history-reset-filters');
@@ -91,6 +97,7 @@ App.ui.pages.bindHistoryFilterEvents = function() {
             });
             document.getElementById('history-sort-order').value = 'date-desc';
             App.ui.pages.renderHistoryCards();
+            App.ui.pages.updateMobilePills();
         });
     }
 };
@@ -111,7 +118,6 @@ App.ui.pages.getFilteredHistory = function() {
 
     var filtered = App.store.serviceRecords.slice();
 
-    // Период
     if (period !== 'all') {
         var start = App.logic.getStartDateForPeriod(period);
         if (start) {
@@ -122,7 +128,6 @@ App.ui.pages.getFilteredHistory = function() {
         }
     }
 
-    // Операция
     if (opFilter) {
         filtered = filtered.filter(function(r) {
             var op = App.store.operations.find(function(o) { return o.id == r.operation_id; });
@@ -130,7 +135,6 @@ App.ui.pages.getFilteredHistory = function() {
         });
     }
 
-    // Категория
     if (catFilter) {
         filtered = filtered.filter(function(r) {
             var op = App.store.operations.find(function(o) { return o.id == r.operation_id; });
@@ -138,12 +142,10 @@ App.ui.pages.getFilteredHistory = function() {
         });
     }
 
-    // Исполнитель
     if (executorFilter) {
         filtered = filtered.filter(function(r) { return r.user_id === executorFilter; });
     }
 
-    // Поиск
     if (searchText) {
         filtered = filtered.filter(function(r) {
             var op = App.store.operations.find(function(o) { return o.id == r.operation_id; });
@@ -153,35 +155,31 @@ App.ui.pages.getFilteredHistory = function() {
         });
     }
 
-    // DIY
     if (diyOnly) {
         filtered = filtered.filter(function(r) { return r.is_diy === true || r.is_diy === 'TRUE'; });
     }
 
-    // Стоимость
     filtered = filtered.filter(function(r) {
         var cost = (Number(r.parts_cost) || 0) + (Number(r.work_cost) || 0);
         return cost >= costMin && cost <= costMax;
     });
 
-    // Пробег
     filtered = filtered.filter(function(r) {
         var m = parseFloat(r.mileage) || 0;
         return m >= mileageMin && m <= mileageMax;
     });
 
-    // Сортировка
     switch (sort) {
         case 'date-asc': filtered.sort(function(a,b) { return (a.date||'').localeCompare(b.date||''); }); break;
         case 'cost-desc': filtered.sort(function(a,b) { return ((Number(b.parts_cost)||0)+(Number(b.work_cost)||0)) - ((Number(a.parts_cost)||0)+(Number(a.work_cost)||0)); }); break;
         case 'cost-asc': filtered.sort(function(a,b) { return ((Number(a.parts_cost)||0)+(Number(a.work_cost)||0)) - ((Number(b.parts_cost)||0)+(Number(b.work_cost)||0)); }); break;
-        default: filtered.sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); }); break; // date-desc
+        default: filtered.sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); }); break;
     }
 
     return filtered;
 };
 
-// Рендер карточек (основная функция)
+// Рендер карточек
 App.ui.pages.renderHistoryCards = function() {
     var container = document.getElementById('history-cards-container');
     if (!container) return;
@@ -198,10 +196,8 @@ App.ui.pages.renderHistoryCards = function() {
     filtered.forEach(function(record) {
         var op = App.store.operations.find(function(o) { return o.id == record.operation_id; }) || { name: 'Неизвестно' };
         var diyFlag = record.is_diy === 'TRUE' || record.is_diy === true;
-        var totalCost = (Number(record.parts_cost) || 0) + (Number(record.work_cost) || 0);
 
         if (isMobile) {
-            // Мобильная карточка с раскрытием
             html += '<div class="history-card-mobile">';
             html += '<div class="header"><strong>' + App.utils.escapeHtml(record.date || '') + '</strong></div>';
             html += '<div class="operation">' + App.utils.escapeHtml(op.name) + '</div>';
@@ -219,7 +215,6 @@ App.ui.pages.renderHistoryCards = function() {
             html += '</div>';
             html += '</div>';
         } else {
-            // Десктопная карточка с колонками
             html += '<div class="history-card">';
             html += '<div class="history-card-header"><span class="date">' + App.utils.escapeHtml(record.date || '') + '</span><span class="operation">' + App.utils.escapeHtml(op.name) + '</span></div>';
             html += '<div class="history-card-grid">';
@@ -242,7 +237,6 @@ App.ui.pages.renderHistoryCards = function() {
 
     container.innerHTML = html;
 
-    // Обработчики раскрытия на мобильных
     if (isMobile) {
         container.querySelectorAll('.mobile-toggle-btn').forEach(function(btn) {
             btn.addEventListener('click', function(e) {
@@ -261,18 +255,14 @@ App.ui.pages.renderHistoryCards = function() {
     }
 
     App.initIcons();
-
-    // Обновление пилюль для мобильных
-    if (isMobile) {
-        App.ui.pages.updateMobilePills();
-    }
+    if (isMobile) App.ui.pages.updateMobilePills();
 };
 
-// Мобильные пилюли
+// Мобильные пилюли с кнопками сброса
 App.ui.pages.updateMobilePills = function() {
     var pillsContainer = document.getElementById('history-pills');
     if (!pillsContainer) return;
-    var pills = [];
+
     var period = document.getElementById('history-period-select')?.value;
     var op = document.getElementById('history-operation-filter')?.value;
     var cat = document.getElementById('history-category-filter')?.value;
@@ -285,26 +275,54 @@ App.ui.pages.updateMobilePills = function() {
     var mileageMax = document.getElementById('history-mileage-max')?.value;
     var sort = document.getElementById('history-sort-order')?.value;
 
-    if (period && period !== 'all') pills.push('Период: ' + period);
-    if (op) pills.push('Операция: ' + op);
-    if (cat) pills.push('Категория: ' + cat);
-    if (exec) pills.push('Исполнитель: ' + exec.substring(0,8));
-    if (search) pills.push('Поиск: ' + search);
-    if (diy) pills.push('Только DIY');
-    if (costMin || costMax) pills.push('Цена: ' + (costMin||'0') + '-' + (costMax||'∞'));
-    if (mileageMin || mileageMax) pills.push('Пробег: ' + (mileageMin||'0') + '-' + (mileageMax||'∞'));
-    if (sort && sort !== 'date-desc') pills.push('Сорт: ' + sort);
+    // Объект фильтров: { id: значение, label: 'Название', resetValue: 'значение по умолчанию' }
+    var pills = [];
+    if (period && period !== 'all') pills.push({ id: 'history-period-select', value: period, label: 'Период: ' + period, reset: 'all' });
+    if (op) pills.push({ id: 'history-operation-filter', value: op, label: 'Операция: ' + op, reset: '' });
+    if (cat) pills.push({ id: 'history-category-filter', value: cat, label: 'Категория: ' + cat, reset: '' });
+    if (exec) pills.push({ id: 'history-executor-filter', value: exec, label: 'Исполнитель: ' + exec.substring(0,8), reset: '' });
+    if (search) pills.push({ id: 'history-search', value: search, label: 'Поиск: ' + search, reset: '' });
+    if (diy) pills.push({ id: 'history-diy-only', value: true, label: 'Только DIY', reset: false });
+    if (costMin || costMax) pills.push({ id: ['history-cost-min','history-cost-max'], value: [costMin, costMax], label: 'Цена: ' + (costMin||'0') + '-' + (costMax||'∞'), reset: ['',''] });
+    if (mileageMin || mileageMax) pills.push({ id: ['history-mileage-min','history-mileage-max'], value: [mileageMin, mileageMax], label: 'Пробег: ' + (mileageMin||'0') + '-' + (mileageMax||'∞'), reset: ['',''] });
+    if (sort && sort !== 'date-desc') pills.push({ id: 'history-sort-order', value: sort, label: 'Сорт: ' + sort, reset: 'date-desc' });
 
     var html = '';
-    pills.forEach(function(pill) {
-        html += '<span class="pill">' + App.utils.escapeHtml(pill) + '</span>';
+    pills.forEach(function(p) {
+        html += '<span class="pill">' + App.utils.escapeHtml(p.label) +
+                '<button class="pill-remove" data-filter-id=\'' + JSON.stringify(p.id) + '\' data-reset=\'' + JSON.stringify(p.reset) + '\'><i data-lucide="x"></i></button></span>';
     });
     pillsContainer.innerHTML = html;
+
+    // Обработчики удаления пилюль
+    pillsContainer.querySelectorAll('.pill-remove').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var filterId = JSON.parse(this.dataset.filterId);
+            var resetValue = JSON.parse(this.dataset.reset);
+            if (Array.isArray(filterId)) {
+                filterId.forEach(function(id, idx) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        if (el.type === 'checkbox') el.checked = resetValue[idx];
+                        else el.value = resetValue[idx];
+                    }
+                });
+            } else {
+                var el = document.getElementById(filterId);
+                if (el) {
+                    if (el.type === 'checkbox') el.checked = resetValue;
+                    else el.value = resetValue;
+                }
+            }
+            App.ui.pages.renderHistoryCards();
+            App.ui.pages.updateMobilePills();
+        });
+    });
 };
 
 // Модальное окно фильтров (для мобильных)
 App.ui.pages.openHistoryFiltersModal = function() {
-    // Здесь строится форма фильтров, аналогичная десктопной, но в вертикальном столбце
     var content =
         '<div class="filters-modal">' +
             '<div class="filter-row"><label>Период <select id="modal-history-period-select">' +
@@ -322,8 +340,9 @@ App.ui.pages.openHistoryFiltersModal = function() {
         '</div>';
 
     var modal = App.ui.createModal('Фильтры', content);
-    // Скопировать текущие значения в модальные поля
-    var currentValues = {
+
+    // Скопировать текущие значения
+    var current = {
         period: document.getElementById('history-period-select')?.value,
         op: document.getElementById('history-operation-filter')?.value,
         cat: document.getElementById('history-category-filter')?.value,
@@ -336,24 +355,22 @@ App.ui.pages.openHistoryFiltersModal = function() {
         mileageMax: document.getElementById('history-mileage-max')?.value,
         sort: document.getElementById('history-sort-order')?.value
     };
-    document.getElementById('modal-history-period-select').value = currentValues.period || 'all';
-    document.getElementById('modal-history-operation-filter').value = currentValues.op || '';
-    document.getElementById('modal-history-category-filter').value = currentValues.cat || '';
-    document.getElementById('modal-history-executor-filter').value = currentValues.exec || '';
-    document.getElementById('modal-history-search').value = currentValues.search || '';
-    document.getElementById('modal-history-diy-only').checked = currentValues.diy;
-    document.getElementById('modal-history-cost-min').value = currentValues.costMin || '';
-    document.getElementById('modal-history-cost-max').value = currentValues.costMax || '';
-    document.getElementById('modal-history-mileage-min').value = currentValues.mileageMin || '';
-    document.getElementById('modal-history-mileage-max').value = currentValues.mileageMax || '';
-    document.getElementById('modal-history-sort-order').value = currentValues.sort || 'date-desc';
 
-    // Заполнение селектов операций, категорий, исполнителей
+    document.getElementById('modal-history-period-select').value = current.period || 'all';
+    document.getElementById('modal-history-operation-filter').value = current.op || '';
+    document.getElementById('modal-history-category-filter').value = current.cat || '';
+    document.getElementById('modal-history-executor-filter').value = current.exec || '';
+    document.getElementById('modal-history-search').value = current.search || '';
+    document.getElementById('modal-history-diy-only').checked = current.diy;
+    document.getElementById('modal-history-cost-min').value = current.costMin || '';
+    document.getElementById('modal-history-cost-max').value = current.costMax || '';
+    document.getElementById('modal-history-mileage-min').value = current.mileageMin || '';
+    document.getElementById('modal-history-mileage-max').value = current.mileageMax || '';
+    document.getElementById('modal-history-sort-order').value = current.sort || 'date-desc';
+
     App.ui.pages.populateModalHistorySelects(modal);
 
-    // Применить
     document.getElementById('apply-mobile-filters').addEventListener('click', function() {
-        // Перенести значения из модалки в основные поля
         document.getElementById('history-period-select').value = document.getElementById('modal-history-period-select').value;
         document.getElementById('history-operation-filter').value = document.getElementById('modal-history-operation-filter').value;
         document.getElementById('history-category-filter').value = document.getElementById('modal-history-category-filter').value;
@@ -367,11 +384,10 @@ App.ui.pages.openHistoryFiltersModal = function() {
         document.getElementById('history-sort-order').value = document.getElementById('modal-history-sort-order').value;
         modal.remove();
         App.ui.pages.renderHistoryCards();
+        App.ui.pages.updateMobilePills();
     });
 
-    // Сброс
     document.getElementById('reset-mobile-filters').addEventListener('click', function() {
-        // Сбросить все модальные поля
         document.getElementById('modal-history-period-select').value = 'all';
         document.getElementById('modal-history-operation-filter').value = '';
         document.getElementById('modal-history-category-filter').value = '';
@@ -386,7 +402,6 @@ App.ui.pages.openHistoryFiltersModal = function() {
     });
 };
 
-// Заполнение селектов в модалке
 App.ui.pages.populateModalHistorySelects = function(modal) {
     var opSelect = modal.querySelector('#modal-history-operation-filter');
     if (opSelect) {
@@ -395,7 +410,7 @@ App.ui.pages.populateModalHistorySelects = function(modal) {
         App.store.operations.forEach(function(op) {
             if (!seen[op.name]) {
                 seen[op.name] = true;
-                opSelect.innerHTML += '<option value="' + op.name + '">' + op.name + '</option>';
+                opSelect.innerHTML += '<option value="' + op.name + '">' + App.utils.escapeHtml(op.name) + '</option>';
             }
         });
     }
@@ -406,7 +421,7 @@ App.ui.pages.populateModalHistorySelects = function(modal) {
         App.store.operations.forEach(function(op) {
             if (op.category && !cats[op.category]) {
                 cats[op.category] = true;
-                catSelect.innerHTML += '<option value="' + op.category + '">' + op.category + '</option>';
+                catSelect.innerHTML += '<option value="' + op.category + '">' + App.utils.escapeHtml(op.category) + '</option>';
             }
         });
     }
@@ -442,7 +457,7 @@ App.ui.pages.openHistoryEdit = function(rowIndex) {
             '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
         '</form>';
 
-    var modal = App.ui.createModal('✏️ Редактировать запись истории', content);
+    var modal = App.ui.createModal('<i data-lucide="pencil"></i> Редактировать запись истории', content);
     var form = modal.querySelector('#history-edit-form');
     form.onsubmit = function(ev) {
         ev.preventDefault();
