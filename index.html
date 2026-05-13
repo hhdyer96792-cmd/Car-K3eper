@@ -330,27 +330,29 @@
         <button class="period-btn" data-period="all">Всё время</button>
     </div>
 
-    <!-- 2. Карточки метрик -->
-    <div class="finance-metrics" id="finance-metrics">
-        <div class="card metric-card">
+    <!-- 2. Карточки метрик (сводная) -->
+<div class="card finance-summary-card" id="finance-summary-card">
+    <div class="finance-metrics-grid">
+        <div class="metric-item">
             <span class="metric-label">Расходы за период</span>
             <span class="metric-value" id="finance-total">0 ₽</span>
         </div>
-        <div class="card metric-card">
+        <div class="metric-item">
+            <span class="metric-label">Самый дорогой месяц</span>
+            <span class="metric-month" id="finance-expensive-month">—</span>
+            <span class="metric-detail" id="finance-expensive-amount">0 ₽</span>
+        </div>
+        <div class="metric-item">
             <span class="metric-label">Средние в день</span>
             <span class="metric-value" id="finance-daily-avg">0 ₽</span>
         </div>
-        <div class="card metric-card">
-            <span class="metric-label">Самый дорогой месяц</span>
-            <span class="metric-value" id="finance-expensive-month">—</span>
-            <span class="metric-detail" id="finance-expensive-amount">0 ₽</span>
-        </div>
-        <div class="card metric-card">
+        <div class="metric-item">
             <span class="metric-label">Самый дешёвый месяц</span>
-            <span class="metric-value" id="finance-cheap-month">—</span>
+            <span class="metric-month" id="finance-cheap-month">—</span>
             <span class="metric-detail" id="finance-cheap-amount">0 ₽</span>
         </div>
     </div>
+</div>
 
     <!-- 3. Карточка прогноза -->
     <div class="card forecast-card" id="finance-forecast">
