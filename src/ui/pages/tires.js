@@ -232,9 +232,9 @@ App.ui.pages.openTireModal = function(record) {
             (isEdit ? '<input type="hidden" name="id" value="' + record.id + '">' : '') +
             '<div style="display:flex; gap:8px; align-items:center;">' +
                 '<label style="margin-bottom:0;">Дата</label>' +
-                '<input type="text" name="date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" required oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + App.utils.escapeHtml(defaultDate) + '" style="width:80px;">' +
+                '<input type="text" name="date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" required oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + App.utils.escapeHtml(defaultDate) + '" style="width:70px;">' +
                 '<label style="margin-bottom:0;">Пробег</label>' +
-                '<input type="number" name="currentMileage" value="' + (record ? record.mileage : App.store.settings.currentMileage) + '" required style="width:110px;">' +
+                '<input type="number" name="currentMileage" value="' + (record ? record.mileage : App.store.settings.currentMileage) + '" required style="width:120px;">' +
                 '<button type="button" id="tire-type-toggle" class="secondary-btn" style="padding:8px 8px;">' + typeValue + '</button>' +
                 '<input type="hidden" name="type" value="' + typeValue + '">' +
             '</div>' +
@@ -246,9 +246,9 @@ App.ui.pages.openTireModal = function(record) {
                 '<span style="font-size:0.85rem;">мм</span>' +
             '</div>' +
             '<div style="display:flex; gap:12px; align-items:center; margin:8px 0;">' +
-                '<label><input type="checkbox" name="isNewSet" id="isNewSetCheckbox" ' + (isNewSet ? 'checked' : '') + '>      Новый комплект</label>' +
-                '<label><input type="checkbox" name="hasDisks" ' + (hasDisks ? 'checked' : '') + '>     Диски</label>' +
-                '<label><input type="checkbox" name="isDIY" value="true" ' + (record && record.isDIY ? 'checked' : '') + '>     Сделал сам</label>' +
+                '<label><input type="checkbox" name="isNewSet" id="isNewSetCheckbox" ' + (isNewSet ? 'checked' : '') + '>            Новый комплект</label>' +
+                '<label><input type="checkbox" name="hasDisks" ' + (hasDisks ? 'checked' : '') + '>           Диски</label>' +
+                '<label><input type="checkbox" name="isDIY" value="true" ' + (record && record.isDIY ? 'checked' : '') + '>       Сделал сам</label>' +
             '</div>' +
             '<div id="diskFields" style="display:' + (hasDisks ? 'block' : 'none') + '; margin-bottom:8px;">' +
                 '<label>Стоимость дисков (₽)</label>' +
