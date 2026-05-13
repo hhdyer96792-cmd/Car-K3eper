@@ -445,7 +445,6 @@ if (historyOpenFiltersBtn) {
 };
 
 App.events.initHistoryFilters = function() {
-App.events.initHistoryFilters = function() {
     ['history-period-select', 'history-operation-filter', 'history-category-filter', 'history-executor-filter',
      'history-search', 'history-diy-only', 'history-cost-min', 'history-cost-max', 'history-mileage-min', 'history-mileage-max', 'history-sort-order'
     ].forEach(function(id) {
