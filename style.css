@@ -1075,14 +1075,16 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 
 /* ==================== История ==================== */
 
+/* Единая строка фильтров */
 .history-filters-bar {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: wrap;          /* на десктопе перенос при нехватке места */
     gap: 8px;
     margin-bottom: 16px;
     align-items: center;
 }
 
+/* Компактные элементы */
 .history-filters-bar select,
 .history-filters-bar input {
     width: auto;
@@ -1099,12 +1101,11 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-bottom: 0;
 }
 
+/* Мобильная версия: одна строка с горизонтальным скроллом */
 @media (max-width: 767px) {
     .history-filters-bar {
-        width: 100%;
-        max-width: 100%;
-        flex-wrap: nowrap;
-        overflow-x: auto;
+        flex-wrap: nowrap;          /* запрет переноса */
+        overflow-x: auto;           /* горизонтальная прокрутка */
         white-space: nowrap;
         gap: 6px;
         padding-bottom: 4px;
@@ -1112,8 +1113,12 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     }
     .history-filters-bar select,
     .history-filters-bar input {
-        min-width: 80px;
-        font-size: 0.8rem;
+        min-width: 110px;
+        font-size: 0.7rem;
+    }
+    /* Скрываем длинные тексты внутри label */
+    .history-filters-bar .checkbox-label span {
+        display: none;
     }
 }
 
