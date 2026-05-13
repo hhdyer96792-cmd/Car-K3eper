@@ -1125,3 +1125,35 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 #history-cards-container {
     margin-top: 16px;
 }
+
+/* ==================== Карточки истории (мобильные) ==================== */
+.history-card-mobile {
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+    padding: 12px;
+    position: relative;
+}
+.history-card-mobile .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+.history-card-mobile .operation {
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+.history-card-mobile .details {
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+.history-card-mobile .actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+}
