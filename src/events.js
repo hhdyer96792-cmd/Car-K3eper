@@ -424,6 +424,14 @@ App.events.initDirectListeners = function() {
         });
     }
 
+// Кнопка открытия мобильных фильтров истории
+var historyOpenFiltersBtn = document.getElementById('history-open-filters-btn');
+if (historyOpenFiltersBtn) {
+    historyOpenFiltersBtn.addEventListener('click', function() {
+        App.ui.pages.openHistoryFiltersModal();
+    });
+}
+
     // Кнопка темы на вкладке Настройки
     var settingsThemeToggle = document.getElementById('settings-theme-toggle');
     if (settingsThemeToggle) {
