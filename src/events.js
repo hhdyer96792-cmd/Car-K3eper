@@ -454,19 +454,21 @@ App.events.initHistoryFilters = function() {
     });
 
     var resetFiltersBtn = document.getElementById('history-reset-filters');
-    if (resetFiltersBtn) {
-        resetFiltersBtn.addEventListener('click', function() {
-            ['history-period-select', 'history-operation-filter', 'history-search', 'history-diy-only', 'history-cost-min', 'history-cost-max'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) {
-                    if (el.type === 'checkbox') el.checked = false;
-                    else el.value = '';
-                }
-            });
-            App.ui.pages.renderHistoryWithFilters();
+if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener('click', function() {
+        ['history-period-select', 'history-operation-filter', 'history-category-filter', 'history-executor-filter',
+         'history-search', 'history-diy-only', 'history-cost-min', 'history-cost-max', 'history-mileage-min', 'history-mileage-max', 'history-sort-order'
+        ].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+                if (el.type === 'checkbox') el.checked = false;
+                else el.value = '';
+            }
         });
-    }
-};
+        document.getElementById('history-sort-order').value = 'date-desc';
+        App.ui.pages.renderHistoryCards();  // ← новый вызов
+    });
+}
 
 App.events.initStatsListeners = function() {
     var periodSelect = document.getElementById('stats-period-select');
