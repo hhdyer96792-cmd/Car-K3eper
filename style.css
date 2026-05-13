@@ -1069,3 +1069,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
         flex-direction: column;
     }
 }
+#partsPieChart {
+    max-height: 160px;
+}
