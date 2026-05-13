@@ -240,9 +240,9 @@ App.events.switchToTab = function(tabId) {
             if (typeof App.ui.pages.renderFinanceTab === 'function') App.ui.pages.renderFinanceTab();
             break;
         case 'history':
-            if (typeof App.ui.pages.initHistoryFilters === 'function') App.ui.pages.initHistoryFilters();
-            if (typeof App.ui.pages.renderHistoryCards === 'function') App.ui.pages.renderHistoryCards();
-            break;
+    if (typeof App.ui.pages.initHistoryFilters === 'function') App.ui.pages.initHistoryFilters();
+    if (typeof App.ui.pages.renderHistoryCards === 'function') App.ui.pages.renderHistoryCards();
+    break;
         case 'fuel':
             if (typeof App.ui.pages.renderFuelTab === 'function') App.ui.pages.renderFuelTab();
             break;
@@ -420,14 +420,6 @@ App.events.initDirectListeners = function() {
             if (document.getElementById('tab-to')?.classList.contains('active')) {
                 App.ui.pages.renderTOCostChart();
             }
-        });
-    }
-
-    // Кнопка открытия мобильных фильтров истории
-    var historyOpenFiltersBtn = document.getElementById('history-open-filters-btn');
-    if (historyOpenFiltersBtn) {
-        historyOpenFiltersBtn.addEventListener('click', function() {
-            App.ui.pages.openHistoryFiltersModal();
         });
     }
 
