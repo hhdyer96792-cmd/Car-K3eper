@@ -923,6 +923,21 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     max-height: 160px;
 }
 
+/* Блок прогноз + круговая диаграмма в одной строке */
+.finance-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.finance-row > .card {
+    flex: 1 1 0;
+    min-width: 250px;
+}
+.finance-pie-card canvas {
+    max-height: 180px;   /* уменьшенный размер на десктопе */
+}
+
 /* Сравнение периодов */
 .comparison-selectors {
     display: flex;
@@ -937,21 +952,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .comparison-line {
     display: flex;
     justify-content: space-between;
-}
-
-/* Блок прогноз + круговая диаграмма в одной строке */
-.finance-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-}
-.finance-row > .card {
-    flex: 1 1 0;
-    min-width: 250px;
-}
-.finance-pie-card canvas {
-    max-height: 180px;   /* уменьшенный размер на десктопе */
 }
 
 @media (max-width: 767px) {
