@@ -230,9 +230,9 @@ App.ui.pages.openTireModal = function(record) {
     var content =
         '<form id="tire-form">' +
             (isEdit ? '<input type="hidden" name="id" value="' + record.id + '">' : '') +
-            '<div style="display:flex; gap:8px; align-items:center;">' +
+            '<div style="display:flex; gap:6px; align-items:center;">' +
                 '<label style="margin-bottom:0;">Дата</label>' +
-                '<input type="text" name="date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" required oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + App.utils.escapeHtml(defaultDate) + '" style="width:70px;">' +
+                '<input type="text" name="date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" required oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + App.utils.escapeHtml(defaultDate) + '" style="width:90px;">' +
                 '<label style="margin-bottom:0;">Пробег</label>' +
                 '<input type="number" name="currentMileage" value="' + (record ? record.mileage : App.store.settings.currentMileage) + '" required style="width:120px;">' +
                 '<button type="button" id="tire-type-toggle" class="secondary-btn" style="padding:8px 8px;">' + typeValue + '</button>' +
@@ -241,9 +241,8 @@ App.ui.pages.openTireModal = function(record) {
             '<div style="display:flex; gap:8px; align-items:center;">' +
                 '<label style="margin-bottom:0;">Шиномонтаж (₽)</label>' +
                 '<input type="number" name="mountCost" step="0.01" value="' + (record ? (record.mountCost || '') : '') + '" style="width:100px;">' +
-                '<label style="margin-bottom:0;">Глубина протектора</label>' +
-                '<input type="number" name="wear" step="0.1" value="' + (record ? (record.wear || '') : '') + '" style="width:40px;">' +
-                '<span style="font-size:0.85rem;">мм</span>' +
+                '<label style="margin-bottom:0;">Протектор мм</label>' +
+                '<input type="number" name="wear" step="0.1" value="' + (record ? (record.wear || '') : '') + '" style="width:70px;">' +
             '</div>' +
             '<div style="display:flex; gap:12px; align-items:center; margin:8px 0;">' +
                 '<label><input type="checkbox" name="isNewSet" id="isNewSetCheckbox" ' + (isNewSet ? 'checked' : '') + '>            Новый комплект</label>' +
@@ -264,7 +263,7 @@ App.ui.pages.openTireModal = function(record) {
             '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
         '</form>';
 
-    var modal = App.ui.createModal(isEdit ? '✏️ Редактировать запись шин' : '🛞 Сменить резину', content);
+    var modal = App.ui.createModal(isEdit ? ' Редактировать запись шин' : 'Сменить резину', content);
 
     // Переключатель Лето/Зима
     var typeToggle = modal.querySelector('#tire-type-toggle');
