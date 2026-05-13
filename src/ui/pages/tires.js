@@ -3,71 +3,151 @@ window.App = window.App || {};
 App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
-App.ui.pages.renderTiresTable = function() {
-    var tbody = document.getElementById('tires-body');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    App.store.tireLog.forEach(function(t, i) {
-        if (!t.date) return;
-        var tr = document.createElement('tr');
-        tr.innerHTML =
-            '<td>' + App.utils.escapeHtml(t.date) + '</td>' +
-            '<td>' + App.utils.escapeHtml(t.type || '') + '</td>' +
-            '<td>' + (t.mileage || '') + '</td>' +
-            '<td>' + App.utils.escapeHtml(t.model || '') + '</td>' +
-            '<td>' + App.utils.escapeHtml(t.size || '') + '</td>' +
-            '<td>' + App.utils.escapeHtml(t.wear || '') + '</td>' +
-            '<td>' + App.utils.escapeHtml(t.notes || '') + '</td>' +
-            '<td>' +
-                '<button class="icon-btn" data-action="edit-tire" data-idx="' + i + '"><i data-lucide="pencil"></i></button>' +
-                '<button class="icon-btn" data-action="delete-tire" data-idx="' + i + '"><i data-lucide="trash-2"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    });
-    App.ui.pages.renderTireWear();
-    App.ui.pages.renderTireCalculator();
-    App.initIcons();
+// ---------- Главная точка входа при открытии вкладки ----------
+App.ui.pages.renderTiresTab = function() {
+    App.ui.pages.renderTotalTiresCost();
+    App.ui.pages.renderTireWearBars();
+    App.ui.pages.renderTiresCards();
+    App.ui.pages.renderTireCalculator(); // калькулятор не меняется
 };
 
-App.ui.pages.renderTireWear = function() {
+// Поддержка старого вызова из events.js
+App.ui.pages.renderTiresTable = function() {
+    App.ui.pages.renderTiresTab();
+};
+
+// ---------- 1. Карточка «Всего затрат на колёса» ----------
+App.ui.pages.renderTotalTiresCost = function() {
+    var total = (App.store.tireLog || []).reduce(function(sum, t) {
+        return sum + (parseFloat(t.purchaseCost) || 0) + (parseFloat(t.mountCost) || 0);
+    }, 0);
+    var el = document.getElementById('tires-total-cost');
+    if (el) el.textContent = total.toLocaleString() + ' ₽';
+};
+
+// ---------- 3. Прогресс-бары остатка протектора ----------
+App.ui.pages.renderTireWearBars = function() {
     var container = document.getElementById('tire-wear-container');
     if (!container) return;
+
     var summerTires = App.store.tireLog.filter(function(t) { return t.type === 'Лето'; })
         .sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
     var winterTires = App.store.tireLog.filter(function(t) { return t.type === 'Зима'; })
         .sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
-    var summerLast = summerTires[0];
-    var winterLast = winterTires[0];
+    var summer = summerTires[0];
+    var winter = winterTires[0];
 
-    function buildWearCard(tire, type) {
-        if (!tire) return '<div class="wear-card-item"><h4>' + type + '</h4><p class="hint">Нет данных</p></div>';
-        var wearPercent = 0;
-        var wearValue = tire.wear ? parseFloat(tire.wear) : 0;
-        if (type === 'Лето') {
-            var minWear = 1.6;
-            var maxDepth = 8;
-            var currentDepth = Math.min(maxDepth, Math.max(minWear, wearValue));
-            wearPercent = ((maxDepth - currentDepth) / (maxDepth - minWear)) * 100;
-            wearPercent = Math.min(100, Math.max(0, wearPercent));
-        } else {
-            wearPercent = Math.min(100, Math.max(0, 100 - wearValue));
+    function buildWearBar(tire, type) {
+        if (!tire) {
+            return '<div class="wear-item"><h4>' + type + '</h4><p class="hint">Нет данных</p></div>';
         }
-        var statusColor = wearPercent < 50 ? '#2ecc71' : (wearPercent < 80 ? '#f39c12' : '#e74c3c');
-        return '<div class="wear-card-item" style="flex:1; min-width:200px; background:var(--card-bg); padding:12px; border-radius:12px;">' +
-            '<h4>' + type + ' шины</h4>' +
-            '<p>Модель: ' + App.utils.escapeHtml(tire.model || '—') + '<br>Размер: ' + App.utils.escapeHtml(tire.size || '—') + '<br>Пробег на установке: ' + (tire.mileage || 0) + ' км</p>' +
-            '<div style="margin-top:12px;">' +
-                '<div style="display:flex; justify-content:space-between;"><span>Износ:</span><span>' + wearPercent.toFixed(0) + '%</span></div>' +
-                '<div class="progress-bar-container" style="height:12px;"><div class="progress-bar" style="width:' + wearPercent + '%; background:' + statusColor + ';"></div></div>' +
-                '<p class="hint">' + (type === 'Лето' ? 'Остаток протектора: ' + wearValue + ' мм (мин. 1.6 мм)' : 'Остаток шипов: ' + (100 - wearValue) + '%') + '</p>' +
+        var depth = parseFloat(tire.wear) || 0;
+        var newDepth, critical, safe, warnLow, warnHigh, critLow;
+        if (type === 'Лето') {
+            newDepth = 7.0; critical = 1.6;
+            safe = 4.0; // >4 зелёный
+            warnLow = 3.0; // 3-4 жёлтый
+            critLow = 2.5; // 2.5-3 оранжевый, <2.5 красный
+        } else {
+            newDepth = 8.0; critical = 4.0;
+            safe = 6.0;
+            warnLow = 5.0;
+            critLow = 4.0;
+        }
+        // Защита от отрицательных значений
+        depth = Math.max(0, depth);
+        var percent = ((depth - critical) / (newDepth - critical)) * 100;
+        percent = Math.min(100, Math.max(0, percent));
+        var color, statusText;
+        if (type === 'Лето') {
+            if (depth > 4.0) { color = 'var(--success)'; statusText = 'Безопасно'; }
+            else if (depth >= 3.0) { color = 'var(--warning)'; statusText = 'Внимание'; }
+            else if (depth >= 2.5) { color = '#f39c12'; statusText = 'Предел'; } // оранжевый
+            else { color = 'var(--danger)'; statusText = 'Критично'; }
+        } else {
+            if (depth > 6.0) { color = 'var(--success)'; statusText = 'Безопасно'; }
+            else if (depth >= 5.0) { color = 'var(--warning)'; statusText = 'Внимание'; }
+            else if (depth >= 4.0) { color = '#f39c12'; statusText = 'Предел'; }
+            else { color = 'var(--danger)'; statusText = 'Критично'; }
+        }
+        var pricePerKm = 0;
+        if (tire.mileage > 0) {
+            var totalCost = (parseFloat(tire.purchaseCost) || 0) + (parseFloat(tire.mountCost) || 0);
+            pricePerKm = totalCost / tire.mileage;
+        }
+        return '<div class="wear-item" style="flex:1; min-width:200px;">' +
+            '<h4>' + type + ': ' + App.utils.escapeHtml(tire.model || '') + ' ' + App.utils.escapeHtml(tire.size || '') + '</h4>' +
+            '<div>Пробег: ' + (tire.mileage || 0) + ' км · Глубина: ' + depth.toFixed(1) + ' мм</div>' +
+            '<div>Цена/пробег: ' + pricePerKm.toFixed(2) + ' ₽/км</div>' +
+            '<div class="progress-label">Остаток протектора</div>' +
+            '<div class="progress-bar-container" style="height:14px;"><div class="progress-bar" style="width:' + percent + '%; background:' + color + ';"></div></div>' +
+            '<div style="display:flex; justify-content:space-between; font-size:0.8rem;">' +
+                '<span>' + statusText + '</span><span>' + percent.toFixed(0) + '%</span>' +
             '</div>' +
         '</div>';
     }
-    container.innerHTML = buildWearCard(summerLast, 'Лето') + buildWearCard(winterLast, 'Зима');
+
+    container.innerHTML = buildWearBar(summer, 'Лето') + buildWearBar(winter, 'Зима');
     App.initIcons();
 };
 
-// Вспомогательные функции для шинного калькулятора остаются без изменений
+// ---------- 5. Карточки истории шин ----------
+App.ui.pages.renderTiresCards = function() {
+    var container = document.getElementById('tires-cards-container');
+    if (!container) return;
+    var sorted = (App.store.tireLog || []).filter(function(t) { return t.date; })
+        .sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    if (sorted.length === 0) {
+        container.innerHTML = '<p class="hint">Нет данных</p>';
+        return;
+    }
+    var html = '';
+    sorted.forEach(function(t) {
+        var originalIndex = App.store.tireLog.indexOf(t);
+        var depth = parseFloat(t.wear) || 0;
+        var totalCost = (parseFloat(t.purchaseCost) || 0) + (parseFloat(t.mountCost) || 0);
+        html += '<div class="card-item">';
+        html += '<div class="card-header" style="justify-content:space-between;">';
+        html += '<div class="card-summary">';
+        html += '<strong>' + App.utils.escapeHtml(t.date) + ' · ' + (t.type || '—') + ' · ' + App.utils.escapeHtml(t.model || '') + ' ' + App.utils.escapeHtml(t.size || '') + '</strong>';
+        html += '<div class="card-meta">Пробег: ' + (t.mileage || '—') + ' км · Глубина протектора: ' + depth.toFixed(1) + ' мм</div>';
+        html += '<div class="card-meta">Покупка: ' + (t.purchaseCost || '0') + ' ₽ · Монтаж: ' + (t.mountCost || '0') + ' ₽' + (t.isDIY ? ' (DIY)' : '') + '</div>';
+        if (t.notes) html += '<div class="card-meta">Прим.: ' + App.utils.escapeHtml(t.notes) + '</div>';
+        html += '</div>';
+        html += '<button class="icon-btn tire-toggle-btn"><i data-lucide="more-vertical"></i></button>';
+        html += '</div>'; // card-header
+        // Скрытые кнопки действий
+        html += '<div class="card-detail-actions" style="display:none; padding:8px 12px; justify-content:flex-end;">';
+        html += '<button class="icon-btn" data-action="edit-tire" data-idx="' + originalIndex + '"><i data-lucide="pencil"></i></button>';
+        html += '<button class="icon-btn" data-action="delete-tire" data-idx="' + originalIndex + '"><i data-lucide="trash-2"></i></button>';
+        html += '</div>';
+        html += '</div>'; // card-item
+    });
+
+    container.innerHTML = html;
+
+    // Обработчики раскрытия
+    container.querySelectorAll('.tire-toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var card = btn.closest('.card-item');
+            var actions = card.querySelector('.card-detail-actions');
+            if (actions) {
+                var visible = actions.style.display === 'flex';
+                actions.style.display = visible ? 'none' : 'flex';
+                var icon = btn.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', visible ? 'more-vertical' : 'more-horizontal');
+                    App.initIcons();
+                }
+            }
+        });
+    });
+
+    App.initIcons();
+};
+
+// ---------- КАЛЬКУЛЯТОР (существующий код, без изменений) ----------
 App.ui.pages.parseTireSize = function(sizeStr) {
     var match = sizeStr.match(/(\d+)[\/\-](\d+)[\/\-R](\d+)/i);
     if (!match) return null;
@@ -115,8 +195,8 @@ App.ui.pages.renderTireCalculator = function() {
     var newBtn = calcBtn.cloneNode(true);
     calcBtn.parentNode.replaceChild(newBtn, calcBtn);
     newBtn.addEventListener('click', function() {
-        var oldSize = oldInput.value.trim();
-        var newSize = newInput.value.trim();
+        var oldSize = oldInput ? oldInput.value.trim() : '';
+        var newSize = newInput ? newInput.value.trim() : '';
         if (!oldSize || !newSize) {
             resultDiv.innerHTML = '<i data-lucide="alert-triangle"></i> Введите оба размера (пример: 205/55R16)';
             App.initIcons();
@@ -147,8 +227,9 @@ App.ui.pages.renderTireCalculator = function() {
     });
 };
 
+// ---------- МОДАЛЬНОЕ ОКНО (без изменений в логике) ----------
 App.ui.pages.openTireModal = function(record) {
-    var isEdit = !!record && !!record.id;
+    var isEdit = !!(record && record.id);
     var defaultDate = record ? App.utils.isoToDDMMYYYY(record.date) : App.utils.isoToDDMMYYYY(new Date().toISOString().split('T')[0]);
     var typeValue = record ? (record.type || 'Лето') : 'Лето';
     var isNewSet = record ? (record.mileage === 0 && record.purchaseCost) : false;
@@ -235,15 +316,15 @@ App.ui.pages.openTireModal = function(record) {
                         App.store.tireLog.push(rowData);
                     }
                     App.store.saveToLocalStorage();
-                    App.ui.pages.renderTiresTable();
+                    App.ui.pages.renderTiresTab();
                     App.toast(isEdit ? 'Запись о шинах обновлена' : 'Резина добавлена', 'success');
                 }).catch(function(err) {
                     console.error(err);
                     App.toast('Ошибка сохранения в Supabase', 'error');
                 });
         } else {
-            // Старая логика...
-            if (App.auth.accessToken) {
+            // старая логика
+            if (App.auth && App.auth.accessToken) {
                 if (isEdit) {
                     App.storage.saveTireRecord(d.id, rowData);
                 } else {
@@ -257,8 +338,7 @@ App.ui.pages.openTireModal = function(record) {
                 App.store.tireLog.push(rowData);
             }
             App.store.saveToLocalStorage();
-            App.ui.pages.renderTiresTable();
-            if (App.auth.accessToken) App.loadSheet();
+            App.ui.pages.renderTiresTab();
             App.toast(isEdit ? 'Запись о шинах обновлена' : 'Резина добавлена', 'success');
         }
     };
@@ -271,6 +351,7 @@ App.ui.pages.deleteTireEntry = function(idx) {
     if (!tire || !tire.id) { App.toast('Запись не найдена', 'error'); return; }
     App.storage.deleteTireRecord(tire.id).then(function() {
         App.storage.loadAllData();
+        App.ui.pages.renderTiresTab();
         App.toast('Запись о шинах удалена', 'success');
     }).catch(function(err) {
         console.error(err);
