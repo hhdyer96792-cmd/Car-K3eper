@@ -496,20 +496,41 @@
     <div id="tires-cards-container" class="cards-container"></div>
 </div>
 
-        <!-- Запчасти (полный блок) -->
-        <div id="tab-parts" class="tab-content">
-            <div class="action-bar"><button id="add-part-btn" class="primary-btn"><i data-lucide="plus"></i> Добавить запчасть</button></div>
-            <div class="table-wrapper">
-                <table id="parts-table">
-                    <thead>
-                        <tr><th>Операция</th><th>OEM</th><th>Аналог</th><th>Цена</th><th>Поставщик</th><th>Ссылка</th><th>Комм.</th><th>В наличии (шт.)</th><th>Место хранения</th><th></th></tr>
-                    </thead>
-                    <tbody id="parts-body"></tbody>
-                </table>
-            </div>
-        </div>
+      <!-- Запчасти (переработано) -->
+<div id="tab-parts" class="tab-content">
+    <!-- 1. Всего затрат на запчасти -->
+    <div class="card total-parts-card" id="total-parts-card">
+        <h3><i data-lucide="package"></i> Всего затрат на запчасти</h3>
+        <div class="total-cost-value" id="parts-total-cost">0 ₽</div>
+    </div>
 
-        <!-- Вкладка Автомобиль (полный блок) -->
+    <!-- 2. Селектор периода -->
+    <div class="parts-period-switch" id="parts-period-switch">
+        <button class="period-btn active" data-period="all">Всё время</button>
+        <button class="period-btn" data-period="month">Месяц</button>
+        <button class="period-btn" data-period="quarter">Квартал</button>
+        <button class="period-btn" data-period="year">Год</button>
+    </div>
+
+    <!-- 3. Круговая диаграмма -->
+    <div class="card chart-card">
+        <h3><i data-lucide="pie-chart"></i> Распределение затрат по категориям</h3>
+        <canvas id="partsPieChart" height="200"></canvas>
+    </div>
+
+    <!-- 4. Кнопка добавить -->
+    <div class="action-bar"><button id="add-part-btn" class="primary-btn"><i data-lucide="plus"></i> Добавить запчасть</button></div>
+
+    <!-- 5. Сводка по складу -->
+    <div class="card warehouse-card" id="warehouse-summary">
+        <h3><i data-lucide="warehouse"></i> Складская сводка</h3>
+    </div>
+
+    <!-- 6. Поиск и карточки -->
+    <div id="parts-cards-container"></div>
+</div>
+
+        <!-- Вкладка Автомобиль 🚗 (полный блок) -->
         <div id="tab-car" class="tab-content">
             <div class="card" id="car-details-card">
                 <h3>🚗 Автомобиль</h3>
