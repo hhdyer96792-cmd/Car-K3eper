@@ -108,7 +108,7 @@ App.ui.pages.getFilteredHistory = function() {
     var catFilter = document.getElementById('history-category-filter')?.value || '';
     var executorFilter = document.getElementById('history-executor-filter')?.value || '';
     var searchText = (document.getElementById('history-search')?.value || '').toLowerCase();
-    var diyOnly = document.getElementById('history-diy-only')?.checked || false;
+    var diyOnly = document.getElementById('history-diy-only')?.value === 'yes';
     var costMin = parseFloat(document.getElementById('history-cost-min')?.value) || 0;
     var costMax = parseFloat(document.getElementById('history-cost-max')?.value) || Infinity;
     var mileageMin = parseFloat(document.getElementById('history-mileage-min')?.value) || 0;
