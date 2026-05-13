@@ -448,34 +448,41 @@
     <div id="fuel-cards-container" class="cards-container"></div>
 </div>
 
-        <!-- Шины (полный блок) -->
-        <div id="tab-tires" class="tab-content">
-            <div id="tire-recommendation" class="info-card"></div>
-            <div class="card calculator-card">
-                <h3><i data-lucide="calculator"></i> Калькулятор изменения показаний спидометра</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
-                    <label style="flex:1; min-width:120px;">Старый размер:<br>
-                        <input type="text" id="old-tire-size" placeholder="205/55R16" style="width:100%">
-                    </label>
-                    <label style="flex:1; min-width:120px;">Новый размер:<br>
-                        <input type="text" id="new-tire-size" placeholder="215/50R17" style="width:100%">
-                    </label>
-                    <button id="calc-tire-btn" class="primary-btn" style="margin-bottom:12px;"><i data-lucide="rotate-cw"></i> Рассчитать</button>
-                </div>
-                <div id="tire-calc-result" class="hint" style="margin-top:12px;"></div>
-            </div>
-            <div class="card wear-card">
-                <h3><i data-lucide="activity"></i> Износ шин</h3>
-                <div id="tire-wear-container" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between;"></div>
-            </div>
-            <div class="action-bar"><button id="add-tire-btn" class="primary-btn"><i data-lucide="plus"></i> Сменить резину</button></div>
-            <div class="table-wrapper">
-                <table id="tires-table">
-                    <thead><tr><th>Дата</th><th>Тип</th><th>Пробег</th><th>Модель</th><th>Размер</th><th>Износ</th><th>Прим.</th><th></th></tr></thead>
-                    <tbody id="tires-body"></tbody>
-                </table>
-            </div>
+        <!-- Шины (переработано) -->
+<div id="tab-tires" class="tab-content">
+    <!-- 1. Всего затрат на колеса -->
+    <div class="card total-tires-card" id="total-tires-card">
+        <h3><i data-lucide="circle-dollar-sign"></i> Всего затрат на колеса</h3>
+        <div class="total-cost-value" id="tires-total-cost">0 ₽</div>
+    </div>
+
+    <!-- 2. Калькулятор спидометра (без изменений) -->
+    <div class="card calculator-card">
+        <h3><i data-lucide="calculator"></i> Калькулятор изменения показаний спидометра</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+            <label style="flex:1; min-width:120px;">Старый размер:<br>
+                <input type="text" id="old-tire-size" placeholder="205/55R16" style="width:100%">
+            </label>
+            <label style="flex:1; min-width:120px;">Новый размер:<br>
+                <input type="text" id="new-tire-size" placeholder="215/50R17" style="width:100%">
+            </label>
+            <button id="calc-tire-btn" class="primary-btn" style="margin-bottom:12px;"><i data-lucide="rotate-cw"></i> Рассчитать</button>
         </div>
+        <div id="tire-calc-result" class="hint" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- 3. Износ шин (с прогресс-баром) -->
+    <div class="card wear-card" id="tire-wear-card">
+        <h3><i data-lucide="activity"></i> Износ шин</h3>
+        <div id="tire-wear-container" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between;"></div>
+    </div>
+
+    <!-- 4. Панель действий -->
+    <div class="action-bar"><button id="add-tire-btn" class="primary-btn"><i data-lucide="plus"></i> Сменить резину</button></div>
+
+    <!-- 5. Карточки истории шин -->
+    <div id="tires-cards-container" class="cards-container"></div>
+</div>
 
         <!-- Запчасти (полный блок) -->
         <div id="tab-parts" class="tab-content">
