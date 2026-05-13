@@ -231,24 +231,24 @@ App.ui.pages.openTireModal = function(record) {
         '<form id="tire-form">' +
             (isEdit ? '<input type="hidden" name="id" value="' + record.id + '">' : '') +
             '<div style="display:flex; gap:8px; align-items:center;">' +
-                '<label style="margin-bottom:0;">Дата (ДД-ММ-ГГГГ)</label>' +
-                '<input type="text" name="date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" required oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + App.utils.escapeHtml(defaultDate) + '" style="width:120px;">' +
+                '<label style="margin-bottom:0;">Дата</label>' +
+                '<input type="text" name="date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" required oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + App.utils.escapeHtml(defaultDate) + '" style="width:100px;">' +
                 '<label style="margin-bottom:0;">Пробег</label>' +
                 '<input type="number" name="currentMileage" value="' + (record ? record.mileage : App.store.settings.currentMileage) + '" required style="width:90px;">' +
                 '<button type="button" id="tire-type-toggle" class="secondary-btn" style="padding:8px 12px;">' + typeValue + '</button>' +
                 '<input type="hidden" name="type" value="' + typeValue + '">' +
             '</div>' +
             '<div style="display:flex; gap:8px; align-items:center;">' +
-                '<label style="margin-bottom:0;">Стоимость шиномонтажа (₽)</label>' +
-                '<input type="number" name="mountCost" step="0.01" value="' + (record ? (record.mountCost || '') : '') + '" style="width:100px;">' +
+                '<label style="margin-bottom:0;">Шиномонтаж (₽)</label>' +
+                '<input type="number" name="mountCost" step="0.01" value="' + (record ? (record.mountCost || '') : '') + '" style="width:110px;">' +
                 '<label style="margin-bottom:0;">Глубина протектора</label>' +
-                '<input type="number" name="wear" step="0.1" value="' + (record ? (record.wear || '') : '') + '" style="width:80px;">' +
+                '<input type="number" name="wear" step="0.1" value="' + (record ? (record.wear || '') : '') + '" style="width:40px;">' +
                 '<span style="font-size:0.85rem;">мм</span>' +
             '</div>' +
             '<div style="display:flex; gap:12px; align-items:center; margin:8px 0;">' +
-                '<label><input type="checkbox" name="isNewSet" id="isNewSetCheckbox" ' + (isNewSet ? 'checked' : '') + '> Новый комплект</label>' +
-                '<label><input type="checkbox" name="hasDisks" ' + (hasDisks ? 'checked' : '') + '> Диски</label>' +
-                '<label><input type="checkbox" name="isDIY" value="true" ' + (record && record.isDIY ? 'checked' : '') + '> Сделал сам</label>' +
+                '<label><input type="checkbox" name="isNewSet" id="isNewSetCheckbox" ' + (isNewSet ? 'checked' : '') + '>     Новый комплект</label>' +
+                '<label><input type="checkbox" name="hasDisks" ' + (hasDisks ? 'checked' : '') + '>    Диски</label>' +
+                '<label><input type="checkbox" name="isDIY" value="true" ' + (record && record.isDIY ? 'checked' : '') + '>    Сделал сам</label>' +
             '</div>' +
             '<div id="diskFields" style="display:' + (hasDisks ? 'block' : 'none') + '; margin-bottom:8px;">' +
                 '<label>Стоимость дисков (₽)</label>' +
