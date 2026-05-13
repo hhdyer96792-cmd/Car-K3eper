@@ -1075,21 +1075,24 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 
 /* ==================== История ==================== */
 
-/* Десктопная строка фильтров */
+/* Единая строка фильтров */
 .history-filters-bar {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: wrap;          /* на десктопе перенос при нехватке места */
     gap: 8px;
     margin-bottom: 16px;
     align-items: center;
 }
+
+/* Все элементы фильтров — компактные */
 .history-filters-bar select,
 .history-filters-bar input {
     width: auto;
-    min-width: 120px;
+    min-width: 100px;
     margin-bottom: 0;
+    font-size: 0.85rem;
 }
-.checkbox-label {
+.history-filters-bar .checkbox-label {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -1098,118 +1101,23 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-bottom: 0;
 }
 
-/* Мобильные фильтры */
-.history-mobile-filters {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-}
-.pills-container {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    flex: 1;
-    white-space: nowrap;
-}
-.pill {
-    display: inline-flex;
-    align-items: center;
-    background: var(--primary-light);
-    border-radius: 20px;
-    padding: 2px 8px;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    gap: 4px;
-}
-.pill button {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-size: 0.9rem;
-    line-height: 1;
-    color: var(--text-muted);
-}
-
-/* Карточки истории – десктоп */
-.history-card {
-    background: var(--card-bg);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    margin-bottom: 12px;
-    padding: 16px;
-}
-.history-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-.history-card-header .date { font-weight: 600; }
-.history-card-header .operation { font-weight: 500; margin-left: 8px; }
-.history-card-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    margin-bottom: 8px;
-}
-.history-card-grid div {
-    font-size: 0.85rem;
-}
-.history-card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-.history-card-actions {
-    display: flex;
-    gap: 4px;
-}
-
-/* Карточки истории – мобильные */
-.history-card-mobile {
-    background: var(--card-bg);
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow);
-    margin-bottom: 12px;
-    padding: 12px;
-    position: relative;
-}
-.history-card-mobile .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-}
-.history-card-mobile .details {
-    font-size: 0.85rem;
-    margin-top: 8px;
-}
-.history-card-mobile .actions {
-    display: none;
-    margin-top: 8px;
-    text-align: right;
-}
-.history-card-mobile.expanded .actions {
-    display: block;
-}
-.mobile-toggle-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-/* Модальное окно фильтров (мобильное) */
-.filters-modal .filter-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-}
-.filters-modal .filter-row select,
-.filters-modal .filter-row input {
-    margin-bottom: 0;
+/* Мобильная версия: одна строка с горизонтальным скроллом */
+@media (max-width: 767px) {
+    .history-filters-bar {
+        flex-wrap: nowrap;         /* запрет переноса */
+        overflow-x: auto;          /* горизонтальная прокрутка */
+        white-space: nowrap;
+        gap: 6px;
+        padding-bottom: 4px;       /* место для скролла */
+        -webkit-overflow-scrolling: touch;
+    }
+    .history-filters-bar select,
+    .history-filters-bar input {
+        min-width: 80px;           /* ещё компактнее */
+        font-size: 0.8rem;
+    }
+    /* Скрываем длинные тексты, оставляем placeholder */
+    .history-filters-bar .checkbox-label span {
+        display: none;
+    }
 }
