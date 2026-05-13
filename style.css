@@ -1028,3 +1028,44 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     font-size: 0.85rem;
     margin-top: 2px;
 }
+
+/* ==================== Запчасти ==================== */
+.parts-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+.parts-search i {
+    opacity: 0.6;
+}
+.parts-search input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+/* Компактная форма запчасти */
+.part-form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.part-form-row select,
+.part-form-row input,
+.part-form-row textarea {
+    margin-bottom: 0;
+}
+@media (max-width: 767px) {
+    .part-form-row {
+        flex-direction: column;
+    }
+}
