@@ -442,7 +442,7 @@ App.ui.pages.openHistoryEdit = function(rowIndex) {
             '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
         '</form>';
 
-    var modal = App.ui.createModal('✏️ Редактировать запись истории', content);
+    var modal = App.ui.createModal('<i data-lucide="pencil"></i> Редактировать запись истории', content);
     var form = modal.querySelector('#history-edit-form');
     form.onsubmit = function(ev) {
         ev.preventDefault();
