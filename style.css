@@ -1111,14 +1111,15 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     gap: 6px;
     overflow-x: auto;
     flex: 1;
+    white-space: nowrap;
 }
 .pill {
     display: inline-flex;
     align-items: center;
     background: var(--primary-light);
     border-radius: 20px;
-    padding: 4px 10px;
-    font-size: 0.9rem;
+    padding: 2px 8px;
+    font-size: 0.75rem;
     white-space: nowrap;
     gap: 4px;
 }
@@ -1211,12 +1212,4 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .filters-modal .filter-row select,
 .filters-modal .filter-row input {
     margin-bottom: 0;
-}
-
-.desktop-only { display: block; }
-.mobile-only  { display: none; }
-
-@media (max-width: 767px) {
-    .desktop-only { display: none; }
-    .mobile-only  { display: block; }
 }
