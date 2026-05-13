@@ -237,22 +237,63 @@ App.ui.pages.renderHistoryCards = function() {
     container.innerHTML = html;
 
     if (isMobile) {
-        container.querySelectorAll('.mobile-toggle-btn').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                var card = btn.closest('.history-card-mobile');
-                if (card) {
-                    card.classList.toggle('expanded');
-                    var icon = btn.querySelector('i');
-                    if (icon) {
-                        icon.setAttribute('data-lucide', card.classList.contains('expanded') ? 'more-horizontal' : 'more-vertical');
-                        App.initIcons();
-                    }
-                }
-            });
-        });
+App.ui.pages.renderHistoryCards = function() {
+    var container = document.getElementById('history-cards-container');
+    if (!container) return;
+
+    var filtered = App.ui.pages.getFilteredHistory();
+    if (filtered.length === 0) {
+        container.innerHTML = '<p class="hint">Нет записей, соответствующих фильтрам.</p>';
+        return;
     }
 
+    var isMobile = window.innerWidth < 768;
+    var html = '';
+
+    filtered.forEach(function(record) {
+        var op = App.store.operations.find(function(o) { return o.id == record.operation_id; }) || { name: 'Неизвестно' };
+        var diyFlag = record.is_diy === 'TRUE' || record.is_diy === true;
+
+        if (isMobile) {
+            html += '<div class="history-card-mobile">';
+            html += '<div class="header"><strong>' + App.utils.escapeHtml(record.date || '') + '</strong></div>';
+            html += '<div class="operation">' + App.utils.escapeHtml(op.name) + '</div>';
+            html += '<div class="details">';
+            html += 'Пробег: ' + (record.mileage || '—') + ' км · Моточасы: ' + (record.motohours || '—') + '<br>';
+            html += 'Запчасти: ' + (record.parts_cost || '0') + ' ₽ · Работа: ' + (record.work_cost || '0') + ' ₽ · ';
+            html += 'DIY: ' + (diyFlag ? '<i data-lucide="check"></i>' : '<i data-lucide="x"></i>') + '<br>';
+            html += 'Исполнитель: ' + (record.user_id ? record.user_id.substring(0,8) : '—') + '<br>';
+            if (record.notes) html += 'Прим.: ' + App.utils.escapeHtml(record.notes);
+            html += '</div>';
+            html += '<div class="actions">';
+            html += '<button class="icon-btn" data-action="edit-history" data-row="' + record.rowIndex + '"><i data-lucide="pencil"></i></button>';
+            html += '<button class="icon-btn" data-action="delete-history" data-row="' + record.rowIndex + '"><i data-lucide="trash-2"></i></button>';
+            html += '</div>';
+            html += '</div>';
+        } else {
+            html += '<div class="history-card">';
+            html += '<div class="history-card-header"><span class="date">' + App.utils.escapeHtml(record.date || '') + '</span><span class="operation">' + App.utils.escapeHtml(op.name) + '</span></div>';
+            html += '<div class="history-card-grid">';
+            html += '<div><strong>Пробег</strong><br>' + (record.mileage || '—') + ' км</div>';
+            html += '<div><strong>Моточасы</strong><br>' + (record.motohours || '—') + '</div>';
+            html += '<div><strong>Запчасти</strong><br>' + (record.parts_cost || '0') + ' ₽</div>';
+            html += '<div><strong>Работа</strong><br>' + (record.work_cost || '0') + ' ₽</div>';
+            html += '<div><strong>DIY</strong><br>' + (diyFlag ? '<i data-lucide="check"></i> Да' : '<i data-lucide="x"></i> Нет') + '</div>';
+            html += '</div>';
+            html += '<div class="history-card-footer">';
+            html += '<span>Исполнитель: ' + (record.user_id ? record.user_id.substring(0,8) : '—') + (record.notes ? ' | Прим.: ' + App.utils.escapeHtml(record.notes) : '') + '</span>';
+            html += '<div class="history-card-actions">';
+            html += '<button class="icon-btn" data-action="edit-history" data-row="' + record.rowIndex + '"><i data-lucide="pencil"></i></button>';
+            html += '<button class="icon-btn" data-action="delete-history" data-row="' + record.rowIndex + '"><i data-lucide="trash-2"></i></button>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+        }
+    });
+
+    container.innerHTML = html;
+
+    // Обработчики раскрытия на мобильных больше не нужны, удалены
     App.initIcons();
 };
 
