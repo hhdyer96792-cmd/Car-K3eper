@@ -241,9 +241,9 @@ App.events.switchToTab = function(tabId) {
             if (typeof App.ui.pages.renderFuelAnalytics === 'function') App.ui.pages.renderFuelAnalytics();
             break;
         case 'history':
-            if (typeof App.ui.pages.renderHistoryWithFilters === 'function') App.ui.pages.renderHistoryWithFilters();
-            if (typeof App.ui.pages.populateHistoryOperationFilter === 'function') App.ui.pages.populateHistoryOperationFilter();
-            break;
+    if (typeof App.ui.pages.initHistoryFilters === 'function') App.ui.pages.initHistoryFilters();
+    if (typeof App.ui.pages.renderHistoryCards === 'function') App.ui.pages.renderHistoryCards();
+    break;
         case 'fuel':
     if (typeof App.ui.pages.renderFuelTab === 'function') App.ui.pages.renderFuelTab();
     break;
