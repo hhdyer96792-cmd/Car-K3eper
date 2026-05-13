@@ -1129,5 +1129,5 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 }
 
 #history-cards-container {
-    margin-top: 100px;   /* отступ от фильтров */
+    margin-top: 16px;   /* отступ от фильтров */
 }
