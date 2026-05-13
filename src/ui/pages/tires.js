@@ -19,7 +19,7 @@ App.ui.pages.renderTiresTable = function() {
 // ---------- 1. Карточка «Всего затрат на колёса» ----------
 App.ui.pages.renderTotalTiresCost = function() {
     var total = (App.store.tireLog || []).reduce(function(sum, t) {
-        return sum + (parseFloat(t.purchaseCost) || 0) + (parseFloat(t.mountCost) || 0);
+        return sum + (parseFloat(t.purchaseCost) || 0) + (parseFloat(t.mountCost) || 0) + (parseFloat(t.diskCost) || 0);
     }, 0);
     var el = document.getElementById('tires-total-cost');
     if (el) el.textContent = total.toLocaleString() + ' ₽';
@@ -42,19 +42,12 @@ App.ui.pages.renderTireWearBars = function() {
             return '<div class="wear-item"><h4>' + type + '</h4><p class="hint">Нет данных</p></div>';
         }
         var depth = parseFloat(tire.wear) || 0;
-        var newDepth, critical, safe, warnLow, warnHigh, critLow;
+        var newDepth, critical;
         if (type === 'Лето') {
             newDepth = 7.0; critical = 1.6;
-            safe = 4.0; // >4 зелёный
-            warnLow = 3.0; // 3-4 жёлтый
-            critLow = 2.5; // 2.5-3 оранжевый, <2.5 красный
         } else {
             newDepth = 8.0; critical = 4.0;
-            safe = 6.0;
-            warnLow = 5.0;
-            critLow = 4.0;
         }
-        // Защита от отрицательных значений
         depth = Math.max(0, depth);
         var percent = ((depth - critical) / (newDepth - critical)) * 100;
         percent = Math.min(100, Math.max(0, percent));
@@ -62,7 +55,7 @@ App.ui.pages.renderTireWearBars = function() {
         if (type === 'Лето') {
             if (depth > 4.0) { color = 'var(--success)'; statusText = 'Безопасно'; }
             else if (depth >= 3.0) { color = 'var(--warning)'; statusText = 'Внимание'; }
-            else if (depth >= 2.5) { color = '#f39c12'; statusText = 'Предел'; } // оранжевый
+            else if (depth >= 2.5) { color = '#f39c12'; statusText = 'Предел'; }
             else { color = 'var(--danger)'; statusText = 'Критично'; }
         } else {
             if (depth > 6.0) { color = 'var(--success)'; statusText = 'Безопасно'; }
@@ -70,9 +63,9 @@ App.ui.pages.renderTireWearBars = function() {
             else if (depth >= 4.0) { color = '#f39c12'; statusText = 'Предел'; }
             else { color = 'var(--danger)'; statusText = 'Критично'; }
         }
+        var totalCost = (parseFloat(tire.purchaseCost) || 0) + (parseFloat(tire.mountCost) || 0) + (parseFloat(tire.diskCost) || 0);
         var pricePerKm = 0;
         if (tire.mileage > 0) {
-            var totalCost = (parseFloat(tire.purchaseCost) || 0) + (parseFloat(tire.mountCost) || 0);
             pricePerKm = totalCost / tire.mileage;
         }
         return '<div class="wear-item" style="flex:1; min-width:200px;">' +
@@ -105,18 +98,18 @@ App.ui.pages.renderTiresCards = function() {
     sorted.forEach(function(t) {
         var originalIndex = App.store.tireLog.indexOf(t);
         var depth = parseFloat(t.wear) || 0;
-        var totalCost = (parseFloat(t.purchaseCost) || 0) + (parseFloat(t.mountCost) || 0);
+        var totalCost = (parseFloat(t.purchaseCost) || 0) + (parseFloat(t.mountCost) || 0) + (parseFloat(t.diskCost) || 0);
         html += '<div class="card-item">';
         html += '<div class="card-header" style="justify-content:space-between;">';
         html += '<div class="card-summary">';
         html += '<strong>' + App.utils.escapeHtml(t.date) + ' · ' + (t.type || '—') + ' · ' + App.utils.escapeHtml(t.model || '') + ' ' + App.utils.escapeHtml(t.size || '') + '</strong>';
         html += '<div class="card-meta">Пробег: ' + (t.mileage || '—') + ' км · Глубина протектора: ' + depth.toFixed(1) + ' мм</div>';
         html += '<div class="card-meta">Покупка: ' + (t.purchaseCost || '0') + ' ₽ · Монтаж: ' + (t.mountCost || '0') + ' ₽' + (t.isDIY ? ' (DIY)' : '') + '</div>';
+        if (t.diskCost > 0) html += '<div class="card-meta">Диски: ' + t.diskCost + ' ₽</div>';
         if (t.notes) html += '<div class="card-meta">Прим.: ' + App.utils.escapeHtml(t.notes) + '</div>';
         html += '</div>';
         html += '<button class="icon-btn tire-toggle-btn"><i data-lucide="more-vertical"></i></button>';
         html += '</div>'; // card-header
-        // Скрытые кнопки действий
         html += '<div class="card-detail-actions" style="display:none; padding:8px 12px; justify-content:flex-end;">';
         html += '<button class="icon-btn" data-action="edit-tire" data-idx="' + originalIndex + '"><i data-lucide="pencil"></i></button>';
         html += '<button class="icon-btn" data-action="delete-tire" data-idx="' + originalIndex + '"><i data-lucide="trash-2"></i></button>';
@@ -126,7 +119,6 @@ App.ui.pages.renderTiresCards = function() {
 
     container.innerHTML = html;
 
-    // Обработчики раскрытия
     container.querySelectorAll('.tire-toggle-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -227,47 +219,79 @@ App.ui.pages.renderTireCalculator = function() {
     });
 };
 
-// ---------- МОДАЛЬНОЕ ОКНО (без изменений в логике) ----------
+// ---------- МОДАЛЬНОЕ ОКНО (с добавленными дисками) ----------
 App.ui.pages.openTireModal = function(record) {
     var isEdit = !!(record && record.id);
     var defaultDate = record ? App.utils.isoToDDMMYYYY(record.date) : App.utils.isoToDDMMYYYY(new Date().toISOString().split('T')[0]);
     var typeValue = record ? (record.type || 'Лето') : 'Лето';
     var isNewSet = record ? (record.mileage === 0 && record.purchaseCost) : false;
+    var hasDisks = !!(record && record.diskCost && parseFloat(record.diskCost) > 0);
 
     var content =
         '<form id="tire-form">' +
             (isEdit ? '<input type="hidden" name="id" value="' + record.id + '">' : '') +
-            '<label>Дата (ДД-ММ-ГГГГ)</label>' +
-            '<input type="text" name="date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" required oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + App.utils.escapeHtml(defaultDate) + '">' +
-            '<label>Тип</label>' +
-            '<select name="type">' +
-                '<option value="Лето" ' + (typeValue === 'Лето' ? 'selected' : '') + '>Лето</option>' +
-                '<option value="Зима" ' + (typeValue === 'Зима' ? 'selected' : '') + '>Зима</option>' +
-            '</select>' +
-            '<label><input type="checkbox" name="isNewSet" id="isNewSetCheckbox" ' + (isNewSet ? 'checked' : '') + '> Новый комплект</label>' +
-            '<div id="newSetFields" style="display:' + (isNewSet ? 'block' : 'none') + ';">' +
-                '<label>Название модели</label><input type="text" name="model" value="' + App.utils.escapeHtml(record ? (record.model || '') : '') + '">' +
-                '<label>Размерность</label><input type="text" name="size" value="' + App.utils.escapeHtml(record ? (record.size || '') : '') + '">' +
-                '<label>Стоимость покупки (₽)</label><input type="number" name="purchaseCost" step="0.01" value="' + (record ? (record.purchaseCost || '') : '') + '">' +
+            '<div style="display:flex; gap:8px; align-items:center;">' +
+                '<label style="margin-bottom:0;">Дата (ДД-ММ-ГГГГ)</label>' +
+                '<input type="text" name="date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" required oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + App.utils.escapeHtml(defaultDate) + '" style="width:120px;">' +
+                '<label style="margin-bottom:0;">Пробег</label>' +
+                '<input type="number" name="currentMileage" value="' + (record ? record.mileage : App.store.settings.currentMileage) + '" required style="width:90px;">' +
+                '<button type="button" id="tire-type-toggle" class="secondary-btn" style="padding:8px 12px;">' + typeValue + '</button>' +
+                '<input type="hidden" name="type" value="' + typeValue + '">' +
             '</div>' +
-            '<div id="mountFields" style="display:' + (isNewSet ? 'none' : 'block') + ';">' +
-                '<label>Текущий пробег (км)</label><input type="number" name="currentMileage" value="' + (isNewSet ? 0 : App.store.settings.currentMileage) + '" required>' +
-                '<label>Стоимость шиномонтажа (₽)</label><input type="number" name="mountCost" step="0.01" value="' + (record ? (record.mountCost || '') : '') + '">' +
+            '<div style="display:flex; gap:8px; align-items:center;">' +
+                '<label style="margin-bottom:0;">Стоимость шиномонтажа (₽)</label>' +
+                '<input type="number" name="mountCost" step="0.01" value="' + (record ? (record.mountCost || '') : '') + '" style="width:100px;">' +
+                '<label style="margin-bottom:0;">Глубина протектора</label>' +
+                '<input type="number" name="wear" step="0.1" value="' + (record ? (record.wear || '') : '') + '" style="width:80px;">' +
+                '<span style="font-size:0.85rem;">мм</span>' +
+            '</div>' +
+            '<div style="display:flex; gap:12px; align-items:center; margin:8px 0;">' +
+                '<label><input type="checkbox" name="isNewSet" id="isNewSetCheckbox" ' + (isNewSet ? 'checked' : '') + '> Новый комплект</label>' +
+                '<label><input type="checkbox" name="hasDisks" ' + (hasDisks ? 'checked' : '') + '> Диски</label>' +
                 '<label><input type="checkbox" name="isDIY" value="true" ' + (record && record.isDIY ? 'checked' : '') + '> Сделал сам</label>' +
             '</div>' +
-            '<label>Износ / Остаток шипов (' + (typeValue === 'Зима' ? '%' : 'мм') + ')</label>' +
-            '<input type="number" name="wear" step="0.1" value="' + (record ? (record.wear || '') : '') + '">' +
+            '<div id="diskFields" style="display:' + (hasDisks ? 'block' : 'none') + '; margin-bottom:8px;">' +
+                '<label>Стоимость дисков (₽)</label>' +
+                '<input type="number" name="diskCost" step="0.01" value="' + (record ? (record.diskCost || '') : '') + '">' +
+            '</div>' +
             '<label>Примечание</label>' +
             '<input type="text" name="notes" value="' + App.utils.escapeHtml(record ? (record.notes || '') : '') + '">' +
+            '<div id="newSetFields" style="display:' + (isNewSet ? 'block' : 'none') + ';">' +
+                '<label>Название модели</label><input type="text" name="model" value="' + App.utils.escapeHtml(record ? (record.model || '') : '') + '">' +
+                '<label>Размерность</label><input type="text" name="size" placeholder="205/55R16" value="' + App.utils.escapeHtml(record ? (record.size || '') : '') + '">' +
+                '<label>Стоимость покупки (₽)</label><input type="number" name="purchaseCost" step="0.01" value="' + (record ? (record.purchaseCost || '') : '') + '">' +
+            '</div>' +
             '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
         '</form>';
 
     var modal = App.ui.createModal(isEdit ? '✏️ Редактировать запись шин' : '🛞 Сменить резину', content);
 
+    // Переключатель Лето/Зима
+    var typeToggle = modal.querySelector('#tire-type-toggle');
+    var typeInput = modal.querySelector('[name="type"]');
+    if (typeToggle && typeInput) {
+        typeToggle.addEventListener('click', function() {
+            var newType = typeInput.value === 'Лето' ? 'Зима' : 'Лето';
+            typeInput.value = newType;
+            typeToggle.textContent = newType;
+            // обновить подсказку глубины
+            var wearUnit = modal.querySelector('#wear-unit');
+            if (wearUnit) wearUnit.textContent = newType === 'Зима' ? '%' : 'мм';
+        });
+    }
+
+    // Чекбоксы
     modal.querySelector('#isNewSetCheckbox').addEventListener('change', function(e) {
         modal.querySelector('#newSetFields').style.display = e.target.checked ? 'block' : 'none';
-        modal.querySelector('#mountFields').style.display = e.target.checked ? 'none' : 'block';
     });
+
+    var diskCheckbox = modal.querySelector('[name="hasDisks"]');
+    var diskFields = modal.querySelector('#diskFields');
+    if (diskCheckbox && diskFields) {
+        diskCheckbox.addEventListener('change', function() {
+            diskFields.style.display = this.checked ? 'block' : 'none';
+        });
+    }
 
     var form = modal.querySelector('#tire-form');
     form.onsubmit = function(e) {
@@ -275,11 +299,12 @@ App.ui.pages.openTireModal = function(record) {
         var formEl = e.target;
         var d = Object.fromEntries(new FormData(formEl));
         var isNew = d.isNewSet === 'on';
-        var currentMileage = isNew ? 0 : App.utils.validateNumberInput(formEl.querySelector('[name="currentMileage"]'), false);
-        if (!isNew && currentMileage === null) return;
+        var currentMileage = App.utils.validateNumberInput(formEl.querySelector('[name="currentMileage"]'), false);
+        if (currentMileage === null) return;
 
-        var mountCost = App.utils.validateNumberInput(formEl.querySelector('[name="mountCost"]'), true, true);
-        var purchaseCost = App.utils.validateNumberInput(formEl.querySelector('[name="purchaseCost"]'), true, true);
+        var mountCost = App.utils.validateNumberInput(formEl.querySelector('[name="mountCost"]'), true, true) || 0;
+        var purchaseCost = App.utils.validateNumberInput(formEl.querySelector('[name="purchaseCost"]'), true, true) || 0;
+        var diskCost = App.utils.validateNumberInput(formEl.querySelector('[name="diskCost"]'), true, true) || 0;
 
         var dateISO = App.utils.ddmmYYYYtoISO(d.date);
         modal.remove();
@@ -298,17 +323,16 @@ App.ui.pages.openTireModal = function(record) {
             size: d.size || '',
             wear: d.wear || '',
             notes: d.notes || '',
-            purchaseCost: isNew ? (purchaseCost || 0) : 0,
-            mountCost: isNew ? 0 : (mountCost || 0),
+            purchaseCost: purchaseCost,
+            mountCost: mountCost,
+            diskCost: diskCost,
             isDIY: d.isDIY === 'true'
         };
 
         if (App.config.USE_SUPABASE) {
             App.storage.saveTireRecord(d.id, rowData)
                 .then(function(res) {
-                    if (res && res.data && res.data.length > 0) {
-                        rowData.id = res.data[0].id;
-                    }
+                    if (res && res.data && res.data.length > 0) rowData.id = res.data[0].id;
                     if (isEdit) {
                         var idx = App.store.tireLog.findIndex(function(t) { return t.id == d.id; });
                         if (idx !== -1) App.store.tireLog[idx] = rowData;
@@ -323,18 +347,10 @@ App.ui.pages.openTireModal = function(record) {
                     App.toast('Ошибка сохранения в Supabase', 'error');
                 });
         } else {
-            // старая логика
-            if (App.auth && App.auth.accessToken) {
-                if (isEdit) {
-                    App.storage.saveTireRecord(d.id, rowData);
-                } else {
-                    App.storage.addTireRecord(rowData);
-                }
-            }
-            var idx = App.store.tireLog.findIndex(function(t) { return t.id == d.id; });
-            if (idx !== -1) {
-                App.store.tireLog[idx] = rowData;
-            } else if (!isEdit) {
+            if (isEdit) {
+                var idx = App.store.tireLog.findIndex(function(t) { return t.id == d.id; });
+                if (idx !== -1) App.store.tireLog[idx] = rowData;
+            } else {
                 App.store.tireLog.push(rowData);
             }
             App.store.saveToLocalStorage();
