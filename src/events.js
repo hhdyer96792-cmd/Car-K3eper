@@ -445,30 +445,34 @@ if (historyOpenFiltersBtn) {
 };
 
 App.events.initHistoryFilters = function() {
-    ['history-period-select', 'history-operation-filter', 'history-search', 'history-diy-only', 'history-cost-min', 'history-cost-max'].forEach(function(id) {
+App.events.initHistoryFilters = function() {
+    ['history-period-select', 'history-operation-filter', 'history-category-filter', 'history-executor-filter',
+     'history-search', 'history-diy-only', 'history-cost-min', 'history-cost-max', 'history-mileage-min', 'history-mileage-max', 'history-sort-order'
+    ].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) {
             var eventType = (el.tagName === 'INPUT' && el.type === 'checkbox') ? 'change' : (el.tagName === 'INPUT' ? 'input' : 'change');
-            el.addEventListener(eventType, App.ui.pages.renderHistoryWithFilters);
+            el.addEventListener(eventType, App.ui.pages.renderHistoryCards);
         }
     });
 
     var resetFiltersBtn = document.getElementById('history-reset-filters');
-if (resetFiltersBtn) {
-    resetFiltersBtn.addEventListener('click', function() {
-        ['history-period-select', 'history-operation-filter', 'history-category-filter', 'history-executor-filter',
-         'history-search', 'history-diy-only', 'history-cost-min', 'history-cost-max', 'history-mileage-min', 'history-mileage-max', 'history-sort-order'
-        ].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) {
-                if (el.type === 'checkbox') el.checked = false;
-                else el.value = '';
-            }
+    if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener('click', function() {
+            ['history-period-select', 'history-operation-filter', 'history-category-filter', 'history-executor-filter',
+             'history-search', 'history-diy-only', 'history-cost-min', 'history-cost-max', 'history-mileage-min', 'history-mileage-max', 'history-sort-order'
+            ].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    if (el.type === 'checkbox') el.checked = false;
+                    else el.value = '';
+                }
+            });
+            document.getElementById('history-sort-order').value = 'date-desc';
+            App.ui.pages.renderHistoryCards();
         });
-        document.getElementById('history-sort-order').value = 'date-desc';
-        App.ui.pages.renderHistoryCards();  // ← новый вызов
-    });
-}
+    }
+};
 
 App.events.initStatsListeners = function() {
     var periodSelect = document.getElementById('stats-period-select');
