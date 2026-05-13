@@ -990,3 +990,14 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-right: 6px;
     vertical-align: middle;
 }
+
+.tire-type-btn.summer {
+    background: #A6CE39;
+    color: #000;
+    border-color: #A6CE39;
+}
+.tire-type-btn.winter {
+    background: #00BCD4;
+    color: #000;
+    border-color: #00BCD4;
+}
