@@ -242,12 +242,12 @@ App.ui.pages.openTireModal = function(record) {
                 '<label style="margin-bottom:0;">Шиномонтаж (₽)</label>' +
                 '<input type="number" name="mountCost" step="0.01" value="' + (record ? (record.mountCost || '') : '') + '" style="width:100px;">' +
                 '<label style="margin-bottom:0;">Протектор мм</label>' +
-                '<input type="number" name="wear" step="0.1" value="' + (record ? (record.wear || '') : '') + '" style="width:70px;">' +
+                '<input type="number" name="wear" step="0.1" value="' + (record ? (record.wear || '') : '') + '" style="width:60px;">' +
             '</div>' +
             '<div style="display:flex; gap:12px; align-items:center; margin:8px 0;">' +
-                '<label><input type="checkbox" name="isNewSet" id="isNewSetCheckbox" ' + (isNewSet ? 'checked' : '') + '>            Новый комплект</label>' +
-                '<label><input type="checkbox" name="hasDisks" ' + (hasDisks ? 'checked' : '') + '>           Диски</label>' +
-                '<label><input type="checkbox" name="isDIY" value="true" ' + (record && record.isDIY ? 'checked' : '') + '>       Сделал сам</label>' +
+                '<label><input type="checkbox" name="isNewSet" id="isNewSetCheckbox" ' + (isNewSet ? 'checked' : '') + '>                Новый комплект</label>' +
+                '<label><input type="checkbox" name="hasDisks" ' + (hasDisks ? 'checked' : '') + '>                  Диски</label>' +
+                '<label><input type="checkbox" name="isDIY" value="true" ' + (record && record.isDIY ? 'checked' : '') + '>               Сделал сам</label>' +
             '</div>' +
             '<div id="diskFields" style="display:' + (hasDisks ? 'block' : 'none') + '; margin-bottom:8px;">' +
                 '<label>Стоимость дисков (₽)</label>' +
