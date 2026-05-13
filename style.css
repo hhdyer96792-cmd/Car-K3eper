@@ -1078,21 +1078,14 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 /* Единая строка фильтров */
 .history-filters-bar {
     display: flex;
-    flex-wrap: wrap;          /* на десктопе перенос при нехватке места */
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 12px;
     margin-bottom: 16px;
     align-items: center;
 }
 
-/* Компактные элементы */
-.history-filters-bar select,
-.history-filters-bar input {
-    width: auto;
-    min-width: 100px;
-    margin-bottom: 0;
-    font-size: 0.85rem;
-}
-.history-filters-bar .checkbox-label {
+/* Десктопные подписи */
+.filter-label {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -1101,23 +1094,41 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-bottom: 0;
 }
 
-/* Мобильная версия: одна строка с горизонтальным скроллом */
+.filter-label select,
+.filter-label input {
+    width: auto;
+    min-width: 100px;
+    margin-bottom: 0;
+}
+
+/* Мобильная версия: скрываем подписи, показываем только поля */
 @media (max-width: 767px) {
     .history-filters-bar {
-        flex-wrap: nowrap;          /* запрет переноса */
-        overflow-x: auto;           /* горизонтальная прокрутка */
+        flex-wrap: nowrap;
+        overflow-x: auto;
         white-space: nowrap;
         gap: 6px;
         padding-bottom: 4px;
         -webkit-overflow-scrolling: touch;
+        width: 100%;
+        max-width: 100%;
     }
-    .history-filters-bar select,
-    .history-filters-bar input {
-        min-width: 140px;
-        font-size: 0.7rem;
+
+    .filter-label {
+        display: inline-block;    /* вместо flex, чтобы скрыть текст */
+        font-size: 0;            /* скрываем текст подписи */
     }
-    /* Скрываем длинные тексты внутри label */
-    .history-filters-bar .checkbox-label span {
+
+    .filter-label select,
+    .filter-label input {
+        font-size: 0.8rem;
+        padding: 6px 8px;
+    }
+
+    /* Показываем placeholder вместо подписи */
+    .filter-label::before {
+        content: attr(data-label);
+        font-size: 0;
         display: none;
     }
 }
@@ -1126,7 +1137,44 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-top: 16px;
 }
 
-/* ==================== Карточки истории (мобильные) ==================== */
+/* Десктопные карточки истории */
+.history-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+    padding: 16px;
+}
+.history-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.history-card-header .date { font-weight: 600; }
+.history-card-header .operation { font-weight: 500; margin-left: 8px; }
+.history-card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.history-card-grid div {
+    font-size: 0.85rem;
+}
+.history-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.history-card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* Мобильные карточки истории */
 .history-card-mobile {
     background: var(--card-bg);
     border-radius: var(--radius-sm);
