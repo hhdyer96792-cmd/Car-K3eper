@@ -320,63 +320,74 @@
     <div id="to-cards-container" class="cards-container"></div>
 </div>
 
-        <!-- Статистика (полный блок) -->
-        <div id="tab-stats" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-                <label style="display: flex; align-items: center; gap: 8px;"><span>Период:</span>
-                    <select id="stats-period-select" style="width: auto; margin: 0;">
-                        <option value="all">Весь период</option>
-                        <option value="year">Последний год</option>
-                        <option value="6months">Последние 6 месяцев</option>
-                        <option value="quarter">Последний квартал</option>
-                        <option value="month">Последний месяц</option>
-                        <option value="week">Последняя неделя</option>
-                    </select>
-                </label>
-                <div id="driving-mode-indicator" class="driving-mode-card">
-                    <span class="mode-label"><i data-lucide="gauge"></i> Режим:</span>
-                    <span class="mode-value" id="driving-mode">—</span>
-                    <span class="mode-hint" id="driving-mode-hint"></span>
-                </div>
-                <button id="reset-all-zoom" class="secondary-btn" style="margin-left: auto;"><i data-lucide="refresh-ccw"></i> Сбросить масштаб</button>
-            </div>
-            <div class="stats-summary-grid" id="stats-summary-skeleton">
-                <div class="stat-card"><span class="stat-label"><i data-lucide="dollar-sign"></i> Всего на ТО</span><span class="stat-value" id="total-maintenance-cost">0</span><span class="stat-unit">₽</span></div>
-                <div class="stat-card"><span class="stat-label"><i data-lucide="fuel"></i> Всего на топливо</span><span class="stat-value" id="total-fuel-cost">0</span><span class="stat-unit">₽</span></div>
-                <div class="stat-card"><span class="stat-label"><i data-lucide="ruler"></i> Стоимость 1 км</span><span class="stat-value" id="cost-per-km">0</span><span class="stat-unit">₽/км</span></div>
-                <div class="stat-card"><span class="stat-label"><i data-lucide="bar-chart-2"></i> Средний расход</span><span class="stat-value" id="avg-fuel-consumption">0</span><span class="stat-unit">л/100 км</span></div>
-                <div class="stat-card"><span class="stat-label"><i data-lucide="car"></i> Ср. пробег/день</span><span class="stat-value" id="avg-mileage-per-day">0</span><span class="stat-unit">км</span></div>
-                <div class="stat-card"><span class="stat-label"><i data-lucide="clock"></i> Ср. моточасы/день</span><span class="stat-value" id="avg-motohours-per-day">0</span><span class="stat-unit">ч</span></div>
-                <div class="stat-card ownership-card"><span class="stat-label"><i data-lucide="calendar"></i> Владение</span><span class="stat-value" id="ownership-display">0</span><span class="stat-unit" id="ownership-unit">дней</span><button id="toggle-ownership-unit" class="icon-btn" title="Переключить дни/годы"><i data-lucide="refresh-ccw"></i></button></div>
-            </div>
-            <div class="stats-container">
-                <div class="chart-card"><h3><i data-lucide="line-chart"></i> Расход топлива (л/100 км) по месяцам</h3><canvas id="fuelConsumptionChart"></canvas></div>
-                <div class="chart-card"><h3><i data-lucide="dollar-sign"></i> Средняя цена топлива (₽/л) по месяцам</h3><canvas id="fuelPriceChart"></canvas></div>
-                <div class="chart-card"><h3><i data-lucide="bar-chart-3"></i> Затраты на топливо и ТО по месяцам</h3><canvas id="costsChart"></canvas></div>
-                <div class="card">
-                    <h3><i data-lucide="trending-up"></i> Прогноз пробега</h3>
-                    <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
-                        <label style="flex:1; min-width:150px;">Целевой пробег (км):
-                            <input type="number" id="prediction-target" placeholder="например, 100000" style="width:100%">
-                        </label>
-                        <button id="calc-prediction-btn" class="secondary-btn"><i data-lucide="calculator"></i> Рассчитать</button>
-                    </div>
-                    <div id="prediction-result" class="hint" style="margin-top:12px;"></div>
-                </div>
-                <div class="pie-row">
-                    <div class="chart-card"><h3><i data-lucide="pie-chart"></i> Распределение затрат по категориям</h3><canvas id="expensePieChart"></canvas></div>
-                </div>
-                <div class="card">
-                    <div id="oil-resource-bar" class="oil-resource-container">
-                        <div class="oil-resource-label">Остаток ресурса масла</div>
-                        <div class="oil-resource-track">
-                            <div class="oil-resource-fill" style="width: 100%;"></div>
-                        </div>
-                        <div class="oil-resource-percent">100%</div>
-                    </div>
-                </div>
-            </div>
+        <!-- Финансы (переработано) -->
+<div id="tab-stats" class="tab-content">
+    <!-- 1. Переключатель периода -->
+    <div class="finance-period-switch" id="finance-period-switch">
+        <button class="period-btn active" data-period="month">Месяц</button>
+        <button class="period-btn" data-period="quarter">Квартал</button>
+        <button class="period-btn" data-period="year">Год</button>
+        <button class="period-btn" data-period="all">Всё время</button>
+    </div>
+
+    <!-- 2. Карточки метрик -->
+    <div class="finance-metrics" id="finance-metrics">
+        <div class="card metric-card">
+            <span class="metric-label">Расходы за период</span>
+            <span class="metric-value" id="finance-total">0 ₽</span>
         </div>
+        <div class="card metric-card">
+            <span class="metric-label">Средние в день</span>
+            <span class="metric-value" id="finance-daily-avg">0 ₽</span>
+        </div>
+        <div class="card metric-card">
+            <span class="metric-label">Самый дорогой месяц</span>
+            <span class="metric-value" id="finance-expensive-month">—</span>
+            <span class="metric-detail" id="finance-expensive-amount">0 ₽</span>
+        </div>
+        <div class="card metric-card">
+            <span class="metric-label">Самый дешёвый месяц</span>
+            <span class="metric-value" id="finance-cheap-month">—</span>
+            <span class="metric-detail" id="finance-cheap-amount">0 ₽</span>
+        </div>
+    </div>
+
+    <!-- 3. Карточка прогноза -->
+    <div class="card forecast-card" id="finance-forecast">
+        <h3><i data-lucide="trending-up"></i> Прогноз на следующий месяц</h3>
+        <div id="finance-forecast-value">—</div>
+    </div>
+
+    <!-- 4. Линейный график динамики с прогнозом -->
+    <div class="card chart-card">
+        <h3><i data-lucide="chart-line"></i> Динамика общих затрат с прогнозом</h3>
+        <div class="chart-wrapper" style="height:220px;"><canvas id="financeDynamicsChart"></canvas></div>
+    </div>
+
+    <!-- 5. Гистограмма общих затрат -->
+    <div class="card chart-card">
+        <h3><i data-lucide="bar-chart-3"></i> Общие затраты по месяцам</h3>
+        <div class="chart-wrapper" style="height:200px;"><canvas id="financeCostHistogram"></canvas></div>
+    </div>
+
+    <!-- 6. Круговая диаграмма распределения затрат -->
+    <div class="card chart-card">
+        <h3><i data-lucide="pie-chart"></i> Распределение затрат</h3>
+        <canvas id="financePieChart" height="200"></canvas>
+    </div>
+
+    <!-- 7. Блок сравнения периодов -->
+    <div class="card comparison-card" id="finance-comparison">
+        <h3><i data-lucide="git-compare"></i> Сравнение периодов</h3>
+        <div class="comparison-selectors">
+            <select id="compare-period-1"></select>
+            <span>с</span>
+            <select id="compare-period-2"></select>
+        </div>
+        <div class="comparison-results" id="comparison-results"></div>
+        <div class="chart-wrapper" style="height:200px;"><canvas id="financeComparisonChart"></canvas></div>
+    </div>
+</div>
 
         <!-- Топливо (переработан) -->
 <div id="tab-fuel" class="tab-content">
