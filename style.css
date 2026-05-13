@@ -1075,16 +1075,14 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 
 /* ==================== История ==================== */
 
-/* Единая строка фильтров */
 .history-filters-bar {
     display: flex;
-    flex-wrap: wrap;          /* на десктопе перенос при нехватке места */
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 16px;
     align-items: center;
 }
 
-/* Все элементы фильтров — компактные */
 .history-filters-bar select,
 .history-filters-bar input {
     width: auto;
@@ -1101,33 +1099,24 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-bottom: 0;
 }
 
-/* Мобильная версия: одна строка с горизонтальным скроллом */
 @media (max-width: 767px) {
     .history-filters-bar {
-        flex-wrap: nowrap;         /* запрет переноса */
-        overflow-x: auto;          /* горизонтальная прокрутка */
+        width: 100%;
+        max-width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
         white-space: nowrap;
         gap: 6px;
-        padding-bottom: 4px;       /* место для скролла */
+        padding-bottom: 4px;
         -webkit-overflow-scrolling: touch;
     }
     .history-filters-bar select,
     .history-filters-bar input {
-        min-width: 110px;           /* ещё компактнее */
-        font-size: 0.7rem;
+        min-width: 80px;
+        font-size: 0.8rem;
     }
-    /* Скрываем длинные тексты, оставляем placeholder */
-    .history-filters-bar .checkbox-label span {
-        display: none;
-    }
-}
-
-/* Уменьшенная кнопка сброса */
-#history-reset-filters {
-    padding: 6px 12px;
-    font-size: 0.8rem;
 }
 
 #history-cards-container {
-    margin-top: 16px;   /* отступ от фильтров */
+    margin-top: 16px;
 }
