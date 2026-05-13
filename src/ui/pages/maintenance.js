@@ -186,6 +186,23 @@ App.ui.pages.renderTOCategoryPieChart = function() {
     });
 };
 
+// Карточка ресурса масла (прогресс-бар)
+App.ui.pages.renderOilResourceCard = function() {
+    // Вызываем рендер прогресс-бара из charts.js
+    if (typeof App.charts.renderOilResourceBar === 'function') {
+        App.charts.renderOilResourceBar();
+    }
+    var container = document.getElementById('oil-resource-bar');
+    if (!container) return;
+    var fill = container.querySelector('.oil-resource-fill');
+    // Если нет заполнения или ширина 0% — скрываем карточку
+    if (!fill || fill.style.width === '0%' || fill.style.width === '') {
+        container.style.display = 'none';
+    } else {
+        container.style.display = ''; // показываем (убираем inline display:none)
+    }
+};
+
 // 5. Карточки операций (аккордеоны по категориям, Вариант Д)
 App.ui.pages.renderTOTable = function() {
     var container = document.getElementById('to-cards-container');
