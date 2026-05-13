@@ -469,6 +469,7 @@ App.events.initHistoryFilters = function() {
             });
             document.getElementById('history-sort-order').value = 'date-desc';
             App.ui.pages.renderHistoryCards();
+}
         });
     }
 };
