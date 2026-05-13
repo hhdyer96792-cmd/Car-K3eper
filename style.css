@@ -1113,8 +1113,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     }
     .history-filters-bar select,
     .history-filters-bar input {
-        min-width: 80px;           /* ещё компактнее */
-        font-size: 0.8rem;
+        min-width: 100px;           /* ещё компактнее */
+        font-size: 0.6rem;
     }
     /* Скрываем длинные тексты, оставляем placeholder */
     .history-filters-bar .checkbox-label span {
