@@ -229,6 +229,7 @@ App.events.switchToTab = function(tabId) {
         }
         if (typeof App.ui.pages.renderTotalCost === 'function') App.ui.pages.renderTotalCost();
         if (typeof App.ui.pages.renderTOStats === 'function') App.ui.pages.renderTOStats();
+        if (typeof App.ui.pages.renderOilResourceCard === 'function') App.ui.pages.renderOilResourceCard();
         if (typeof App.ui.pages.renderResourceBars === 'function') App.ui.pages.renderResourceBars();
         if (typeof App.ui.pages.renderTOCostChart === 'function') App.ui.pages.renderTOCostChart();
         if (typeof App.ui.pages.renderTOCategoryPieChart === 'function') App.ui.pages.renderTOCategoryPieChart();
