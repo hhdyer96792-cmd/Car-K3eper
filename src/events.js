@@ -237,22 +237,21 @@ App.events.switchToTab = function(tabId) {
     })();
     break;
         case 'stats':
-            if (typeof App.ui.pages.renderStats === 'function') App.ui.pages.renderStats();
-            if (typeof App.ui.pages.renderFuelAnalytics === 'function') App.ui.pages.renderFuelAnalytics();
+            if (typeof App.ui.pages.renderFinanceTab === 'function') App.ui.pages.renderFinanceTab();
             break;
         case 'history':
-    if (typeof App.ui.pages.initHistoryFilters === 'function') App.ui.pages.initHistoryFilters();
-    if (typeof App.ui.pages.renderHistoryCards === 'function') App.ui.pages.renderHistoryCards();
-    break;
+            if (typeof App.ui.pages.initHistoryFilters === 'function') App.ui.pages.initHistoryFilters();
+            if (typeof App.ui.pages.renderHistoryCards === 'function') App.ui.pages.renderHistoryCards();
+            break;
         case 'fuel':
-    if (typeof App.ui.pages.renderFuelTab === 'function') App.ui.pages.renderFuelTab();
-    break;
+            if (typeof App.ui.pages.renderFuelTab === 'function') App.ui.pages.renderFuelTab();
+            break;
         case 'tires':
-    if (typeof App.ui.pages.renderTiresTab === 'function') App.ui.pages.renderTiresTab();
-    break;
+            if (typeof App.ui.pages.renderTiresTab === 'function') App.ui.pages.renderTiresTab();
+            break;
         case 'parts':
-    if (typeof App.ui.pages.renderPartsTab === 'function') App.ui.pages.renderPartsTab();
-    break;
+            if (typeof App.ui.pages.renderPartsTab === 'function') App.ui.pages.renderPartsTab();
+            break;
         case 'car':
             if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
             break;
@@ -424,13 +423,13 @@ App.events.initDirectListeners = function() {
         });
     }
 
-// Кнопка открытия мобильных фильтров истории
-var historyOpenFiltersBtn = document.getElementById('history-open-filters-btn');
-if (historyOpenFiltersBtn) {
-    historyOpenFiltersBtn.addEventListener('click', function() {
-        App.ui.pages.openHistoryFiltersModal();
-    });
-}
+    // Кнопка открытия мобильных фильтров истории
+    var historyOpenFiltersBtn = document.getElementById('history-open-filters-btn');
+    if (historyOpenFiltersBtn) {
+        historyOpenFiltersBtn.addEventListener('click', function() {
+            App.ui.pages.openHistoryFiltersModal();
+        });
+    }
 
     // Кнопка темы на вкладке Настройки
     var settingsThemeToggle = document.getElementById('settings-theme-toggle');
@@ -469,7 +468,6 @@ App.events.initHistoryFilters = function() {
             });
             document.getElementById('history-sort-order').value = 'date-desc';
             App.ui.pages.renderHistoryCards();
-}
         });
     }
 };
@@ -481,8 +479,7 @@ App.events.initStatsListeners = function() {
         periodSelect.addEventListener('change', function() {
             localStorage.setItem(App.config.STATS_PERIOD_KEY, periodSelect.value);
             if (document.getElementById('tab-stats')?.classList.contains('active')) {
-                App.ui.pages.renderStats();
-                App.ui.pages.renderFuelAnalytics();
+                App.ui.pages.renderFinanceTab();
             }
         });
     }
