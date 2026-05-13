@@ -1113,7 +1113,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     }
     .history-filters-bar select,
     .history-filters-bar input {
-        min-width: 110px;
+        min-width: 140px;
         font-size: 0.7rem;
     }
     /* Скрываем длинные тексты внутри label */
