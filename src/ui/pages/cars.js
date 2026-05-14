@@ -481,14 +481,37 @@ App.ui.pages.loadCarDetails = function(carId) {
 };
 
 // ---------- Основные параметры ----------
-App.ui.pages.renderBasicParams = function() {
-    document.getElementById('set-base-mileage').value = App.store.baseMileage || 0;
-    document.getElementById('set-base-motohours').value = App.store.baseMotohours || 0;
-    document.getElementById('purchase-date').value = App.store.purchaseDate
-        ? App.utils.isoToDDMMYYYY(App.store.purchaseDate) : '';
-    document.getElementById('purchase-cost').value = App.store.purchaseCost || 0;
+App.ui.pages.renderBasicParams = async function() {
+    // Загружаем данные из Supabase
+    let baseMileage = 0, baseMotohours = 0, purchaseDate = '', purchaseCost = 0;
+    if (App.store.activeCarId) {
+        try {
+            const { data, error } = await App.supabase
+                .from('vehicle_state')
+                .select('base_mileage, base_motohours, purchase_date, purchase_cost')
+                .eq('car_id', App.store.activeCarId)
+                .maybeSingle();
+            if (!error && data) {
+                baseMileage = data.base_mileage || 0;
+                baseMotohours = data.base_motohours || 0;
+                purchaseDate = data.purchase_date || '';
+                purchaseCost = data.purchase_cost || 0;
+            }
+        } catch (e) {
+            console.warn('Ошибка загрузки базовых параметров:', e);
+        }
+    }
 
-    // Начальное отображение времени владения с единицей измерения
+    document.getElementById('set-base-mileage').value = baseMileage;
+    document.getElementById('set-base-motohours').value = baseMotohours;
+    document.getElementById('purchase-date').value = purchaseDate ? App.utils.isoToDDMMYYYY(purchaseDate) : '';
+    document.getElementById('purchase-cost').value = purchaseCost;
+
+    // Время владения (расчёт на основе текущей даты и purchaseDate)
+    if (purchaseDate) {
+        App.store.purchaseDate = purchaseDate;
+        App.store.calculateOwnershipDays();
+    }
     var currentMode = App.store.ownershipDisplayMode || 'days';
     var days = App.store.ownershipDays;
     var display = days;
@@ -497,28 +520,90 @@ App.ui.pages.renderBasicParams = function() {
     var unit = currentMode === 'days' ? 'дн' : (currentMode === 'months' ? 'мес' : 'лет');
     document.getElementById('ownership-days').value = display + ' ' + unit;
 
+    // Стоимость владения
+    App.store.purchaseCost = purchaseCost;
     App.ui.pages.updateOwnershipCost();
 
-    document.getElementById('save-params-btn').onclick = function() {
-        App.store.baseMileage = parseInt(document.getElementById('set-base-mileage').value) || 0;
-        App.store.baseMotohours = parseInt(document.getElementById('set-base-motohours').value) || 0;
+    // ---- Обработчики ----
+
+    // Сохранить
+    document.getElementById('save-params-btn').onclick = async function() {
+        var newBaseMileage = parseInt(document.getElementById('set-base-mileage').value) || 0;
+        var newBaseMotohours = parseInt(document.getElementById('set-base-motohours').value) || 0;
         var dateStr = document.getElementById('purchase-date').value;
-        if (dateStr) App.store.purchaseDate = App.utils.ddmmYYYYtoISO(dateStr);
-        App.store.purchaseCost = parseFloat(document.getElementById('purchase-cost').value) || 0;
+        var newPurchaseDate = dateStr ? App.utils.ddmmYYYYtoISO(dateStr) : null;
+        var newPurchaseCost = parseFloat(document.getElementById('purchase-cost').value) || 0;
+
+        // Сохраняем в Supabase
+        if (App.store.activeCarId) {
+            const { error } = await App.supabase
+                .from('vehicle_state')
+                .upsert({
+                    car_id: App.store.activeCarId,
+                    base_mileage: newBaseMileage,
+                    base_motohours: newBaseMotohours,
+                    purchase_date: newPurchaseDate,
+                    purchase_cost: newPurchaseCost
+                }, { onConflict: 'car_id' });
+            if (error) {
+                console.error('Ошибка сохранения параметров:', error);
+                App.toast('Ошибка сохранения', 'error');
+                return;
+            }
+        }
+
+        // Обновляем локальный кеш
+        App.store.baseMileage = newBaseMileage;
+        App.store.baseMotohours = newBaseMotohours;
+        App.store.purchaseDate = newPurchaseDate;
+        App.store.purchaseCost = newPurchaseCost;
         App.store.calculateOwnershipDays();
-        // Обновить поле времени владения после сохранения
-        var currentMode = App.store.ownershipDisplayMode || 'days';
-        var days = App.store.ownershipDays;
-        var display = days;
-        if (currentMode === 'months') display = (days / 30).toFixed(1);
-        else if (currentMode === 'years') display = (days / 365).toFixed(1);
-        var unit = currentMode === 'days' ? 'дн' : (currentMode === 'months' ? 'мес' : 'лет');
-        document.getElementById('ownership-days').value = display + ' ' + unit;
         App.store.saveToLocalStorage();
         App.ui.pages.updateOwnershipCost();
         App.toast('Параметры сохранены', 'success');
     };
 
+    // Редактировать (ничего не делаем, поля уже доступны)
+    document.getElementById('edit-params-btn').onclick = function() {
+        document.getElementById('set-base-mileage').focus();
+    };
+
+    // Очистить
+    document.getElementById('clear-params-btn').onclick = function() {
+        if (!confirm('Удалить все основные параметры? Это действие нельзя отменить.')) return;
+        // Очищаем поля
+        document.getElementById('set-base-mileage').value = '';
+        document.getElementById('set-base-motohours').value = '';
+        document.getElementById('purchase-date').value = '';
+        document.getElementById('purchase-cost').value = '';
+        // Удаляем из Supabase (ставим NULL)
+        if (App.store.activeCarId) {
+            App.supabase
+                .from('vehicle_state')
+                .upsert({
+                    car_id: App.store.activeCarId,
+                    base_mileage: null,
+                    base_motohours: null,
+                    purchase_date: null,
+                    purchase_cost: null
+                }, { onConflict: 'car_id' })
+                .then(({ error }) => {
+                    if (error) console.error('Ошибка очистки параметров:', error);
+                });
+        }
+        // Сбрасываем локальные значения
+        App.store.baseMileage = 0;
+        App.store.baseMotohours = 0;
+        App.store.purchaseDate = '';
+        App.store.purchaseCost = 0;
+        App.store.ownershipDays = 0;
+        App.store.saveToLocalStorage();
+        document.getElementById('ownership-days').value = '0 дн';
+        App.ui.pages.updateOwnershipCost();
+        App.toast('Параметры очищены', 'success');
+    };
+
+    // Переключение единиц времени владения
     var toggleUnitBtn = document.getElementById('toggle-ownership-unit');
     if (toggleUnitBtn) {
         toggleUnitBtn.onclick = function() {
@@ -535,6 +620,7 @@ App.ui.pages.renderBasicParams = function() {
         };
     }
 
+    // Переключение стоимости владения
     var toggleCostBtn = document.getElementById('toggle-cost-unit');
     if (toggleCostBtn) {
         toggleCostBtn.onclick = function() {
