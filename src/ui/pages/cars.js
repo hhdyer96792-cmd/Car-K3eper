@@ -563,45 +563,61 @@ App.ui.pages.renderBasicParams = async function() {
         App.toast('Параметры сохранены', 'success');
     };
 
-    // Редактировать (ничего не делаем, поля уже доступны)
-    document.getElementById('edit-params-btn').onclick = function() {
-        document.getElementById('set-base-mileage').focus();
-    };
+    // === БЛОКИРОВКА ПОЛЕЙ ===
+var fields = [
+    document.getElementById('set-base-mileage'),
+    document.getElementById('set-base-motohours'),
+    document.getElementById('purchase-date'),
+    document.getElementById('purchase-cost')
+];
+fields.forEach(function(f) { if (f) f.disabled = true; });
 
-    // Очистить
-    document.getElementById('clear-params-btn').onclick = function() {
-        if (!confirm('Удалить все основные параметры? Это действие нельзя отменить.')) return;
-        // Очищаем поля
-        document.getElementById('set-base-mileage').value = '';
-        document.getElementById('set-base-motohours').value = '';
-        document.getElementById('purchase-date').value = '';
-        document.getElementById('purchase-cost').value = '';
-        // Удаляем из Supabase (ставим NULL)
-        if (App.store.activeCarId) {
-            App.supabase
-                .from('vehicle_state')
-                .upsert({
-                    car_id: App.store.activeCarId,
-                    base_mileage: null,
-                    base_motohours: null,
-                    purchase_date: null,
-                    purchase_cost: null
-                }, { onConflict: 'car_id' })
-                .then(({ error }) => {
-                    if (error) console.error('Ошибка очистки параметров:', error);
-                });
-        }
-        // Сбрасываем локальные значения
-        App.store.baseMileage = 0;
-        App.store.baseMotohours = 0;
-        App.store.purchaseDate = '';
-        App.store.purchaseCost = 0;
-        App.store.ownershipDays = 0;
-        App.store.saveToLocalStorage();
-        document.getElementById('ownership-days').value = '0 дн';
-        App.ui.pages.updateOwnershipCost();
-        App.toast('Параметры очищены', 'success');
-    };
+// Карандаш – разблокировать поля
+document.getElementById('edit-params-btn').onclick = function() {
+    fields.forEach(function(f) { if (f) f.disabled = false; });
+    document.getElementById('set-base-mileage').focus();
+};
+
+// Сохранить – после сохранения снова заблокировать
+var originalSave = document.getElementById('save-params-btn').onclick;
+document.getElementById('save-params-btn').onclick = async function() {
+    if (originalSave) await originalSave();
+    fields.forEach(function(f) { if (f) f.disabled = true; });
+};
+
+// Очистить – без повторного диалога, сразу сбрасываем поля и Supabase
+document.getElementById('clear-params-btn').onclick = function() {
+    if (!confirm('Удалить все основные параметры? Это действие нельзя отменить.')) return;
+    document.getElementById('set-base-mileage').value = '';
+    document.getElementById('set-base-motohours').value = '';
+    document.getElementById('purchase-date').value = '';
+    document.getElementById('purchase-cost').value = '';
+    if (App.store.activeCarId) {
+        App.supabase
+            .from('vehicle_state')
+            .upsert({
+                car_id: App.store.activeCarId,
+                base_mileage: null,
+                base_motohours: null,
+                purchase_date: null,
+                purchase_cost: null
+            }, { onConflict: 'car_id' })
+            .then(({ error }) => {
+                if (error) console.error('Ошибка очистки параметров:', error);
+            });
+    }
+    App.store.baseMileage = 0;
+    App.store.baseMotohours = 0;
+    App.store.purchaseDate = '';
+    App.store.purchaseCost = 0;
+    App.store.ownershipDays = 0;
+    App.store.saveToLocalStorage();
+    document.getElementById('ownership-days').value = '0 дн';
+    App.ui.pages.updateOwnershipCost();
+    fields.forEach(function(f) { if (f) f.disabled = true; });
+    App.toast('Параметры очищены', 'success');
+};
+
 
     // Переключение единиц времени владения
     var toggleUnitBtn = document.getElementById('toggle-ownership-unit');
