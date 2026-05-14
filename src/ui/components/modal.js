@@ -109,3 +109,4 @@ if (window.visualViewport && window.innerWidth < 768) {
 }
 
 return modal;
+};
