@@ -84,20 +84,20 @@ App.initIcons();
 // Прилепляем модалку к клавиатуре (мобильные)
 if (window.visualViewport && window.innerWidth < 768) {
     var content = modal.querySelector('.modal-content');
-    var initialHeight = window.innerHeight;
     function adjustForKeyboard() {
-        if (!modal.parentNode) return; // модалка уже удалена
+        if (!modal.parentNode) return;
         var viewport = window.visualViewport;
-        var keyboardHeight = initialHeight - viewport.height;
-        if (keyboardHeight > 0) {
-            content.style.marginBottom = keyboardHeight + 'px';
+        var bottomOffset = window.innerHeight - (viewport.height + viewport.offsetTop);
+        if (bottomOffset > 0) {
+            // Клавиатура открыта — поднимаем модалку ровно на высоту клавиатуры
+            content.style.transform = 'translateY(-' + bottomOffset + 'px)';
         } else {
-            content.style.marginBottom = '0';
+            // Клавиатура скрыта — возвращаем на место
+            content.style.transform = 'translateY(0)';
         }
     }
     window.visualViewport.addEventListener('resize', adjustForKeyboard);
     window.visualViewport.addEventListener('scroll', adjustForKeyboard);
-    // Очистка при закрытии модалки
     var observer = new MutationObserver(function() {
         if (!document.body.contains(modal)) {
             window.visualViewport.removeEventListener('resize', adjustForKeyboard);
