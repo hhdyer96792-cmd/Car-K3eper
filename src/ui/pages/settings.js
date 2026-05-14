@@ -57,7 +57,8 @@ App.ui.pages.populateSettingsFields = function() {
         if (document.getElementById('reminder-days-2')) document.getElementById('reminder-days-2').value = parts[1] || 2;
     }
 
-    App.ui.pages.updateOwnershipDisplay();
+    // Заглушка для отсутствующей функции, чтобы не падала ошибка
+App.ui.pages.updateOwnershipDisplay = function() {};
 
     // Кнопка с информацией о подключении Telegram
     var telegramInfoBtn = document.getElementById('telegram-info-btn');
