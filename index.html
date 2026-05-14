@@ -769,35 +769,6 @@
     <div id="settings-result"></div>
             </div>
             <div class="card">
-                <h3><i data-lucide="download"></i> Экспорт данных</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-                    <label style="flex: 1; min-width: 180px;">Тип данных:
-                        <select id="export-type-select" style="width: 100%;">
-                            <option value="to">📋 Журнал ТО</option>
-                            <option value="fuel">⛽ Топливо</option>
-                            <option value="tires">🛞 Шины</option>
-                            <option value="parts">📦 Запчасти</option>
-                            <option value="history">📜 История ТО</option>
-                            <option value="all">📁 Все данные</option>
-                        </select>
-                    </label>
-                    <label style="flex: 0 0 auto;">Формат:
-                        <select id="export-format-select" style="width: auto;">
-                            <option value="csv">CSV (csv)</option>
-                            <option value="xlsx">Excel (XLSX)</option>
-                        </select>
-                    </label>
-                    <button id="export-data-btn" class="primary-btn"><i data-lucide="download"></i> Экспорт данных</button>
-                </div>
-                <p class="hint">CSV – подходит для просмотра в таблицах, Excel – полная резервная копия (много листов).</p>
-
-                <!-- Импорт -->
-                <hr style="margin: 12px 0;">
-                <h3><i data-lucide="upload"></i> Импорт данных</h3>
-                <div id="csv-import-container"><p class="hint">Загрузка...</p></div>
-            </div>
-            
-            <div class="card">
                 <h3><i data-lucide="key"></i> Резервные коды</h3>
                 <div id="recovery-codes-container">
                     <button id="show-recovery-btn" class="secondary-btn">Показать неиспользованные коды</button>
