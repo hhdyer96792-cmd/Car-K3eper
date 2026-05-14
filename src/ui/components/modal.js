@@ -79,6 +79,33 @@ App.ui.createModal = function(title, content) {
     }
 
     // Инициализируем иконки внутри модалки
-    App.initIcons();
-    return modal;
-};
+App.initIcons();
+
+// Прилепляем модалку к клавиатуре (мобильные)
+if (window.visualViewport && window.innerWidth < 768) {
+    var content = modal.querySelector('.modal-content');
+    var initialHeight = window.innerHeight;
+    function adjustForKeyboard() {
+        if (!modal.parentNode) return; // модалка уже удалена
+        var viewport = window.visualViewport;
+        var keyboardHeight = initialHeight - viewport.height;
+        if (keyboardHeight > 0) {
+            content.style.marginBottom = keyboardHeight + 'px';
+        } else {
+            content.style.marginBottom = '0';
+        }
+    }
+    window.visualViewport.addEventListener('resize', adjustForKeyboard);
+    window.visualViewport.addEventListener('scroll', adjustForKeyboard);
+    // Очистка при закрытии модалки
+    var observer = new MutationObserver(function() {
+        if (!document.body.contains(modal)) {
+            window.visualViewport.removeEventListener('resize', adjustForKeyboard);
+            window.visualViewport.removeEventListener('scroll', adjustForKeyboard);
+            observer.disconnect();
+        }
+    });
+    observer.observe(document.body, { childList: true });
+}
+
+return modal;
