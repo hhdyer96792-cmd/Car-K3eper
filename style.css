@@ -1294,3 +1294,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     align-items: center;
     margin-top: 12px;
 }
+#telegram-info-btn {
+    margin-left: 0;
+}
