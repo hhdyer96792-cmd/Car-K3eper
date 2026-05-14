@@ -248,8 +248,9 @@ App.ui.pages.updateCurrentCarName = function() {
 };
 
 // ========== Новая вкладка «Автомобиль» ==========
+// Главный рендер вкладки
 App.ui.pages.renderCarTab = function() {
-    // Заполняем селектор на вкладке
+    // Заполняем селектор
     var selector = document.getElementById('car-page-selector');
     if (selector) {
         selector.innerHTML = '<option value="">-- Выберите авто --</option>';
@@ -257,7 +258,7 @@ App.ui.pages.renderCarTab = function() {
             var selected = car.id == App.store.activeCarId ? ' selected' : '';
             selector.innerHTML += '<option value="' + car.id + '"' + selected + '>' + App.utils.escapeHtml(car.name) + '</option>';
         });
-        selector.addEventListener('change', function() {
+        selector.onchange = function() {
             var carId = this.value;
             if (carId) {
                 App.store.setActiveCar(carId);
@@ -269,78 +270,49 @@ App.ui.pages.renderCarTab = function() {
                     App.ui.pages.renderCarSelector();
                     App.ui.pages.updateCurrentCarName();
                     App.ui.pages.renderSharingListForCarTab();
+                    App.ui.pages.renderBasicParams();
+                    App.ui.pages.renderDocuments();
                 });
             }
-        });
+        };
     }
 
-    // Перепривязываем кнопки управления авто (на случай, если вкладка открывается после загрузки)
-    var addCarBtn = document.getElementById('add-car-btn');
-    if (addCarBtn) addCarBtn.onclick = App.ui.pages.addCar;
-
-    var renameCarBtn = document.getElementById('rename-car-btn');
-    if (renameCarBtn) renameCarBtn.onclick = App.ui.pages.renameCar;
-
-    var deleteCarBtn = document.getElementById('delete-car-btn');
-    if (deleteCarBtn) deleteCarBtn.onclick = App.ui.pages.deleteCar;
-
-    var inviteBtn = document.getElementById('invite-btn');
-    if (inviteBtn) inviteBtn.onclick = App.ui.pages.inviteUser;
-
-    // Загружаем детали текущего авто
-    if (App.store.activeCarId) {
-        App.ui.pages.loadCarDetails(App.store.activeCarId);
-    }
-
-    // Загружаем точки отсчёта и дату покупки из store
-    var baseMileage = App.store.baseMileage || 0;
-    var baseMotohours = App.store.baseMotohours || 0;
-    var purchaseDate = App.store.purchaseDate || '';
-    document.getElementById('set-base-mileage').value = baseMileage;
-    document.getElementById('set-base-motohours').value = baseMotohours;
-    document.getElementById('purchase-date').value = purchaseDate;
-    document.getElementById('ownership-days').value = App.store.ownershipDays || 0;
-
-    // Обработчики сохранения
+    // Привязываем кнопки
+    document.getElementById('add-car-btn').onclick = App.ui.pages.addCar;
+    document.getElementById('rename-car-btn').onclick = App.ui.pages.renameCar;
+    document.getElementById('delete-car-btn').onclick = App.ui.pages.deleteCar;
     document.getElementById('save-car-details-btn').onclick = function() {
         var brand = document.getElementById('car-brand').value.trim();
         var model = document.getElementById('car-model').value.trim();
         var year = parseInt(document.getElementById('car-year').value) || null;
         var plate = document.getElementById('car-plate').value.trim();
         var vin = document.getElementById('car-vin').value.trim();
-
         App.store.settings.carBrand = brand;
         App.store.settings.carModel = model;
         App.store.settings.carYear = year;
         App.store.settings.plateNumber = plate;
         App.store.settings.vin = vin;
         App.store.saveToLocalStorage();
-
         App.storage.saveSettings(App.store.settings).then(function() {
             App.toast('Данные автомобиля сохранены', 'success');
-        }).catch(function(err) {
-            console.error(err);
-            App.toast('Ошибка сохранения', 'error');
         });
     };
 
-    document.getElementById('save-base-points-btn').onclick = function() {
-        App.store.baseMileage = parseInt(document.getElementById('set-base-mileage').value) || 0;
-        App.store.baseMotohours = parseInt(document.getElementById('set-base-motohours').value) || 0;
-        App.store.saveToLocalStorage();
-        App.toast('Точки отсчёта сохранены', 'success');
-    };
+    // Загружаем детали текущего авто
+    if (App.store.activeCarId) {
+        App.ui.pages.loadCarDetails(App.store.activeCarId);
+    } else {
+        document.getElementById('car-brand').value = '';
+        document.getElementById('car-model').value = '';
+        document.getElementById('car-year').value = '';
+        document.getElementById('car-plate').value = '';
+        document.getElementById('car-vin').value = '';
+    }
 
-    document.getElementById('save-ownership-btn').onclick = function() {
-        var date = document.getElementById('purchase-date').value;
-        App.store.purchaseDate = date;
-        App.store.calculateOwnershipDays();
-        document.getElementById('ownership-days').value = App.store.ownershipDays;
-        App.store.saveToLocalStorage();
-        App.toast('Дата покупки сохранена', 'success');
-    };
-
+    App.ui.pages.renderBasicParams();
     App.ui.pages.renderSharingListForCarTab();
+    App.ui.pages.renderExportBlock();
+    App.ui.pages.renderDocuments();
     App.initIcons();
 };
 
@@ -348,155 +320,4 @@ App.ui.pages.renderCarTab = function() {
 App.ui.pages.loadCarDetails = function(carId) {
     var s = App.store.settings;
     document.getElementById('car-brand').value = s.carBrand || '';
-    document.getElementById('car-model').value = s.carModel || '';
-    document.getElementById('car-year').value = s.carYear || '';
-    document.getElementById('car-plate').value = s.plateNumber || '';
-    document.getElementById('car-vin').value = s.vin || '';
-};
-
-// Совместный доступ для вкладки Автомобиль
-App.ui.pages.renderSharingListForCarTab = function() {
-    var container = document.getElementById('sharing-container');
-    if (!container) return;
-
-    var carId = App.store.activeCarId;
-    if (!carId) {
-        container.innerHTML = '<p class="hint">Выберите автомобиль</p>';
-        return;
-    }
-
-    App.supa.getCurrentUserId().then(function(userId) {
-        if (!userId) {
-            container.innerHTML = '<p class="hint">Не удалось определить пользователя</p>';
-            return;
-        }
-
-        App.supa.getCarShares(carId).then(function({ data, error }) {
-            if (error) {
-                container.innerHTML = '<p class="hint">Ошибка загрузки</p>';
-                return;
-            }
-
-            var car = App.store.cars.find(c => c.id == carId);
-            var isOwner = car && car.user_id === userId;
-
-            var shares = data || [];
-            if (!isOwner) {
-                shares = shares.filter(share => share.invited_user_id === userId);
-            }
-
-            if (shares.length === 0) {
-                container.innerHTML = '<p class="hint">Нет приглашённых пользователей</p>';
-                App.initIcons();
-                return;
-            }
-
-            var html = '<ul style="list-style:none; padding:0;">';
-            shares.forEach(function(share) {
-                var statusIcon = share.accepted ? '✅' : '⏳';
-                var statusText = share.accepted ? 'Принято' : 'Ожидает';
-                var emailOrId = share.invited_email || (share.invited_user_id ? 'ID: ' + share.invited_user_id.substring(0,8) : '—');
-                html += '<li style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">';
-                html += '<span>' + statusIcon + ' <strong>' + App.utils.escapeHtml(emailOrId) + '</strong> (' + statusText + ')</span>';
-                if (isOwner) {
-                    html += '<button class="icon-btn remove-share-btn" data-id="' + share.id + '" title="Удалить доступ"><i data-lucide="trash-2"></i></button>';
-                }
-                html += '</li>';
-            });
-            html += '</ul>';
-            container.innerHTML = html;
-
-            if (isOwner) {
-                container.querySelectorAll('.remove-share-btn').forEach(function(btn) {
-                    btn.addEventListener('click', function() {
-                        var shareId = btn.dataset.id;
-                        if (!confirm('Удалить доступ для этого пользователя?')) return;
-                        App.supa.deleteCarShare(shareId).then(function() {
-                            App.toast('Доступ удалён', 'success');
-                            App.ui.pages.renderSharingListForCarTab();
-                        }).catch(function(err) {
-                            console.error(err);
-                            App.toast('Ошибка удаления доступа', 'error');
-                        });
-                    });
-                });
-            }
-
-            App.initIcons();
-        });
-    }).catch(function(err) {
-        console.error(err);
-        container.innerHTML = '<p class="hint">Ошибка загрузки</p>';
-    });
-};
-
-// Проверка приглашений
-App.ui.pages.checkPendingInvites = function() {
-    var urlParams = new URLSearchParams(window.location.search);
-    var inviteCode = urlParams.get('invite');
-
-    if (inviteCode && !App.supabase.auth.getUser()) {
-        sessionStorage.setItem('pendingInvite', inviteCode);
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return;
-    }
-
-    if (inviteCode) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-        App.supa.getInviteByCode(inviteCode).then(function({ data, error }) {
-            if (error || !data) {
-                App.toast('Приглашение не найдено', 'error');
-                return;
-            }
-            if (data.accepted) {
-                App.toast('Приглашение уже принято', 'warning');
-                return;
-            }
-            var carName = data.cars ? data.cars.name : 'автомобиль';
-            if (confirm(`Вас пригласили в автомобиль "${carName}". Принять?`)) {
-                App.supa.acceptInvite(data.id).then(function() {
-                    App.toast('Приглашение принято!', 'success');
-                    App.store.setActiveCar(data.car_id);
-                    App.store.loadCars().then(function() {
-                        App.ui.pages.renderCarSelector();
-                        App.storage.loadAllData();
-                    });
-                }).catch(function(err) {
-                    console.error(err);
-                    App.toast('Ошибка принятия приглашения', 'error');
-                });
-            }
-        });
-        return;
-    }
-
-    var pendingInvite = sessionStorage.getItem('pendingInvite');
-    if (pendingInvite) {
-        sessionStorage.removeItem('pendingInvite');
-        window.history.replaceState({}, document.title, window.location.pathname + '?invite=' + pendingInvite);
-        App.ui.pages.checkPendingInvites();
-        return;
-    }
-
-    App.supa.getPendingInvites().then(function({ data, error }) {
-        if (error || !data || data.length === 0) return;
-        data.forEach(function(inv) {
-            var carName = inv.cars ? inv.cars.name : 'автомобиль';
-            if (confirm(`Вас пригласили в автомобиль "${carName}". Принять?`)) {
-                App.supa.acceptInvite(inv.id).then(function() {
-                    App.toast('Приглашение принято!', 'success');
-                    App.store.setActiveCar(inv.car_id);
-                    App.store.loadCars().then(function() {
-                        App.ui.pages.renderCarSelector();
-                        App.storage.loadAllData();
-                    });
-                }).catch(function(err) {
-                    console.error(err);
-                    App.toast('Ошибка принятия приглашения', 'error');
-                });
-            } else {
-                App.supa.declineInvite(inv.id);
-            }
-        });
-    });
-};
+    
