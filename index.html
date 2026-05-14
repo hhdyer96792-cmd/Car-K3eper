@@ -587,11 +587,16 @@
     <!-- 4. Кнопка добавить -->
     <div class="action-bar"><button id="add-part-btn" class="primary-btn"><i data-lucide="plus"></i> Добавить запчасть</button></div>
 
-    <!-- 5. Сводка по складу -->
-    <div class="card warehouse-card" id="warehouse-summary">
-        <h3><i data-lucide="warehouse"></i> Складская сводка</h3>
+    <!-- 5. Сводка по складу (аккордеон) -->
+<div class="accordion-group" id="warehouse-accordion">
+    <div class="accordion-header">
+        <i data-lucide="warehouse"></i> Складская сводка
+        <i data-lucide="chevron-down" class="accordion-arrow" style="margin-left:auto;"></i>
     </div>
-
+    <div class="accordion-body" id="warehouse-summary" style="display:none;">
+        <!-- Содержимое будет заполнено через JS -->
+    </div>
+</div>
     <!-- 6. Поиск и карточки -->
     <div id="parts-cards-container"></div>
 </div>
