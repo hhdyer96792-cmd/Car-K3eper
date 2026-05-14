@@ -633,50 +633,54 @@
     </div>
 
     <!-- Карточка "Основные параметры" -->
+<div class="card car-params-card">
+    <h3><i data-lucide="settings"></i> Основные параметры</h3>
+
+    <!-- Пробег и моточасы до владения в одну строку -->
     <div class="car-params-row">
-    <div class="field-group">
-        <label>Пробег до владения, км</label>
-        <input type="number" id="set-base-mileage" placeholder="0">
+        <div class="field-group">
+            <label>Пробег до владения, км</label>
+            <input type="number" id="set-base-mileage" placeholder="0">
+        </div>
+        <div class="field-group">
+            <label>Моточасы до владения, ч</label>
+            <input type="number" id="set-base-motohours" placeholder="0">
+        </div>
     </div>
-    <div class="field-group">
-        <label>Моточасы до владения, ч</label>
-        <input type="number" id="set-base-motohours" placeholder="0">
+    <p class="hint">Эти значения используются, если история пробега не накоплена.</p>
+
+    <!-- Дата покупки и стоимость -->
+    <div class="car-params-row">
+        <div class="field-group">
+            <label>Дата покупки</label>
+            <input type="text" id="purchase-date" placeholder="ДД-ММ-ГГГГ" pattern="\d{2}-\d{2}-\d{4}" oninput="App.utils.applyDateMaskDDMMYYYY(event)">
+        </div>
+        <div class="field-group">
+            <label>Стоимость покупки</label>
+            <input type="number" id="purchase-cost" placeholder="₽">
+        </div>
     </div>
+
+    <!-- Время владения и стоимость владения -->
+    <div class="car-params-row">
+        <div class="field-group">
+            <label>Время владения</label>
+            <div class="field-output">
+                <input type="text" id="ownership-days" readonly>
+                <button id="toggle-ownership-unit" class="icon-btn" title="Дни / Месяцы / Годы"><i data-lucide="history"></i></button>
+            </div>
+        </div>
+        <div class="field-group">
+            <label>Стоимость владения</label>
+            <div class="field-output">
+                <input type="text" id="ownership-cost" readonly>
+                <button id="toggle-cost-unit" class="icon-btn" title="Общая сумма / за 1 км"><i data-lucide="refresh-ccw-dot"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <button id="save-params-btn" class="secondary-btn"><i data-lucide="save"></i> Сохранить параметры</button>
 </div>
-        <p class="hint">Эти значения используются, если история пробега не накоплена.</p>
-
-        <!-- Дата покупки и стоимость -->
-        <div class="car-params-row">
-            <div class="field-group">
-                <label>Дата покупки</label>
-                <input type="text" id="purchase-date" placeholder="ДД-ММ-ГГГГ" pattern="\d{2}-\d{2}-\d{4}" oninput="App.utils.applyDateMaskDDMMYYYY(event)">
-            </div>
-            <div class="field-group">
-                <label>Стоимость покупки</label>
-                <input type="number" id="purchase-cost" placeholder="₽">
-            </div>
-        </div>
-
-        <!-- Время владения и стоимость владения -->
-        <div class="car-params-row">
-            <div class="field-group">
-                <label>Время владения</label>
-                <div class="field-output">
-                    <input type="text" id="ownership-days" readonly>
-                    <button id="toggle-ownership-unit" class="icon-btn" title="Дни / Месяцы / Годы"><i data-lucide="history"></i></button>
-                </div>
-            </div>
-            <div class="field-group">
-                <label>Стоимость владения</label>
-                <div class="field-output">
-                    <input type="text" id="ownership-cost" readonly>
-                    <button id="toggle-cost-unit" class="icon-btn" title="Общая сумма / за 1 км"><i data-lucide="refresh-ccw-dot"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <button id="save-params-btn" class="secondary-btn"><i data-lucide="save"></i> Сохранить параметры</button>
-    </div>
 
     <!-- Карточка "Совместный доступ" -->
     <div class="card car-sharing-card">
