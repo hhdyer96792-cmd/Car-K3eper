@@ -502,27 +502,35 @@ App.events.handleImport = function(e) {
 };
 
 App.events.updateMileageAndAverages = function() {
-    var m = document.getElementById('new-mileage');
-    var h = document.getElementById('new-motohours');
+    // Пробуем получить поля из мобильного дашборда (приоритет)
+    var m = document.getElementById('dash-new-mileage');
+    var h = document.getElementById('dash-new-motohours');
+
+    // Если не нашли, ищем старые ID (десктоп)
+    if (!m) m = document.getElementById('new-mileage');
+    if (!h) h = document.getElementById('new-motohours');
+
     if (!m || !h) {
-        alert('Поля не найдены');
+        // Поля действительно отсутствуют – тихо выходим, ничего не делаем
+        console.warn('Поля пробега/моточасов не найдены на текущей странице');
         return;
     }
+
     var newM = App.utils.validateNumberInput(m, false);
-var newH = App.utils.validateNumberInput(h, true);
-if (newM === null || newH === null) return;
+    var newH = App.utils.validateNumberInput(h, true);
+    if (newM === null || newH === null) return;
 
-// ВАЛИДАЦИЯ: значения не должны быть меньше базовых
-if (newM < (App.store.baseMileage || 0)) {
-    App.toast('Значение пробега меньше базового. Исправьте базовое значение на вкладке Автомобиль', 'error');
-    return;
-}
-if (newH < (App.store.baseMotohours || 0)) {
-    App.toast('Значение моточасов меньше базового. Исправьте базовое значение на вкладке Автомобиль', 'error');
-    return;
-}
+    // ВАЛИДАЦИЯ: значения не должны быть меньше базовых
+    if (newM < (App.store.baseMileage || 0)) {
+        App.toast('Значение пробега меньше базового. Исправьте базовое значение на вкладке Автомобиль', 'error');
+        return;
+    }
+    if (newH < (App.store.baseMotohours || 0)) {
+        App.toast('Значение моточасов меньше базового. Исправьте базовое значение на вкладке Автомобиль', 'error');
+        return;
+    }
 
-var today = new Date().toISOString().split('T')[0];
+    var today = new Date().toISOString().split('T')[0];
     App.storage.addMileageRecord(today, newM, newH);
     App.store.mileageHistory.push({
         uuid: crypto.randomUUID(),
