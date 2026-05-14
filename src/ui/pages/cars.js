@@ -487,7 +487,15 @@ App.ui.pages.renderBasicParams = function() {
     document.getElementById('purchase-date').value = App.store.purchaseDate
         ? App.utils.isoToDDMMYYYY(App.store.purchaseDate) : '';
     document.getElementById('purchase-cost').value = App.store.purchaseCost || 0;
-    document.getElementById('ownership-days').value = App.store.ownershipDays;
+
+    // Начальное отображение времени владения с единицей измерения
+    var currentMode = App.store.ownershipDisplayMode || 'days';
+    var days = App.store.ownershipDays;
+    var display = days;
+    if (currentMode === 'months') display = (days / 30).toFixed(1);
+    else if (currentMode === 'years') display = (days / 365).toFixed(1);
+    var unit = currentMode === 'days' ? 'дн' : (currentMode === 'months' ? 'мес' : 'лет');
+    document.getElementById('ownership-days').value = display + ' ' + unit;
 
     App.ui.pages.updateOwnershipCost();
 
@@ -498,7 +506,14 @@ App.ui.pages.renderBasicParams = function() {
         if (dateStr) App.store.purchaseDate = App.utils.ddmmYYYYtoISO(dateStr);
         App.store.purchaseCost = parseFloat(document.getElementById('purchase-cost').value) || 0;
         App.store.calculateOwnershipDays();
-        document.getElementById('ownership-days').value = App.store.ownershipDays;
+        // Обновить поле времени владения после сохранения
+        var currentMode = App.store.ownershipDisplayMode || 'days';
+        var days = App.store.ownershipDays;
+        var display = days;
+        if (currentMode === 'months') display = (days / 30).toFixed(1);
+        else if (currentMode === 'years') display = (days / 365).toFixed(1);
+        var unit = currentMode === 'days' ? 'дн' : (currentMode === 'months' ? 'мес' : 'лет');
+        document.getElementById('ownership-days').value = display + ' ' + unit;
         App.store.saveToLocalStorage();
         App.ui.pages.updateOwnershipCost();
         App.toast('Параметры сохранены', 'success');
@@ -508,14 +523,15 @@ App.ui.pages.renderBasicParams = function() {
     if (toggleUnitBtn) {
         toggleUnitBtn.onclick = function() {
             var modes = ['days', 'months', 'years'];
-            var current = App.store.ownershipDisplayMode || 'days';
-            var next = modes[(modes.indexOf(current) + 1) % modes.length];
+            var cur = App.store.ownershipDisplayMode || 'days';
+            var next = modes[(modes.indexOf(cur) + 1) % modes.length];
             App.store.ownershipDisplayMode = next;
             var days = App.store.ownershipDays;
             var display = days;
             if (next === 'months') display = (days / 30).toFixed(1);
             else if (next === 'years') display = (days / 365).toFixed(1);
-            document.getElementById('ownership-days').value = display;
+            var unit = next === 'days' ? 'дн' : (next === 'months' ? 'мес' : 'лет');
+            document.getElementById('ownership-days').value = display + ' ' + unit;
         };
     }
 
