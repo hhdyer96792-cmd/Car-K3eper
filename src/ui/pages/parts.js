@@ -104,23 +104,6 @@ App.ui.pages.renderWarehouseSummary = function() {
                '<div>Нет в наличии: <strong style="color:var(--danger)">' + outOfStock + '</strong></div>';
     var container = document.getElementById('warehouse-summary');
     if (container) container.innerHTML = html;
-
-    // Активируем аккордеон для складской сводки
-    var accordionHeader = document.querySelector('#warehouse-accordion .accordion-header');
-    var accordionBody = document.getElementById('warehouse-summary');
-    if (accordionHeader && accordionBody) {
-        accordionHeader.addEventListener('click', function() {
-            var body = accordionHeader.nextElementSibling;
-            if (body && body.classList.contains('accordion-body')) {
-                var isOpen = body.style.display === 'block';
-                body.style.display = isOpen ? 'none' : 'block';
-                var arrow = accordionHeader.querySelector('.accordion-arrow');
-                if (arrow) {
-                    arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-                }
-            }
-        });
-    }
 };
 
 // ---------- 5. Поиск и карточки запчастей ----------
@@ -171,7 +154,7 @@ App.ui.pages.renderPartsCards = function() {
         var html = '';
         cats.forEach(function(cat, idx) {
             var parts = grouped[cat];
-            var openClass = (idx === 0) ? ' open' : '';
+            var openClass = '';
             html += '<div class="accordion-group">';
             html += '<div class="accordion-header' + openClass + '">';
             html += '<i data-lucide="tag"></i> ' + App.utils.escapeHtml(cat) + ' (' + parts.length + ')';
