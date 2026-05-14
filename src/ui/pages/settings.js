@@ -58,7 +58,31 @@ App.ui.pages.populateSettingsFields = function() {
     }
 
     App.ui.pages.updateOwnershipDisplay();
-    // Рендер совместного доступа теперь во вкладке Автомобиль
+
+    // Кнопка с информацией о подключении Telegram
+    var telegramInfoBtn = document.getElementById('telegram-info-btn');
+    if (telegramInfoBtn) {
+        telegramInfoBtn.addEventListener('click', function() {
+            var modalContent =
+                '<div style="line-height:1.6; font-size:0.9rem;">' +
+                    '<p><strong>Как подключить Telegram?</strong></p>' +
+                    '<ol style="padding-left:20px;">' +
+                        '<li>Найдите в Telegram бота <strong>@BotFather</strong> и создайте нового бота командой <code>/newbot</code>. Следуйте инструкциям, получите <strong>токен</strong> (вида <code>123456:ABCdef...</code>).</li>' +
+                        '<li>Скопируйте токен в поле <strong>Bot Token</strong>.</li>' +
+                        '<li>Узнайте свой <strong>Chat ID</strong>. Для этого:' +
+                            '<ul style="padding-left:20px;">' +
+                                '<li>Найдите в Telegram бота <strong>@getidsbot</strong> или аналогичного.</li>' +
+                                '<li>Нажмите <code>/start</code> и скопируйте числовой ID.</li>' +
+                            '</ul>' +
+                        '</li>' +
+                        '<li>Вставьте Chat ID в соответствующее поле.</li>' +
+                        '<li>Нажмите <strong>Сохранить настройки</strong>.</li>' +
+                    '</ol>' +
+                    '<p>Готово! Уведомления будут приходить в ваш Telegram.</p>' +
+                '</div>';
+            App.ui.createModal('Инструкция по Telegram', modalContent);
+        });
+    }
 };
 
 App.ui.pages.sendTestNotification = function() {
