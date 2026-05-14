@@ -429,7 +429,21 @@
                         });
                     });
 
-                    App.store.loadCars().then(function() {
+                    App.store.loadCars().then(async function() {
+                        if (App.store.cars.length === 0) {
+                            try {
+                                var newCar = await App.supa.createCar('Мой автомобиль');
+                                if (newCar.data) {
+                                    App.store.cars.push(newCar.data);
+                                    App.store.setActiveCar(newCar.data.id);
+                                }
+                            } catch (e) {
+                                console.warn('Не удалось создать автомобиль:', e);
+                            }
+                        } else if (!App.store.activeCarId) {
+                            App.store.setActiveCar(App.store.cars[0].id);
+                        }
+
                         App.ui.pages.renderCarSelector();
                         App.ui.pages.checkPendingInvites();
                         if (App.store.activeCarId) {
@@ -447,7 +461,6 @@
                                         App.ui.pages.checkPendingInvites();
                                     }
                                 }
-                                // Показываем модальное окно начальных параметров
                                 App.ui.pages.checkAndShowInitialParamsModal();
                             });
                         } else {
@@ -516,7 +529,21 @@
                         });
                     }
 
-                    App.store.loadCars().then(function() {
+                    App.store.loadCars().then(async function() {
+                        if (App.store.cars.length === 0) {
+                            try {
+                                var newCar = await App.supa.createCar('Мой автомобиль');
+                                if (newCar.data) {
+                                    App.store.cars.push(newCar.data);
+                                    App.store.setActiveCar(newCar.data.id);
+                                }
+                            } catch (e) {
+                                console.warn('Не удалось создать автомобиль:', e);
+                            }
+                        } else if (!App.store.activeCarId) {
+                            App.store.setActiveCar(App.store.cars[0].id);
+                        }
+
                         App.ui.pages.renderCarSelector();
                         if (App.store.activeCarId) {
                             if (App.realtime && App.realtime.subscribeToCar) {
@@ -533,7 +560,6 @@
                                         App.ui.pages.checkPendingInvites();
                                     }
                                 }
-                                // Показываем модальное окно начальных параметров
                                 App.ui.pages.checkAndShowInitialParamsModal();
                             });
                         } else {
