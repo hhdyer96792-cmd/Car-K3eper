@@ -509,10 +509,20 @@ App.events.updateMileageAndAverages = function() {
         return;
     }
     var newM = App.utils.validateNumberInput(m, false);
-    var newH = App.utils.validateNumberInput(h, true);
-    if (newM === null || newH === null) return;
+var newH = App.utils.validateNumberInput(h, true);
+if (newM === null || newH === null) return;
 
-    var today = new Date().toISOString().split('T')[0];
+// ВАЛИДАЦИЯ: значения не должны быть меньше базовых
+if (newM < (App.store.baseMileage || 0)) {
+    App.toast('Значение пробега меньше базового. Исправьте базовое значение на вкладке Автомобиль', 'error');
+    return;
+}
+if (newH < (App.store.baseMotohours || 0)) {
+    App.toast('Значение моточасов меньше базового. Исправьте базовое значение на вкладке Автомобиль', 'error');
+    return;
+}
+
+var today = new Date().toISOString().split('T')[0];
     App.storage.addMileageRecord(today, newM, newH);
     App.store.mileageHistory.push({
         uuid: crypto.randomUUID(),
