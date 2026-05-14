@@ -1205,3 +1205,86 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     border-top: 1px solid var(--border);
     padding-top: 8px;
 }
+
+/* ==================== Автомобиль ==================== */
+.car-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.car-selector select {
+    margin-bottom: 0;
+    min-width: 200px;
+}
+.car-action-buttons {
+    display: flex;
+    gap: 6px;
+}
+.car-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+}
+.car-fields-grid input {
+    margin-bottom: 0;
+}
+
+/* Параметры */
+.car-params-card .car-params-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.car-params-row input[type="number"],
+.car-params-row input[type="text"] {
+    flex: 1;
+    margin-bottom: 0;
+}
+.field-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.field-group label {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+.field-output {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.field-output input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    color: var(--text);
+}
+
+/* Документы */
+.doc-add-area {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+#documents-accordions .card-item {
+    border-left: 4px solid var(--primary);
+    margin-top: 8px;
+}
+#documents-accordions .accordion-body {
+    padding: 8px 12px 12px;
+}
+.doc-preview {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+}
