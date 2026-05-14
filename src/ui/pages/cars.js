@@ -5,7 +5,7 @@ App.ui.pages = App.ui.pages || {};
 // ---------- Локальный кэш документов ----------
 App.ui.pages._carDocuments = [];
 
-// Безопасное получение userId (через сессию, а не через getCurrentUserId)
+// Безопасное получение userId (через сессию)
 App.ui.pages._getUserIdSafe = async function() {
     const { data: { session } } = await App.supabase.auth.getSession();
     return session?.user?.id || null;
@@ -326,9 +326,7 @@ App.ui.pages.subscribeToCalendar = async function() {
 App.ui.pages.updateCurrentCarName = function() {
     var car = App.store.cars.find(function(c) { return c.id == App.store.activeCarId; });
     var el = document.getElementById('current-car-name');
-    if (el) {
-        el.textContent = car ? car.name : '';
-    }
+    if (el) el.textContent = car ? car.name : '';
 };
 
 App.ui.pages.checkPendingInvites = function() {
@@ -482,7 +480,6 @@ App.ui.pages.loadCarDetails = function(carId) {
 
 // ---------- Основные параметры ----------
 App.ui.pages.renderBasicParams = async function() {
-    // Загружаем данные из Supabase
     let baseMileage = 0, baseMotohours = 0, purchaseDate = '', purchaseCost = 0;
     if (App.store.activeCarId) {
         try {
@@ -507,7 +504,6 @@ App.ui.pages.renderBasicParams = async function() {
     document.getElementById('purchase-date').value = purchaseDate ? App.utils.isoToDDMMYYYY(purchaseDate) : '';
     document.getElementById('purchase-cost').value = purchaseCost;
 
-    // Время владения (расчёт на основе текущей даты и purchaseDate)
     if (purchaseDate) {
         App.store.purchaseDate = purchaseDate;
         App.store.calculateOwnershipDays();
@@ -520,13 +516,11 @@ App.ui.pages.renderBasicParams = async function() {
     var unit = currentMode === 'days' ? 'дн' : (currentMode === 'months' ? 'мес' : 'лет');
     document.getElementById('ownership-days').value = display + ' ' + unit;
 
-    // Стоимость владения
     App.store.purchaseCost = purchaseCost;
     App.ui.pages.updateOwnershipCost();
 
     // ---- Обработчики ----
 
-    // Сохранить
     document.getElementById('save-params-btn').onclick = async function() {
         var newBaseMileage = parseInt(document.getElementById('set-base-mileage').value) || 0;
         var newBaseMotohours = parseInt(document.getElementById('set-base-motohours').value) || 0;
@@ -534,7 +528,6 @@ App.ui.pages.renderBasicParams = async function() {
         var newPurchaseDate = dateStr ? App.utils.ddmmYYYYtoISO(dateStr) : null;
         var newPurchaseCost = parseFloat(document.getElementById('purchase-cost').value) || 0;
 
-        // Сохраняем в Supabase
         if (App.store.activeCarId) {
             const { error } = await App.supabase
                 .from('vehicle_state')
@@ -552,7 +545,6 @@ App.ui.pages.renderBasicParams = async function() {
             }
         }
 
-        // Обновляем локальный кеш
         App.store.baseMileage = newBaseMileage;
         App.store.baseMotohours = newBaseMotohours;
         App.store.purchaseDate = newPurchaseDate;
@@ -563,63 +555,57 @@ App.ui.pages.renderBasicParams = async function() {
         App.toast('Параметры сохранены', 'success');
     };
 
-    // === БЛОКИРОВКА ПОЛЕЙ ===
-var fields = [
-    document.getElementById('set-base-mileage'),
-    document.getElementById('set-base-motohours'),
-    document.getElementById('purchase-date'),
-    document.getElementById('purchase-cost')
-];
-fields.forEach(function(f) { if (f) f.disabled = true; });
-
-// Карандаш – разблокировать поля
-document.getElementById('edit-params-btn').onclick = function() {
-    fields.forEach(function(f) { if (f) f.disabled = false; });
-    document.getElementById('set-base-mileage').focus();
-};
-
-// Сохранить – после сохранения снова заблокировать
-var originalSave = document.getElementById('save-params-btn').onclick;
-document.getElementById('save-params-btn').onclick = async function() {
-    if (originalSave) await originalSave();
+    var fields = [
+        document.getElementById('set-base-mileage'),
+        document.getElementById('set-base-motohours'),
+        document.getElementById('purchase-date'),
+        document.getElementById('purchase-cost')
+    ];
     fields.forEach(function(f) { if (f) f.disabled = true; });
-};
 
-// Очистить – без повторного диалога, сразу сбрасываем поля и Supabase
-document.getElementById('clear-params-btn').onclick = function() {
-    if (!confirm('Удалить все основные параметры? Это действие нельзя отменить.')) return;
-    document.getElementById('set-base-mileage').value = '';
-    document.getElementById('set-base-motohours').value = '';
-    document.getElementById('purchase-date').value = '';
-    document.getElementById('purchase-cost').value = '';
-    if (App.store.activeCarId) {
-        App.supabase
-            .from('vehicle_state')
-            .upsert({
-                car_id: App.store.activeCarId,
-                base_mileage: null,
-                base_motohours: null,
-                purchase_date: null,
-                purchase_cost: null
-            }, { onConflict: 'car_id' })
-            .then(({ error }) => {
-                if (error) console.error('Ошибка очистки параметров:', error);
-            });
-    }
-    App.store.baseMileage = 0;
-    App.store.baseMotohours = 0;
-    App.store.purchaseDate = '';
-    App.store.purchaseCost = 0;
-    App.store.ownershipDays = 0;
-    App.store.saveToLocalStorage();
-    document.getElementById('ownership-days').value = '0 дн';
-    App.ui.pages.updateOwnershipCost();
-    fields.forEach(function(f) { if (f) f.disabled = true; });
-    App.toast('Параметры очищены', 'success');
-};
+    document.getElementById('edit-params-btn').onclick = function() {
+        fields.forEach(function(f) { if (f) f.disabled = false; });
+        document.getElementById('set-base-mileage').focus();
+    };
 
+    var originalSave = document.getElementById('save-params-btn').onclick;
+    document.getElementById('save-params-btn').onclick = async function() {
+        if (originalSave) await originalSave();
+        fields.forEach(function(f) { if (f) f.disabled = true; });
+    };
 
-    // Переключение единиц времени владения
+    document.getElementById('clear-params-btn').onclick = function() {
+        if (!confirm('Удалить все основные параметры? Это действие нельзя отменить.')) return;
+        document.getElementById('set-base-mileage').value = '';
+        document.getElementById('set-base-motohours').value = '';
+        document.getElementById('purchase-date').value = '';
+        document.getElementById('purchase-cost').value = '';
+        if (App.store.activeCarId) {
+            App.supabase
+                .from('vehicle_state')
+                .upsert({
+                    car_id: App.store.activeCarId,
+                    base_mileage: null,
+                    base_motohours: null,
+                    purchase_date: null,
+                    purchase_cost: null
+                }, { onConflict: 'car_id' })
+                .then(({ error }) => {
+                    if (error) console.error('Ошибка очистки параметров:', error);
+                });
+        }
+        App.store.baseMileage = 0;
+        App.store.baseMotohours = 0;
+        App.store.purchaseDate = '';
+        App.store.purchaseCost = 0;
+        App.store.ownershipDays = 0;
+        App.store.saveToLocalStorage();
+        document.getElementById('ownership-days').value = '0 дн';
+        App.ui.pages.updateOwnershipCost();
+        fields.forEach(function(f) { if (f) f.disabled = true; });
+        App.toast('Параметры очищены', 'success');
+    };
+
     var toggleUnitBtn = document.getElementById('toggle-ownership-unit');
     if (toggleUnitBtn) {
         toggleUnitBtn.onclick = function() {
@@ -636,7 +622,6 @@ document.getElementById('clear-params-btn').onclick = function() {
         };
     }
 
-    // Переключение стоимости владения
     var toggleCostBtn = document.getElementById('toggle-cost-unit');
     if (toggleCostBtn) {
         toggleCostBtn.onclick = function() {
@@ -831,10 +816,7 @@ App.ui.pages.renderDocuments = function() {
     });
 };
 
-/**
- * Показывает модальное окно для первичного заполнения основных параметров
- * вызывается из main.js после регистрации, если параметры пусты
- */
+// ---------- Модальное окно начальных параметров ----------
 App.ui.pages.showInitialParamsModal = function() {
     var todayStr = App.utils.isoToDDMMYYYY(new Date().toISOString().split('T')[0]);
 
@@ -866,12 +848,11 @@ App.ui.pages.showInitialParamsModal = function() {
             '</div>' +
         '</form>';
 
-    var modal = App.ui.createModal('🚗 Заполните основные параметры', content);
+    var modal = App.ui.createModal('Заполните основные параметры', content);
     App.initIcons();
 
     var form = modal.querySelector('#initial-params-form');
 
-    // Сохранение
     form.onsubmit = async function(e) {
         e.preventDefault();
         var baseMileage = parseInt(document.getElementById('init-base-mileage').value) || 0;
@@ -895,7 +876,6 @@ App.ui.pages.showInitialParamsModal = function() {
                 App.toast('Ошибка сохранения', 'error');
                 return;
             }
-            // Обновляем локальный кеш
             App.store.baseMileage = baseMileage;
             App.store.baseMotohours = baseMotohours;
             App.store.purchaseDate = purchaseDate;
@@ -909,11 +889,31 @@ App.ui.pages.showInitialParamsModal = function() {
         App.toast('Данные сохранены', 'success');
     };
 
-    // Кнопка "Заполнить позже"
     modal.querySelector('.cancel-btn').onclick = function() {
         modal.remove();
         App.toast('Можно заполнить на вкладке Автомобиль', 'info');
     };
+};
+
+App.ui.pages.checkAndShowInitialParamsModal = async function() {
+    if (!App.store.activeCarId) return;
+    const { data, error } = await App.supabase
+        .from('vehicle_state')
+        .select('base_mileage, base_motohours, purchase_date, purchase_cost')
+        .eq('car_id', App.store.activeCarId)
+        .maybeSingle();
+
+    if (error) {
+        console.warn('Ошибка проверки параметров:', error);
+        return;
+    }
+
+    if (!data || (data.base_mileage === null && data.base_motohours === null && data.purchase_date === null && data.purchase_cost === null)) {
+        if (!sessionStorage.getItem('initial_params_shown')) {
+            sessionStorage.setItem('initial_params_shown', '1');
+            App.ui.pages.showInitialParamsModal();
+        }
+    }
 };
 
 // ---------- Совместный доступ ----------
