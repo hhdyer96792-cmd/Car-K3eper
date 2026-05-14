@@ -633,14 +633,16 @@
     </div>
 
     <!-- Карточка "Основные параметры" -->
-    <div class="card car-params-card">
-        <h3><i data-lucide="settings"></i> Основные параметры</h3>
-
-        <!-- Пробег и моточасы до владения в одну строку -->
-        <div class="car-params-row">
-            <input type="number" id="set-base-mileage" placeholder="Пробег до владения, км">
-            <input type="number" id="set-base-motohours" placeholder="Моточасы до владения, ч">
-        </div>
+    <div class="car-params-row">
+    <div class="field-group">
+        <label>Пробег до владения, км</label>
+        <input type="number" id="set-base-mileage" placeholder="0">
+    </div>
+    <div class="field-group">
+        <label>Моточасы до владения, ч</label>
+        <input type="number" id="set-base-motohours" placeholder="0">
+    </div>
+</div>
         <p class="hint">Эти значения используются, если история пробега не накоплена.</p>
 
         <!-- Дата покупки и стоимость -->
