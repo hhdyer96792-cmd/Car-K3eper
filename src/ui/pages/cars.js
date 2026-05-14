@@ -400,15 +400,22 @@ App.ui.pages.renderDocuments = function() {
     document.getElementById('add-document-btn').onclick = function() {
         document.getElementById('doc-file-input').click();
     };
-    document.getElementById('doc-file-input').onchange = function(e) {
+
+    // ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ЗАГРУЗКИ
+    document.getElementById('doc-file-input').onchange = async function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        App.supa.uploadPhoto(file).then(function(url) {
+        try {
+            var url = await App.supa.uploadPhoto(file);
+            // Безопасно получаем токен текущей сессии
+            var session = (await App.supabase.auth.getSession())?.data?.session;
+            var token = session?.access_token || '';
+
             fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/ocr-recognize', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + (App.supabase?.auth?.session()?.access_token || '')
+                    'Authorization': 'Bearer ' + token
                 },
                 body: JSON.stringify({ imageUrl: url })
             })
@@ -439,10 +446,10 @@ App.ui.pages.renderDocuments = function() {
                 App.ui.pages.renderDocuments();
                 App.toast('Документ добавлен (без распознавания)', 'warning');
             });
-        }).catch(function(err) {
-            console.error('Upload failed:', err);
+        } catch (uploadError) {
+            console.error('Upload failed:', uploadError);
             App.toast('Ошибка загрузки фото', 'error');
-        });
+        }
         e.target.value = '';
     };
 
