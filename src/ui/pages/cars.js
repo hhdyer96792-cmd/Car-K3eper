@@ -5,90 +5,104 @@ App.ui.pages = App.ui.pages || {};
 // ---------- Локальный кэш документов ----------
 App.ui.pages._carDocuments = [];
 
+// Безопасное получение userId (через сессию, а не через getCurrentUserId)
+App.ui.pages._getUserIdSafe = async function() {
+    const { data: { session } } = await App.supabase.auth.getSession();
+    return session?.user?.id || null;
+};
+
 // ---------- Функции работы с документами через Supabase ----------
 App.ui.pages.loadCarDocuments = async function() {
     if (!App.store.activeCarId) return [];
-    const { data, error } = await App.supabase
-        .from('car_documents')
-        .select('*')
-        .eq('car_id', App.store.activeCarId)
-        .order('created_at', { ascending: false });
-    if (error) {
-        console.error('Ошибка загрузки документов:', error);
-        return [];
+    try {
+        const { data, error } = await App.supabase
+            .from('car_documents')
+            .select('*')
+            .eq('car_id', App.store.activeCarId)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        App.ui.pages._carDocuments = (data || []).map(d => ({
+            id: d.id,
+            type: d.type,
+            date: d.date,
+            photoUrl: d.photo_url,
+            amount: d.amount,
+            notes: d.notes || ''
+        }));
+    } catch (e) {
+        console.warn('Не удалось загрузить документы:', e);
+        App.ui.pages._carDocuments = [];
     }
-    App.ui.pages._carDocuments = (data || []).map(d => ({
-        id: d.id,
-        type: d.type,
-        date: d.date,
-        photoUrl: d.photo_url,
-        amount: d.amount,
-        notes: d.notes || ''
-    }));
     return App.ui.pages._carDocuments;
 };
 
 App.ui.pages.addCarDocument = async function(doc) {
     if (!App.store.activeCarId) return null;
-    const user = await App.supa.getCurrentUserId();
-    const { data, error } = await App.supabase
-        .from('car_documents')
-        .insert({
-            car_id: App.store.activeCarId,
-            user_id: user,
-            type: doc.type,
-            date: doc.date,
-            photo_url: doc.photoUrl,
-            amount: doc.amount,
-            notes: doc.notes
-        })
-        .select()
-        .single();
-    if (error) {
-        console.error('Ошибка добавления документа:', error);
+    try {
+        const userId = await App.ui.pages._getUserIdSafe();
+        const { data, error } = await App.supabase
+            .from('car_documents')
+            .insert({
+                car_id: App.store.activeCarId,
+                user_id: userId,
+                type: doc.type,
+                date: doc.date,
+                photo_url: doc.photoUrl,
+                amount: doc.amount,
+                notes: doc.notes
+            })
+            .select()
+            .single();
+        if (error) throw error;
+        App.ui.pages._carDocuments.unshift({
+            id: data.id,
+            type: data.type,
+            date: data.date,
+            photoUrl: data.photo_url,
+            amount: data.amount,
+            notes: data.notes || ''
+        });
+        return data;
+    } catch (e) {
+        console.error('Ошибка добавления документа:', e);
         return null;
     }
-    App.ui.pages._carDocuments.unshift({
-        id: data.id,
-        type: data.type,
-        date: data.date,
-        photoUrl: data.photo_url,
-        amount: data.amount,
-        notes: data.notes || ''
-    });
-    return data;
 };
 
 App.ui.pages.updateCarDocument = async function(docId, updates) {
-    const { error } = await App.supabase
-        .from('car_documents')
-        .update({
-            type: updates.type,
-            date: updates.date,
-            amount: updates.amount,
-            notes: updates.notes
-        })
-        .eq('id', docId);
-    if (error) {
-        console.error('Ошибка обновления документа:', error);
+    try {
+        const { error } = await App.supabase
+            .from('car_documents')
+            .update({
+                type: updates.type,
+                date: updates.date,
+                amount: updates.amount,
+                notes: updates.notes
+            })
+            .eq('id', docId);
+        if (error) throw error;
+        const idx = App.ui.pages._carDocuments.findIndex(d => d.id === docId);
+        if (idx !== -1) Object.assign(App.ui.pages._carDocuments[idx], updates);
+        return true;
+    } catch (e) {
+        console.error('Ошибка обновления документа:', e);
         return false;
     }
-    const idx = App.ui.pages._carDocuments.findIndex(d => d.id === docId);
-    if (idx !== -1) Object.assign(App.ui.pages._carDocuments[idx], updates);
-    return true;
 };
 
 App.ui.pages.deleteCarDocument = async function(docId) {
-    const { error } = await App.supabase
-        .from('car_documents')
-        .delete()
-        .eq('id', docId);
-    if (error) {
-        console.error('Ошибка удаления документа:', error);
+    try {
+        const { error } = await App.supabase
+            .from('car_documents')
+            .delete()
+            .eq('id', docId);
+        if (error) throw error;
+        App.ui.pages._carDocuments = App.ui.pages._carDocuments.filter(d => d.id !== docId);
+        return true;
+    } catch (e) {
+        console.error('Ошибка удаления документа:', e);
         return false;
     }
-    App.ui.pages._carDocuments = App.ui.pages._carDocuments.filter(d => d.id !== docId);
-    return true;
 };
 
 // ---------- Рендер селектора автомобиля ----------
@@ -475,7 +489,7 @@ App.ui.pages.renderSharingListForCarTab = function() {
         container.innerHTML = '<p class="hint">Выберите автомобиль</p>';
         return;
     }
-    App.supa.getCurrentUserId().then(function(userId) {
+    App.ui.pages._getUserIdSafe().then(function(userId) {
         if (!userId) {
             container.innerHTML = '<p class="hint">Не удалось определить пользователя</p>';
             return;
