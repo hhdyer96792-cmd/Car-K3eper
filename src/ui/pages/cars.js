@@ -831,6 +831,91 @@ App.ui.pages.renderDocuments = function() {
     });
 };
 
+/**
+ * Показывает модальное окно для первичного заполнения основных параметров
+ * вызывается из main.js после регистрации, если параметры пусты
+ */
+App.ui.pages.showInitialParamsModal = function() {
+    var todayStr = App.utils.isoToDDMMYYYY(new Date().toISOString().split('T')[0]);
+
+    var content =
+        '<form id="initial-params-form">' +
+            '<div class="car-params-row">' +
+                '<div class="field-group">' +
+                    '<label>Пробег до владения, км</label>' +
+                    '<input type="number" id="init-base-mileage" placeholder="0">' +
+                '</div>' +
+                '<div class="field-group">' +
+                    '<label>Моточасы до владения, ч</label>' +
+                    '<input type="number" id="init-base-motohours" placeholder="0">' +
+                '</div>' +
+            '</div>' +
+            '<div class="car-params-row">' +
+                '<div class="field-group">' +
+                    '<label>Дата покупки</label>' +
+                    '<input type="text" id="init-purchase-date" placeholder="ДД-ММ-ГГГГ" pattern="\\d{2}-\\d{2}-\\d{4}" oninput="App.utils.applyDateMaskDDMMYYYY(event)" value="' + todayStr + '">' +
+                '</div>' +
+                '<div class="field-group">' +
+                    '<label>Стоимость покупки</label>' +
+                    '<input type="number" id="init-purchase-cost" placeholder="₽">' +
+                '</div>' +
+            '</div>' +
+            '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
+                '<button type="submit" class="primary-btn"><i data-lucide="save"></i> Сохранить</button>' +
+                '<button type="button" class="cancel-btn secondary-btn">Заполнить позже</button>' +
+            '</div>' +
+        '</form>';
+
+    var modal = App.ui.createModal('🚗 Заполните основные параметры', content);
+    App.initIcons();
+
+    var form = modal.querySelector('#initial-params-form');
+
+    // Сохранение
+    form.onsubmit = async function(e) {
+        e.preventDefault();
+        var baseMileage = parseInt(document.getElementById('init-base-mileage').value) || 0;
+        var baseMotohours = parseInt(document.getElementById('init-base-motohours').value) || 0;
+        var dateStr = document.getElementById('init-purchase-date').value;
+        var purchaseDate = dateStr ? App.utils.ddmmYYYYtoISO(dateStr) : null;
+        var purchaseCost = parseFloat(document.getElementById('init-purchase-cost').value) || 0;
+
+        if (App.store.activeCarId) {
+            const { error } = await App.supabase
+                .from('vehicle_state')
+                .upsert({
+                    car_id: App.store.activeCarId,
+                    base_mileage: baseMileage,
+                    base_motohours: baseMotohours,
+                    purchase_date: purchaseDate,
+                    purchase_cost: purchaseCost
+                }, { onConflict: 'car_id' });
+            if (error) {
+                console.error('Ошибка сохранения параметров:', error);
+                App.toast('Ошибка сохранения', 'error');
+                return;
+            }
+            // Обновляем локальный кеш
+            App.store.baseMileage = baseMileage;
+            App.store.baseMotohours = baseMotohours;
+            App.store.purchaseDate = purchaseDate;
+            App.store.purchaseCost = purchaseCost;
+            App.store.calculateOwnershipDays();
+            App.store.saveToLocalStorage();
+            App.ui.pages.updateOwnershipCost();
+        }
+
+        modal.remove();
+        App.toast('Данные сохранены', 'success');
+    };
+
+    // Кнопка "Заполнить позже"
+    modal.querySelector('.cancel-btn').onclick = function() {
+        modal.remove();
+        App.toast('Можно заполнить на вкладке Автомобиль', 'info');
+    };
+};
+
 // ---------- Совместный доступ ----------
 App.ui.pages.renderSharingListForCarTab = function() {
     var container = document.getElementById('sharing-container');
