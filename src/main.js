@@ -6,7 +6,6 @@
     function setInstallButtonVisible(visible) {
         var installBtn = document.getElementById('pwa-install-btn');
         if (!installBtn) return;
-        // Не показываем кнопку, если приложение уже запущено как PWA
         if (window.matchMedia('(display-mode: standalone)').matches) {
             installBtn.style.display = 'none';
             return;
@@ -19,34 +18,26 @@
     }
 
     function onReady() {
-        // Отключаем анимации до полной загрузки, чтобы избежать моргания
         document.body.classList.add('no-transition');
 
-        // Определяем тему
         var savedTheme = localStorage.getItem(App.config.THEME_KEY);
         if (savedTheme) {
             App.events.applyTheme(savedTheme);
         } else {
-            // Системная тема, если нет сохранённой
             var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             App.events.applyTheme(prefersDark ? 'dark' : 'light');
         }
 
-        // Включаем анимации после небольшой задержки
         setTimeout(function() {
             document.body.classList.remove('no-transition');
         }, 50);
 
-        // Слушаем изменения системной темы, если нет пользовательского выбора
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
             if (!localStorage.getItem(App.config.THEME_KEY)) {
                 App.events.applyTheme(e.matches ? 'dark' : 'light');
             }
         });
 
-        // ------------------------------------------------------------
-        // Остальная логика, которая раньше была внутри onReady
-        // ------------------------------------------------------------
         App.supabase = supabase.createClient(
             'https://qbjlccdqaudyvedpysil.supabase.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiamxjY2RxYXVkeXZlZHB5c2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNjQ5MDEsImV4cCI6MjA5Mjk0MDkwMX0.dpdlcOQLtc6adA-l2z_ksJ3b6b6pLTQviLrKtxuF-kU'
@@ -60,10 +51,9 @@
 
         App.store.initFromLocalStorage();
 
-        // ======================= АВТОРИЗАЦИЯ =======================
         var authPanel = document.getElementById('auth-panel');
         if (authPanel) authPanel.style.display = 'block';
-        // Скрываем мобильные элементы на странице авторизации при загрузке
+
         var mobileRow = document.getElementById('mobile-header-row2');
         if (mobileRow) mobileRow.style.display = 'none';
         var syncIndicator = document.getElementById('sync-indicator');
@@ -108,7 +98,7 @@
             });
         }
 
-        // ===== Логин + пароль =====
+        // Логин + пароль
         var loginForm = document.getElementById('login-form');
         var loginMessage = document.getElementById('login-message');
         var passwordConfirmLabel = document.getElementById('password-confirm-label');
@@ -187,7 +177,7 @@
             }
         }
 
-        // ===== Восстановление доступа =====
+        // Восстановление доступа
         var forgotLink = document.getElementById('forgot-access-link');
         var recoveryBlock = document.getElementById('recovery-options');
         var recoveryMsg = document.getElementById('recovery-message');
@@ -214,7 +204,7 @@
             });
         }
 
-        // Кнопка установки PWA
+        // PWA install
         var installBtn = document.getElementById('pwa-install-btn');
         if (installBtn) installBtn.style.display = 'none';
         if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -241,7 +231,7 @@
             }
         }, 3000);
 
-        // ===== Firebase Cloud Messaging =====
+        // Firebase Cloud Messaging
         var messaging;
         try {
             if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length === 0) {
@@ -334,7 +324,7 @@
             if (unsubBtn) unsubBtn.style.display = isActive ? 'inline-block' : 'none';
         }
 
-        // ===== Кнопка «Выйти» =====
+        // Кнопка «Выйти»
         function doLogout() {
             var loginFormEl = document.getElementById('login-form');
             if (loginFormEl) loginFormEl.reset();
@@ -348,7 +338,6 @@
             if (authPanelEl) authPanelEl.style.display = 'block';
             var dataPanelEl = document.getElementById('data-panel');
             if (dataPanelEl) dataPanelEl.style.display = 'none';
-            // Скрываем мобильные элементы при выходе
             var mobileRowEl = document.getElementById('mobile-header-row2');
             if (mobileRowEl) mobileRowEl.style.display = 'none';
             var syncIndicatorEl = document.getElementById('sync-indicator');
@@ -363,18 +352,17 @@
         if (logoutDrawerBtn) logoutDrawerBtn.addEventListener('click', doLogout);
 
         // ======================= СЕССИЯ (с Realtime) =======================
+        var isInitialized = false;
+
         async function handleOnlineSession() {
             if (!navigator.onLine) {
-                // Офлайн: просто показываем данные из localStorage
                 isLoggedIn = true;
                 setInstallButtonVisible(true);
                 if (authPanel) authPanel.style.display = 'none';
                 var dp = document.getElementById('data-panel');
                 if (dp) dp.style.display = 'block';
-                // Показываем облачко после авторизации (офлайн)
                 var syncIndicatorOffline = document.getElementById('sync-indicator');
                 if (syncIndicatorOffline) syncIndicatorOffline.style.display = '';
-                // Показываем мобильные элементы после авторизации (офлайн)
                 var mobileRowOffline = document.getElementById('mobile-header-row2');
                 if (mobileRowOffline) mobileRowOffline.style.display = 'flex';
 
@@ -388,15 +376,11 @@
 
                 App.store.loadCars().then(function() {
                     App.ui.pages.renderCarSelector();
-                    if (App.store.activeCarId) {
-                        // Realtime не подключаем
-                    }
                     if (typeof App.renderAll === 'function') App.renderAll();
                 });
                 return;
             }
 
-            // Онлайн: стандартная цепочка
             App.supabase.auth.onAuthStateChange(function(event, session) {
                 if (session) {
                     isLoggedIn = true;
@@ -404,10 +388,8 @@
                     if (authPanel) authPanel.style.display = 'none';
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'block';
-                    // Показываем облачко после авторизации
                     var syncIndicatorOnline = document.getElementById('sync-indicator');
                     if (syncIndicatorOnline) syncIndicatorOnline.style.display = '';
-                    // Показываем мобильные элементы после авторизации
                     var mobileRowOnline = document.getElementById('mobile-header-row2');
                     if (mobileRowOnline) mobileRowOnline.style.display = 'flex';
 
@@ -465,6 +447,8 @@
                                         App.ui.pages.checkPendingInvites();
                                     }
                                 }
+                                // Показываем модальное окно начальных параметров
+                                App.ui.pages.checkAndShowInitialParamsModal();
                             });
                         } else {
                             if (typeof App.renderAll === 'function') App.renderAll();
@@ -476,10 +460,8 @@
                     if (authPanel) authPanel.style.display = 'block';
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'none';
-                    // Скрываем облачко на странице авторизации
                     var syncIndicatorOff = document.getElementById('sync-indicator');
                     if (syncIndicatorOff) syncIndicatorOff.style.display = 'none';
-                    // Скрываем мобильные элементы на странице авторизации
                     var mobileRowOff = document.getElementById('mobile-header-row2');
                     if (mobileRowOff) mobileRowOff.style.display = 'none';
                     var carContainerEl = document.getElementById('car-selector-container');
@@ -509,10 +491,8 @@
                     if (authPanel) authPanel.style.display = 'none';
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'block';
-                    // Показываем облачко после авторизации
                     var syncIndicatorSess = document.getElementById('sync-indicator');
                     if (syncIndicatorSess) syncIndicatorSess.style.display = '';
-                    // Показываем мобильные элементы после авторизации
                     var mobileRowSess = document.getElementById('mobile-header-row2');
                     if (mobileRowSess) mobileRowSess.style.display = 'flex';
 
@@ -553,6 +533,8 @@
                                         App.ui.pages.checkPendingInvites();
                                     }
                                 }
+                                // Показываем модальное окно начальных параметров
+                                App.ui.pages.checkAndShowInitialParamsModal();
                             });
                         } else {
                             if (typeof App.renderAll === 'function') App.renderAll();
@@ -562,37 +544,35 @@
             });
         }
 
-        var isInitialized = false;
+        window.addEventListener('online', function() {
+            if (isInitialized) return;
+            isInitialized = true;
+            App.toast('Сеть восстановлена', 'success');
+            if (App.store.pendingActions.length > 0) {
+                App.toast('Синхронизация офлайн-изменений...', 'info');
+                App.store.pendingActions.forEach(function(action) {
+                    if (action.type === 'service') {
+                        App.logic.addServiceRecord(
+                            action.opId, action.date, action.mileage, action.motohours,
+                            action.partsCost, action.workCost, action.isDIY, action.notes, action.photoUrl
+                        );
+                    }
+                });
+                App.store.clearPendingActions();
+            }
+            handleOnlineSession();
+        });
 
-    window.addEventListener('online', function() {
-        if (isInitialized) return;
-        isInitialized = true;
-        App.toast('Сеть восстановлена', 'success');
-        if (App.store.pendingActions.length > 0) {
-            App.toast('Синхронизация офлайн-изменений...', 'info');
-            App.store.pendingActions.forEach(function(action) {
-                if (action.type === 'service') {
-                    App.logic.addServiceRecord(
-                        action.opId, action.date, action.mileage, action.motohours,
-                        action.partsCost, action.workCost, action.isDIY, action.notes, action.photoUrl
-                    );
-                }
-            });
-            App.store.clearPendingActions();
+        window.addEventListener('offline', function() {
+            App.toast('Вы офлайн', 'warning');
+        });
+
+        if (!isInitialized) {
+            isInitialized = true;
+            handleOnlineSession();
         }
-        handleOnlineSession();
-    });
 
-    window.addEventListener('offline', function() {
-        App.toast('Вы офлайн', 'warning');
-    });
-
-    if (!isInitialized) {
-        isInitialized = true;
-        handleOnlineSession();
-    }
-
-        // ==================== РЕГИСТРАЦИЯ СЕРВИС‑ВОРКЕРА ====================
+        // Регистрация сервис-воркера
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register(new URL('./service-worker.js', location.href)).then(function(registration) {
                 console.log('✅ Сервис-воркер зарегистрирован:', registration.scope);
@@ -601,7 +581,6 @@
             });
         }
 
-        // ===== Остальные инициализации =====
         App.events.init();
         App.events.switchToTab('dashboard');
 
@@ -610,7 +589,7 @@
         });
     }
 
-    // ===== Функции восстановления =====
+    // Функции восстановления
     async function recoverViaTelegram(msgEl) {
         var username = prompt('Введите ваш логин:');
         if (!username) return;
