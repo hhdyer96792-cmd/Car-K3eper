@@ -604,50 +604,124 @@
     <div id="parts-cards-container"></div>
 </div>
 
-        <!-- Вкладка Автомобиль 🚗 (полный блок) -->
-        <div id="tab-car" class="tab-content">
-            <div class="card" id="car-details-card">
-                <h3>🚗 Автомобиль</h3>
-                <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
-                    <label style="flex:1; min-width:150px;">Выберите авто:
-                        <select id="car-page-selector" style="width:100%">
-                            <option value="">-- Загрузка... --</option>
-                        </select>
-                    </label>
-                    <button id="add-car-btn" class="icon-btn" title="Добавить авто"><i data-lucide="plus"></i></button>
-                    <button id="rename-car-btn" class="icon-btn" title="Переименовать"><i data-lucide="pencil"></i></button>
-                    <button id="delete-car-btn" class="icon-btn" title="Удалить авто"><i data-lucide="trash-2"></i></button>
-                </div>
-                <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-                    <input type="text" id="car-brand" placeholder="Марка" style="flex:1;">
-                    <input type="text" id="car-model" placeholder="Модель" style="flex:1;">
-                    <input type="number" id="car-year" placeholder="Год выпуска" style="flex:1;">
-                </div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <input type="text" id="car-plate" placeholder="Гос. номер" style="flex:1;">
-                    <input type="text" id="car-vin" placeholder="VIN" style="flex:1;">
-                </div>
-                <button id="save-car-details-btn" class="primary-btn" style="margin-top:12px;">💾 Сохранить данные авто</button>
+        <!-- Автомобиль (переработан) -->
+<div id="tab-car" class="tab-content">
+    <!-- Карточка "Автомобиль" -->
+    <div class="card car-details-card">
+        <div class="car-header-actions">
+            <div class="car-selector">
+                <label>Выберите авто:
+                    <select id="car-page-selector">
+                        <option value="">-- Загрузка... --</option>
+                    </select>
+                </label>
             </div>
-            <div class="card" id="car-base-points">
-                <h3><i data-lucide="wrench"></i> Показатели точки отсчёта</h3>
-                <label>Пробег точки отсчёта (км): <input type="number" id="set-base-mileage" step="1" value="0"></label>
-                <label>Моточасы точки отсчёта: <input type="number" id="set-base-motohours" step="1" value="0"></label>
-                <p class="hint">Используются, если история пробега ещё не накоплена.</p>
-                <button id="save-base-points-btn" class="secondary-btn">💾 Сохранить</button>
-            </div>
-            <div class="card" id="car-ownership">
-                <h3><i data-lucide="calendar"></i> Владение автомобилем</h3>
-                <label>Дата приобретения: <input type="date" id="purchase-date"></label>
-                <label>Дней владения: <input type="text" id="ownership-days" readonly></label>
-                <button id="save-ownership-btn" class="secondary-btn">💾 Сохранить</button>
-            </div>
-            <div class="card" id="car-sharing">
-                <h3><i data-lucide="users"></i> Совместный доступ</h3>
-                <button id="invite-btn" class="secondary-btn" style="margin-bottom:12px;"><i data-lucide="user-plus"></i> Пригласить пользователя</button>
-                <div id="sharing-container"><p class="hint">Загрузка...</p></div>
+            <div class="car-action-buttons">
+                <button id="add-car-btn" class="icon-btn" title="Добавить авто"><i data-lucide="plus"></i></button>
+                <button id="rename-car-btn" class="icon-btn" title="Переименовать"><i data-lucide="pencil"></i></button>
+                <button id="delete-car-btn" class="icon-btn" title="Удалить авто"><i data-lucide="trash-2"></i></button>
+                <button id="save-car-details-btn" class="icon-btn" title="Сохранить данные"><i data-lucide="save"></i></button>
             </div>
         </div>
+        <div class="car-fields-grid">
+            <input type="text" id="car-brand" placeholder="Марка">
+            <input type="text" id="car-model" placeholder="Модель">
+            <input type="number" id="car-year" placeholder="Год выпуска">
+            <input type="text" id="car-plate" placeholder="Гос. номер">
+            <input type="text" id="car-vin" placeholder="VIN">
+        </div>
+    </div>
+
+    <!-- Карточка "Основные параметры" -->
+    <div class="card car-params-card">
+        <h3><i data-lucide="settings"></i> Основные параметры</h3>
+
+        <!-- Пробег и моточасы до владения в одну строку -->
+        <div class="car-params-row">
+            <input type="number" id="set-base-mileage" placeholder="Пробег до владения, км">
+            <input type="number" id="set-base-motohours" placeholder="Моточасы до владения, ч">
+        </div>
+        <p class="hint">Эти значения используются, если история пробега не накоплена.</p>
+
+        <!-- Дата покупки и стоимость -->
+        <div class="car-params-row">
+            <div class="field-group">
+                <label>Дата покупки</label>
+                <input type="text" id="purchase-date" placeholder="ДД-ММ-ГГГГ" pattern="\d{2}-\d{2}-\d{4}" oninput="App.utils.applyDateMaskDDMMYYYY(event)">
+            </div>
+            <div class="field-group">
+                <label>Стоимость покупки</label>
+                <input type="number" id="purchase-cost" placeholder="₽">
+            </div>
+        </div>
+
+        <!-- Время владения и стоимость владения -->
+        <div class="car-params-row">
+            <div class="field-group">
+                <label>Время владения</label>
+                <div class="field-output">
+                    <input type="text" id="ownership-days" readonly>
+                    <button id="toggle-ownership-unit" class="icon-btn" title="Дни / Месяцы / Годы"><i data-lucide="history"></i></button>
+                </div>
+            </div>
+            <div class="field-group">
+                <label>Стоимость владения</label>
+                <div class="field-output">
+                    <input type="text" id="ownership-cost" readonly>
+                    <button id="toggle-cost-unit" class="icon-btn" title="Общая сумма / за 1 км"><i data-lucide="refresh-ccw-dot"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <button id="save-params-btn" class="secondary-btn"><i data-lucide="save"></i> Сохранить параметры</button>
+    </div>
+
+    <!-- Карточка "Совместный доступ" -->
+    <div class="card car-sharing-card">
+        <h3><i data-lucide="users"></i> Совместный доступ</h3>
+        <button id="invite-btn" class="secondary-btn" style="margin-bottom:12px;"><i data-lucide="user-plus"></i> Пригласить пользователя</button>
+        <div id="sharing-container"><p class="hint">Загрузка...</p></div>
+    </div>
+
+    <!-- Карточка "Экспорт данных" (перенесена из Настроек) -->
+    <div class="card car-export-card">
+        <h3><i data-lucide="download"></i> Экспорт данных</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+            <label style="flex: 1; min-width: 180px;">Тип данных:
+                <select id="export-type-select-car">
+                    <option value="to">📋 Журнал ТО</option>
+                    <option value="fuel">⛽ Топливо</option>
+                    <option value="tires">🛞 Шины</option>
+                    <option value="parts">📦 Запчасти</option>
+                    <option value="history">📜 История ТО</option>
+                    <option value="all">📁 Все данные</option>
+                </select>
+            </label>
+            <label style="flex: 0 0 auto;">Формат:
+                <select id="export-format-select-car">
+                    <option value="csv">CSV (csv)</option>
+                    <option value="xlsx">Excel (XLSX)</option>
+                </select>
+            </label>
+            <button id="export-data-btn-car" class="primary-btn"><i data-lucide="download"></i> Экспорт данных</button>
+        </div>
+    </div>
+
+    <!-- Карточка "Документы" -->
+    <div class="card car-documents-card">
+        <h3><i data-lucide="file-text"></i> Документы</h3>
+        <p class="hint">Просто сфотографируйте чек, полис или заказ-наряд — дата и тип подставятся сами. Можно добавить сумму позже.</p>
+
+        <!-- Кнопка добавления (камера/галерея) -->
+        <div class="doc-add-area">
+            <button id="add-document-btn" class="primary-btn"><i data-lucide="camera"></i> Сфотографировать</button>
+            <input type="file" id="doc-file-input" accept="image/*" capture="environment" style="display:none;">
+        </div>
+
+        <!-- Аккордеоны по типам -->
+        <div id="documents-accordions"></div>
+    </div>
+</div>
 
         <!-- Настройки (единственный полный блок) -->
         <div id="tab-settings" class="tab-content">
