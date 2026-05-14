@@ -2,267 +2,96 @@
 window.App = window.App || {};
 App.ui.pages = App.ui.pages || {};
 
-App.ui.pages.renderCarSelector = function() {
-    var container = document.getElementById('car-selector-container');
-    if (!container) return;
-    var html = '<select id="car-select"><option value="">-- Выберите авто --</option>';
-    App.store.cars.forEach(function(car) {
-        var selected = car.id == App.store.activeCarId ? ' selected' : '';
-        html += '<option value="' + car.id + '"' + selected + '>' + App.utils.escapeHtml(car.name) + '</option>';
-    });
-    html += '</select>';
-    container.innerHTML = html;
+// ---------- Локальный кэш документов ----------
+App.ui.pages._carDocuments = [];
 
-    document.getElementById('car-select').addEventListener('change', function() {
-        var carId = this.value;
-        if (carId) {
-            App.store.setActiveCar(carId);
-            if (App.realtime && App.realtime.subscribeToCar) {
-                App.realtime.subscribeToCar(carId);
-            }
-            App.storage.loadAllData().then(function() {
-                if (typeof App.renderAll === 'function') App.renderAll();
-            });
-            var sidebarSelect = document.getElementById('sidebar-car-select');
-            if (sidebarSelect) sidebarSelect.value = carId;
-            var car = App.store.cars.find(function(c) { return c.id == carId; });
-            var currentCarNameEl = document.getElementById('current-car-name');
-            if (currentCarNameEl && car) {
-                currentCarNameEl.textContent = car.name;
-            }
-        }
-    });
-
-    // Обработчики для кнопок в мобильном хедере (если они ещё есть)
-    var addCarBtn = document.getElementById('add-car-btn');
-    if (addCarBtn) addCarBtn.addEventListener('click', App.ui.pages.addCar);
-
-    var renameCarBtn = document.getElementById('rename-car-btn');
-    if (renameCarBtn) renameCarBtn.addEventListener('click', App.ui.pages.renameCar);
-
-    var deleteCarBtn = document.getElementById('delete-car-btn');
-    if (deleteCarBtn) deleteCarBtn.addEventListener('click', App.ui.pages.deleteCar);
-
-    var inviteBtn = document.getElementById('invite-btn');
-    if (inviteBtn) inviteBtn.addEventListener('click', App.ui.pages.inviteUser);
-
-    var calendarSubscribeBtn = document.getElementById('calendar-subscribe-btn');
-    if (calendarSubscribeBtn) calendarSubscribeBtn.addEventListener('click', App.ui.pages.subscribeToCalendar);
-
-    // Дублируем селектор в сайдбар
-    var sidebarContainer = document.getElementById('sidebar-car-selector');
-    if (sidebarContainer) {
-        var sidebarHtml = '<select id="sidebar-car-select">' +
-            '<option value="">-- Выберите авто --</option>';
-        App.store.cars.forEach(function(car) {
-            var selected = car.id == App.store.activeCarId ? ' selected' : '';
-            sidebarHtml += '<option value="' + car.id + '"' + selected + '>' + App.utils.escapeHtml(car.name) + '</option>';
-        });
-        sidebarHtml += '</select>';
-        sidebarContainer.innerHTML = sidebarHtml;
-
-        document.getElementById('sidebar-car-select').addEventListener('change', function() {
-            var carId = this.value;
-            if (carId) {
-                App.store.setActiveCar(carId);
-                if (App.realtime && App.realtime.subscribeToCar) {
-                    App.realtime.subscribeToCar(carId);
-                }
-                App.storage.loadAllData().then(function() {
-                    if (typeof App.renderAll === 'function') App.renderAll();
-                });
-                var mainSelect = document.getElementById('car-select');
-                if (mainSelect) mainSelect.value = carId;
-            }
-        });
-    }
-
-    App.initIcons();
-};
-
-// Функции действий с автомобилем (используются и из мобильных кнопок, и из вкладки «Автомобиль»)
-App.ui.pages.addCar = function() {
-    var name = prompt('Название автомобиля:', 'Мой автомобиль');
-    if (!name) return;
-    App.supa.createCar(name).then(function(res) {
-        var car = res.data;
-        if (!car) {
-            console.warn('createCar вернул пустой ответ, перезагружаем список');
-            return App.store.loadCars().then(function() {
-                App.ui.pages.renderCarSelector();
-            });
-        }
-        App.store.cars.push(car);
-        App.store.setActiveCar(car.id);
-        App.ui.pages.renderCarSelector();
-        if (App.realtime && App.realtime.subscribeToCar) {
-            App.realtime.subscribeToCar(car.id);
-        }
-        App.storage.loadAllData().then(function() {
-            if (typeof App.renderAll === 'function') App.renderAll();
-            if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
-        });
-        App.toast('Автомобиль добавлен', 'success');
-    }).catch(function(err) {
-        console.error(err);
-        App.toast('Ошибка создания авто', 'error');
-    });
-};
-
-App.ui.pages.renameCar = async function() {
-    var carId = App.store.activeCarId;
-    if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
-    var userId = await App.supa.getCurrentUserId();
-    var car = App.store.cars.find(c => c.id == carId);
-    if (!car || car.user_id !== userId) {
-        App.toast('Только владелец может переименовывать автомобиль', 'warning');
-        return;
-    }
-    var currentName = car.name || '';
-    var newName = prompt('Новое название:', currentName);
-    if (!newName || newName === currentName) return;
-    try {
-        await App.supa.renameCar(carId, newName);
-        car.name = newName;
-        App.ui.pages.renderCarSelector();
-        if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
-        App.toast('Название обновлено', 'success');
-    } catch (err) {
-        console.error(err);
-        App.toast('Ошибка переименования', 'error');
-    }
-};
-
-App.ui.pages.deleteCar = async function() {
-    var carId = App.store.activeCarId;
-    if (!carId) { App.toast('Нет выбранного автомобиля', 'warning'); return; }
-    var userId = await App.supa.getCurrentUserId();
-    var car = App.store.cars.find(c => c.id == carId);
-    if (!car || car.user_id !== userId) {
-        App.toast('Только владелец может удалять автомобиль', 'warning');
-        return;
-    }
-    if (!confirm('Удалить автомобиль и все его данные? Это действие необратимо.')) return;
-    try {
-        await App.supa.deleteCar(carId);
-        App.store.cars = App.store.cars.filter(c => c.id != carId);
-        App.store.activeCarId = null;
-        App.ui.pages.renderCarSelector();
-        App.store.operations = [];
-        App.store.fuelLog = [];
-        App.store.tireLog = [];
-        App.store.parts = [];
-        App.store.serviceRecords = [];
-        App.store.mileageHistory = [];
-        App.store.saveToLocalStorage();
-        if (typeof App.renderAll === 'function') App.renderAll();
-        if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
-        App.toast('Автомобиль удалён', 'success');
-    } catch (err) {
-        console.error(err);
-        App.toast('Ошибка удаления', 'error');
-    }
-};
-
-App.ui.pages.inviteUser = function() {
-    var carId = App.store.activeCarId;
-    if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
-    App.supabase.from('car_shares')
-        .insert({ car_id: carId, invited_email: null })
-        .select()
-        .single()
-        .then(function(res) {
-            if (res.error) throw res.error;
-            var inviteCode = res.data.invite_code;
-            var inviteLink = window.location.origin + '/Car-K3eper/?invite=' + inviteCode;
-            var copyHtml = '<div style="margin-top:12px;">' +
-                '<p class="hint">Ссылка для приглашения:</p>' +
-                '<input type="text" value="' + inviteLink + '" readonly style="width:100%;" id="invite-link-input">' +
-                '<button id="copy-invite-link-btn" class="primary-btn" style="margin-top:8px;">Копировать</button>' +
-                '</div>';
-            var modal = App.ui.createModal('Пригласить пользователя', copyHtml);
-            document.getElementById('copy-invite-link-btn').addEventListener('click', function() {
-                var input = document.getElementById('invite-link-input');
-                input.select();
-                document.execCommand('copy');
-                App.toast('Ссылка скопирована в буфер обмена', 'success');
-            });
-        }).catch(function(err) {
-            console.error(err);
-            App.toast('Ошибка создания приглашения', 'error');
-        });
-};
-
-App.ui.pages.subscribeToCalendar = async function() {
-    var carId = App.store.activeCarId;
-    if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
-    var { data: existing, error: selectError } = await App.supabase
-        .from('calendar_tokens')
-        .select('token')
-        .eq('car_id', carId)
-        .maybeSingle();
-    if (selectError) {
-        console.error('Ошибка проверки токена:', selectError);
-        App.toast('Ошибка получения токена', 'error');
-        return;
-    }
-    var token;
-    if (existing && existing.token) {
-        token = existing.token;
-    } else {
-        var newToken = crypto.randomUUID();
-        var { data: inserted, error: insertError } = await App.supabase
-            .from('calendar_tokens')
-            .insert({ car_id: carId, token: newToken })
-            .select('token')
-            .single();
-        if (insertError) {
-            console.error('Ошибка создания токена:', insertError);
-            App.toast('Ошибка создания токена', 'error');
-            return;
-        }
-        token = inserted.token;
-    }
-    var feedUrl = `https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/calendar-feed?token=${token}`;
-    var copyHtml = '<div style="margin-top:12px;">' +
-        '<p class="hint">Скопируйте ссылку и добавьте в свой календарь как интернет-календарь:</p>' +
-        '<input type="text" value="' + feedUrl + '" readonly style="width:100%;" id="calendar-feed-url">' +
-        '<button id="copy-feed-url-btn" class="primary-btn" style="margin-top:8px;">Копировать</button>' +
-        '</div>';
-    var modal = App.ui.createModal('Подписка на календарь', copyHtml);
-    document.getElementById('copy-feed-url-btn').addEventListener('click', function() {
-        var input = document.getElementById('calendar-feed-url');
-        input.select();
-        document.execCommand('copy');
-        App.toast('Ссылка скопирована', 'success');
-    });
-};
-
-// Обновление названия текущего авто в шапке
-App.ui.pages.updateCurrentCarName = function() {
-    var car = App.store.cars.find(function(c) { return c.id == App.store.activeCarId; });
-    var el = document.getElementById('current-car-name');
-    if (el) {
-        el.textContent = car ? car.name : '';
-    }
-};
-
-// ========== Новая вкладка «Автомобиль» ==========
-
-// ---------- Вспомогательные функции для работы с документами (localStorage) ----------
-function getCarDocuments() {
-    try {
-        return JSON.parse(localStorage.getItem('car_documents') || '[]');
-    } catch (e) {
+// ---------- Функции работы с документами через Supabase ----------
+App.ui.pages.loadCarDocuments = async function() {
+    if (!App.store.activeCarId) return [];
+    const { data, error } = await App.supabase
+        .from('car_documents')
+        .select('*')
+        .eq('car_id', App.store.activeCarId)
+        .order('created_at', { ascending: false });
+    if (error) {
+        console.error('Ошибка загрузки документов:', error);
         return [];
     }
-}
+    App.ui.pages._carDocuments = (data || []).map(d => ({
+        id: d.id,
+        type: d.type,
+        date: d.date,
+        photoUrl: d.photo_url,
+        amount: d.amount,
+        notes: d.notes || ''
+    }));
+    return App.ui.pages._carDocuments;
+};
 
-function saveCarDocuments(docs) {
-    localStorage.setItem('car_documents', JSON.stringify(docs));
-}
+App.ui.pages.addCarDocument = async function(doc) {
+    if (!App.store.activeCarId) return null;
+    const user = await App.supa.getCurrentUserId();
+    const { data, error } = await App.supabase
+        .from('car_documents')
+        .insert({
+            car_id: App.store.activeCarId,
+            user_id: user,
+            type: doc.type,
+            date: doc.date,
+            photo_url: doc.photoUrl,
+            amount: doc.amount,
+            notes: doc.notes
+        })
+        .select()
+        .single();
+    if (error) {
+        console.error('Ошибка добавления документа:', error);
+        return null;
+    }
+    App.ui.pages._carDocuments.unshift({
+        id: data.id,
+        type: data.type,
+        date: data.date,
+        photoUrl: data.photo_url,
+        amount: data.amount,
+        notes: data.notes || ''
+    });
+    return data;
+};
 
-// ---------- Рендер селектора автомобиля (без изменений) ----------
+App.ui.pages.updateCarDocument = async function(docId, updates) {
+    const { error } = await App.supabase
+        .from('car_documents')
+        .update({
+            type: updates.type,
+            date: updates.date,
+            amount: updates.amount,
+            notes: updates.notes
+        })
+        .eq('id', docId);
+    if (error) {
+        console.error('Ошибка обновления документа:', error);
+        return false;
+    }
+    const idx = App.ui.pages._carDocuments.findIndex(d => d.id === docId);
+    if (idx !== -1) Object.assign(App.ui.pages._carDocuments[idx], updates);
+    return true;
+};
+
+App.ui.pages.deleteCarDocument = async function(docId) {
+    const { error } = await App.supabase
+        .from('car_documents')
+        .delete()
+        .eq('id', docId);
+    if (error) {
+        console.error('Ошибка удаления документа:', error);
+        return false;
+    }
+    App.ui.pages._carDocuments = App.ui.pages._carDocuments.filter(d => d.id !== docId);
+    return true;
+};
+
+// ---------- Рендер селектора автомобиля ----------
 App.ui.pages.renderCarSelector = function() {
     var container = document.getElementById('car-selector-container');
     if (!container) return;
@@ -288,13 +117,10 @@ App.ui.pages.renderCarSelector = function() {
             if (sidebarSelect) sidebarSelect.value = carId;
             var car = App.store.cars.find(function(c) { return c.id == carId; });
             var currentCarNameEl = document.getElementById('current-car-name');
-            if (currentCarNameEl && car) {
-                currentCarNameEl.textContent = car.name;
-            }
+            if (currentCarNameEl && car) currentCarNameEl.textContent = car.name;
         }
     });
 
-    // Дублируем селектор в сайдбар
     var sidebarContainer = document.getElementById('sidebar-car-selector');
     if (sidebarContainer) {
         var sidebarHtml = '<select id="sidebar-car-select">' +
@@ -321,11 +147,10 @@ App.ui.pages.renderCarSelector = function() {
             }
         });
     }
-
     App.initIcons();
 };
 
-// ---------- CRUD автомобилей (без изменений) ----------
+// ---------- CRUD автомобилей ----------
 App.ui.pages.addCar = function() { /* ... существующий код ... */ };
 App.ui.pages.renameCar = async function() { /* ... существующий код ... */ };
 App.ui.pages.deleteCar = async function() { /* ... существующий код ... */ };
@@ -337,7 +162,6 @@ App.ui.pages.checkPendingInvites = function() { /* ... существующий 
 // ========== НОВАЯ ВКЛАДКА «АВТОМОБИЛЬ» ==========
 
 App.ui.pages.renderCarTab = function() {
-    // Заполняем селектор
     var selector = document.getElementById('car-page-selector');
     if (selector) {
         selector.innerHTML = '<option value="">-- Выберите авто --</option>';
@@ -358,13 +182,14 @@ App.ui.pages.renderCarTab = function() {
                     App.ui.pages.updateCurrentCarName();
                     App.ui.pages.renderSharingListForCarTab();
                     App.ui.pages.renderBasicParams();
-                    App.ui.pages.renderDocuments();
+                    App.ui.pages.loadCarDocuments().then(function() {
+                        App.ui.pages.renderDocuments();
+                    });
                 });
             }
         };
     }
 
-    // Привязываем кнопки
     document.getElementById('add-car-btn').onclick = App.ui.pages.addCar;
     document.getElementById('rename-car-btn').onclick = App.ui.pages.renameCar;
     document.getElementById('delete-car-btn').onclick = App.ui.pages.deleteCar;
@@ -385,7 +210,6 @@ App.ui.pages.renderCarTab = function() {
         });
     };
 
-    // Загружаем детали текущего авто
     if (App.store.activeCarId) {
         App.ui.pages.loadCarDetails(App.store.activeCarId);
     } else {
@@ -399,7 +223,9 @@ App.ui.pages.renderCarTab = function() {
     App.ui.pages.renderBasicParams();
     App.ui.pages.renderSharingListForCarTab();
     App.ui.pages.renderExportBlock();
-    App.ui.pages.renderDocuments();
+    App.ui.pages.loadCarDocuments().then(function() {
+        App.ui.pages.renderDocuments();
+    });
     App.initIcons();
 };
 
@@ -427,9 +253,7 @@ App.ui.pages.renderBasicParams = function() {
         App.store.baseMileage = parseInt(document.getElementById('set-base-mileage').value) || 0;
         App.store.baseMotohours = parseInt(document.getElementById('set-base-motohours').value) || 0;
         var dateStr = document.getElementById('purchase-date').value;
-        if (dateStr) {
-            App.store.purchaseDate = App.utils.ddmmYYYYtoISO(dateStr);
-        }
+        if (dateStr) App.store.purchaseDate = App.utils.ddmmYYYYtoISO(dateStr);
         App.store.purchaseCost = parseFloat(document.getElementById('purchase-cost').value) || 0;
         App.store.calculateOwnershipDays();
         document.getElementById('ownership-days').value = App.store.ownershipDays;
@@ -483,13 +307,13 @@ App.ui.pages.updateOwnershipCost = function() {
     document.getElementById('ownership-cost').value = displayValue;
 };
 
-// ---------- Блок экспорта (перенесён из Настроек) ----------
+// ---------- Экспорт данных ----------
 App.ui.pages.renderExportBlock = function() {
     document.getElementById('export-data-btn-car').onclick = function() {
         var type = document.getElementById('export-type-select-car').value;
         var format = document.getElementById('export-format-select-car').value;
         if (format === 'csv') {
-            var exportData = App.ui.pages.getExportData(type); // используется функция из settings.js
+            var exportData = App.ui.pages.getExportData(type);
             if (exportData && exportData.data) {
                 App.ui.pages.exportToCSV(exportData.data, exportData.filename, exportData.headers);
             }
@@ -505,7 +329,7 @@ App.ui.pages.renderDocuments = function() {
     var container = document.getElementById('documents-accordions');
     if (!container) return;
 
-    var docs = getCarDocuments();
+    var docs = App.ui.pages._carDocuments || [];
     var grouped = {};
     docs.forEach(function(doc) {
         var type = doc.type || 'Прочее';
@@ -548,7 +372,6 @@ App.ui.pages.renderDocuments = function() {
     container.innerHTML = html;
     App.initIcons();
 
-    // Обработчики аккордеонов
     container.querySelectorAll('.accordion-header').forEach(function(header) {
         header.addEventListener('click', function() {
             var body = header.nextElementSibling;
@@ -560,16 +383,13 @@ App.ui.pages.renderDocuments = function() {
         });
     });
 
-    // Добавление документа
     document.getElementById('add-document-btn').onclick = function() {
         document.getElementById('doc-file-input').click();
     };
     document.getElementById('doc-file-input').onchange = function(e) {
         var file = e.target.files[0];
         if (!file) return;
-
         App.supa.uploadPhoto(file).then(function(url) {
-            // OCR-распознавание через Edge Function
             fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/ocr-recognize', {
                 method: 'POST',
                 headers: {
@@ -578,32 +398,30 @@ App.ui.pages.renderDocuments = function() {
                 },
                 body: JSON.stringify({ imageUrl: url })
             })
-            .then(function(res) { return res.json(); })
-            .then(function(ocrData) {
+            .then(res => res.json())
+            .then(async ocrData => {
                 if (ocrData.error) throw new Error(ocrData.error);
-                var docs = getCarDocuments();
-                docs.push({
+                var newDoc = {
                     type: ocrData.type || 'Чек',
                     date: ocrData.date || new Date().toISOString().split('T')[0],
                     photoUrl: url,
                     amount: ocrData.amount || 0,
                     notes: ocrData.rawText || ''
-                });
-                saveCarDocuments(docs);
+                };
+                await App.ui.pages.addCarDocument(newDoc);
                 App.ui.pages.renderDocuments();
                 App.toast('Документ распознан и добавлен', 'success');
             })
-            .catch(function(err) {
+            .catch(async function(err) {
                 console.warn('OCR failed:', err);
-                var docs = getCarDocuments();
-                docs.push({
+                var newDoc = {
                     type: 'Чек',
                     date: new Date().toISOString().split('T')[0],
                     photoUrl: url,
                     amount: 0,
                     notes: ''
-                });
-                saveCarDocuments(docs);
+                };
+                await App.ui.pages.addCarDocument(newDoc);
                 App.ui.pages.renderDocuments();
                 App.toast('Документ добавлен (без распознавания)', 'warning');
             });
@@ -614,39 +432,41 @@ App.ui.pages.renderDocuments = function() {
         e.target.value = '';
     };
 
-    // Редактирование и удаление документов
-    container.addEventListener('click', function(e) {
+    container.addEventListener('click', async function(e) {
         var target = e.target.closest('.edit-doc-btn');
         if (target) {
             var idx = parseInt(target.dataset.idx);
-            var docs = getCarDocuments();
-            if (idx >= 0 && idx < docs.length) {
-                var doc = docs[idx];
-                var newType = prompt('Тип (ОСАГО, Чек, Заказ-наряд, Прочее):', doc.type);
-                if (newType) doc.type = newType;
-                var newAmount = prompt('Сумма:', doc.amount);
-                if (newAmount !== null) doc.amount = parseFloat(newAmount) || 0;
-                var newNotes = prompt('Примечание:', doc.notes);
-                if (newNotes !== null) doc.notes = newNotes;
-                saveCarDocuments(docs);
-                App.ui.pages.renderDocuments();
-            }
+            var doc = App.ui.pages._carDocuments[idx];
+            if (!doc) return;
+            var newType = prompt('Тип (ОСАГО, Чек, Заказ-наряд, Прочее):', doc.type);
+            if (newType) doc.type = newType;
+            var newAmount = prompt('Сумма:', doc.amount);
+            if (newAmount !== null) doc.amount = parseFloat(newAmount) || 0;
+            var newNotes = prompt('Примечание:', doc.notes);
+            if (newNotes !== null) doc.notes = newNotes;
+            await App.ui.pages.updateCarDocument(doc.id, {
+                type: doc.type,
+                date: doc.date,
+                amount: doc.amount,
+                notes: doc.notes
+            });
+            App.ui.pages.renderDocuments();
             return;
         }
         target = e.target.closest('.delete-doc-btn');
         if (target) {
             var idx = parseInt(target.dataset.idx);
+            var doc = App.ui.pages._carDocuments[idx];
+            if (!doc) return;
             if (confirm('Удалить документ?')) {
-                var docs = getCarDocuments();
-                docs.splice(idx, 1);
-                saveCarDocuments(docs);
+                await App.ui.pages.deleteCarDocument(doc.id);
                 App.ui.pages.renderDocuments();
             }
         }
     });
 };
 
-// Совместный доступ (оставлен без изменений, но вызывается из renderCarTab)
+// ---------- Совместный доступ ----------
 App.ui.pages.renderSharingListForCarTab = function() {
     var container = document.getElementById('sharing-container');
     if (!container) return;
