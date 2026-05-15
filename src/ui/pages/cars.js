@@ -732,55 +732,77 @@ App.ui.pages.renderDocuments = function() {
         document.getElementById('doc-file-input').click();
     };
 
-    document.getElementById('doc-file-input').onchange = async function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        try {
-            var url = await App.supa.uploadPhoto(file);
-            var session = (await App.supabase.auth.getSession())?.data?.session;
-            var token = session?.access_token || '';
-
-            fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/ocr-recognize', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                 //   'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify({ imageUrl: url })
-            })
-            .then(res => res.json())
-            .then(async ocrData => {
-                if (ocrData.error) throw new Error(ocrData.error);
-                var newDoc = {
-                    type: ocrData.type || 'Чек',
-                    date: ocrData.date || new Date().toISOString().split('T')[0],
-                    photoUrl: url,
-                    amount: ocrData.amount || 0,
-                    notes: ocrData.rawText || ''
-                };
-                await App.ui.pages.addCarDocument(newDoc);
-                App.ui.pages.renderDocuments();
-                App.toast('Документ распознан и добавлен', 'success');
-            })
-            .catch(async function(err) {
-                console.warn('OCR failed:', err);
-                var newDoc = {
-                    type: 'Чек',
-                    date: new Date().toISOString().split('T')[0],
-                    photoUrl: url,
-                    amount: 0,
-                    notes: ''
-                };
-                await App.ui.pages.addCarDocument(newDoc);
-                App.ui.pages.renderDocuments();
-                App.toast('Документ добавлен (без распознавания)', 'warning');
-            });
-        } catch (uploadError) {
-            console.error('Upload failed:', uploadError);
-            App.toast('Ошибка загрузки фото', 'error');
+    // Упрощённое распознавание Tesseract.js прямо в браузере
+async function recognizeWithTesseract(imageUrl) {
+    try {
+        // Динамически загружаем Tesseract.js (если ещё не загружен)
+        if (!window.Tesseract) {
+            await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
         }
-        e.target.value = '';
-    };
+        const worker = await Tesseract.createWorker('rus');
+        const { data: { text } } = await worker.recognize(imageUrl);
+        await worker.terminate();
+        return text;
+    } catch (e) {
+        console.warn('Tesseract не смог распознать:', e);
+        return '';
+    }
+}
+
+// Копия parseRawText из Edge Function (чтобы не зависеть от неё)
+function parseRawText(text) {
+    const lower = text.toLowerCase();
+    let type = "Прочее";
+    if (lower.includes("осаго") || lower.includes("страхов") || lower.includes("полис")) type = "ОСАГО";
+    else if (lower.includes("заказ-наряд") || lower.includes("наряд-заказ") || lower.includes("ремонт")) type = "Заказ-наряд";
+    else if (lower.includes("чек") || lower.includes("касс") || lower.includes("итог")) type = "Чек";
+
+    let amount = null;
+    const am = text.match(/(\d{1,3}(?:[.,]\d{2})?)\s?[₽р]|(?:итог|сумма|всего)[^\d]*(\d{1,3}(?:[.,]\d{2})?)/i);
+    if (am) {
+        const n = (am[1] || am[2]).replace(",", ".");
+        amount = parseFloat(n);
+        if (isNaN(amount)) amount = null;
+    }
+
+    let date = null;
+    const dm = text.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{4})/);
+    if (dm) {
+        const parts = dm[1].replace(/\//g, ".").split(".");
+        if (parts.length === 3) date = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+
+    return { type, amount, date, rawText: text.substring(0, 500) };
+}
+
+document.getElementById('doc-file-input').onchange = async function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    try {
+        var url = await App.supa.uploadPhoto(file);
+        
+        // Распознаём текст с помощью Tesseract.js
+        var rawText = await recognizeWithTesseract(url);
+        
+        // Парсим распознанный текст
+        var ocrData = parseRawText(rawText);
+        
+        var newDoc = {
+            type: ocrData.type || 'Чек',
+            date: ocrData.date || new Date().toISOString().split('T')[0],
+            photoUrl: url,
+            amount: ocrData.amount || 0,
+            notes: ocrData.rawText || ''
+        };
+        await App.ui.pages.addCarDocument(newDoc);
+        App.ui.pages.renderDocuments();
+        App.toast('Документ добавлен и распознан', 'success');
+    } catch (uploadError) {
+        console.error('Upload failed:', uploadError);
+        App.toast('Ошибка загрузки фото', 'error');
+    }
+    e.target.value = '';
+};
 
     container.addEventListener('click', async function(e) {
         var target = e.target.closest('.edit-doc-btn');
