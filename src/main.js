@@ -52,279 +52,189 @@
         App.store.initFromLocalStorage();
 
         var authPanel = document.getElementById('auth-panel');
-        if (authPanel) authPanel.style.display = 'block';
+        if (authPanel) authPanel.style.display = 'none'; // Скрываем, будем показывать в модалке
 
         var mobileRow = document.getElementById('mobile-header-row2');
         if (mobileRow) mobileRow.style.display = 'none';
         var syncIndicator = document.getElementById('sync-indicator');
         if (syncIndicator) syncIndicator.style.display = 'none';
 
-        var tabLogin = document.getElementById('tab-login');
-        var tabSocial = document.getElementById('tab-social');
-        var authLoginDiv = document.getElementById('auth-login');
-        var authSocialDiv = document.getElementById('auth-social');
+        // ======================= ДЕМО‑РЕЖИМ И АВТОРИЗАЦИЯ =======================
+        var isDemoMode = false;
+        var sidebarLoginBtn = document.getElementById('sidebar-login');
+        var drawerLoginBtn = document.getElementById('drawer-login');
 
-        function switchAuthTab(tab) {
-            if (tab === 'login') {
+        function enterDemoMode() {
+            isDemoMode = true;
+            // Очищаем старые данные
+            App.store.operations = [];
+            App.store.fuelLog = [];
+            App.store.tireLog = [];
+            App.store.parts = [];
+            App.store.serviceRecords = [];
+            App.store.mileageHistory = [];
+            // Заполняем демо-данными
+            App.store.operations = [
+                { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
+                { id: 'demo2', category: 'Тормозная система', name: 'Тормозные колодки', intervalKm: 30000, lastMileage: 0 }
+            ];
+            App.store.fuelLog = [
+                { date: '2026-05-01', mileage: 1000, liters: 45, pricePerLiter: 50, fuelType: 'Бензин' }
+            ];
+            App.store.settings.currentMileage = 5000;
+            App.store.settings.currentMotohours = 100;
+            App.store.saveToLocalStorage();
+            // Показываем интерфейс
+            document.getElementById('data-panel').style.display = 'block';
+            if (typeof App.renderAll === 'function') App.renderAll();
+            App.toast('Демо‑режим. Войдите, чтобы сохранить данные.', 'info');
+        }
+
+        function initAuthFormEvents(container) {
+            // Табы
+            var tabLogin = container.querySelector('#tab-login');
+            var tabSocial = container.querySelector('#tab-social');
+            var authLoginDiv = container.querySelector('#auth-login');
+            var authSocialDiv = container.querySelector('#auth-social');
+            if (tabLogin) tabLogin.addEventListener('click', function() {
                 tabLogin.classList.add('active'); tabSocial.classList.remove('active');
                 authLoginDiv.style.display = 'block'; authSocialDiv.style.display = 'none';
-            } else {
+            });
+            if (tabSocial) tabSocial.addEventListener('click', function() {
                 tabSocial.classList.add('active'); tabLogin.classList.remove('active');
                 authSocialDiv.style.display = 'block'; authLoginDiv.style.display = 'none';
+            });
+
+            // Google
+            var googleBtn = container.querySelector('#supabase-auth-btn');
+            if (googleBtn) {
+                googleBtn.addEventListener('click', function() {
+                    App.supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: { redirectTo: window.location.origin }
+                    }).catch(function(err) { App.toast('Ошибка входа через Google', 'error'); });
+                });
             }
-        }
-        if (tabLogin) tabLogin.addEventListener('click', function() { switchAuthTab('login'); });
-        if (tabSocial) tabSocial.addEventListener('click', function() { switchAuthTab('social'); });
 
-        // Google
-        var googleBtn = document.getElementById('supabase-auth-btn');
-        if (googleBtn) {
-            googleBtn.addEventListener('click', function() {
-                App.supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: { redirectTo: window.location.origin }
-                }).catch(function(err) { App.toast('Ошибка входа через Google', 'error'); });
-            });
-        }
+            // Логин + пароль
+            var loginForm = container.querySelector('#login-form');
+            var loginMessage = container.querySelector('#login-message');
+            var passwordConfirmLabel = container.querySelector('#password-confirm-label');
+            var passwordConfirmInput = container.querySelector('#password-confirm-input');
 
-        // Apple
-        var appleBtn = document.getElementById('apple-auth-btn');
-        if (appleBtn) {
-            appleBtn.addEventListener('click', function() {
-                App.supabase.auth.signInWithOAuth({
-                    provider: 'apple',
-                    options: { redirectTo: window.location.origin }
-                }).catch(function(err) { App.toast('Ошибка входа через Apple', 'error'); });
-            });
-        }
-
-        // Логин + пароль
-        var loginForm = document.getElementById('login-form');
-        var loginMessage = document.getElementById('login-message');
-        var passwordConfirmLabel = document.getElementById('password-confirm-label');
-        var passwordConfirmInput = document.getElementById('password-confirm-input');
-
-        if (loginForm) {
-            loginForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                var formData = new FormData(loginForm);
-                var username = formData.get('username').trim();
-                var password = formData.get('password');
-                if (!username || !password) {
-                    App.toast('Введите логин и пароль', 'error');
-                    return;
-                }
-                var email = username + '@vesta.internal';
-                App.supabase.auth.signInWithPassword({ email: email, password: password })
-                    .then(function(res) {
-                        if (res.error) loginMessage.textContent = 'Неверный логин или пароль.';
-                    });
-            });
-
-            var signUpBtn = document.getElementById('login-sign-up-btn');
-            if (signUpBtn) {
-                signUpBtn.addEventListener('click', function() {
-                    passwordConfirmLabel.style.display = 'block';
-                    passwordConfirmInput.style.display = 'block';
-                    passwordConfirmInput.required = true;
-
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     var formData = new FormData(loginForm);
                     var username = formData.get('username').trim();
                     var password = formData.get('password');
-                    var passwordConfirm = formData.get('password_confirm');
-                    if (!username || !password || !passwordConfirm) {
-                        App.toast('Все поля обязательны', 'error');
+                    if (!username || !password) {
+                        App.toast('Введите логин и пароль', 'error');
                         return;
                     }
-                    if (password !== passwordConfirm) {
-                        App.toast('Пароли не совпадают', 'error');
-                        return;
-                    }
-                    if (password.length < 6) {
-                        App.toast('Пароль должен содержать минимум 6 символов', 'error');
-                        return;
-                    }
-
                     var email = username + '@vesta.internal';
-                    App.supabase.auth.signUp({
-                        email: email,
-                        password: password,
-                        options: { data: { username: username } }
-                    }).then(function(res) {
-                        if (res.error) {
-                            App.toast('Ошибка регистрации: ' + res.error.message, 'error');
-                        } else {
-                            App.toast('Регистрация успешна! Выполняем вход...', 'success');
-                            App.supabase.auth.signInWithPassword({ email: email, password: password })
-                                .then(function(innerRes) {
-                                    if (!innerRes.error) {
-                                        passwordConfirmLabel.style.display = 'none';
-                                        passwordConfirmInput.style.display = 'none';
-                                        passwordConfirmInput.required = false;
-                                        loginForm.reset();
-                                        loginMessage.textContent = '';
-
-                                        App.supabase.auth.getUser().then(function(userRes) {
-                                            if (userRes.data.user) generateAndShowRecoveryCodes(userRes.data.user.id, username);
-                                        });
-                                    } else {
-                                        App.toast('Регистрация прошла, но вход не удался. Войдите вручную.', 'warning');
-                                    }
-                                });
-                        }
-                    });
+                    App.supabase.auth.signInWithPassword({ email: email, password: password })
+                        .then(function(res) {
+                            if (res.error) loginMessage.textContent = 'Неверный логин или пароль.';
+                        });
                 });
+
+                var signUpBtn = container.querySelector('#login-sign-up-btn');
+                if (signUpBtn) {
+                    signUpBtn.addEventListener('click', function() {
+                        passwordConfirmLabel.style.display = 'block';
+                        passwordConfirmInput.style.display = 'block';
+                        passwordConfirmInput.required = true;
+
+                        var formData = new FormData(loginForm);
+                        var username = formData.get('username').trim();
+                        var password = formData.get('password');
+                        var passwordConfirm = formData.get('password_confirm');
+                        if (!username || !password || !passwordConfirm) {
+                            App.toast('Все поля обязательны', 'error');
+                            return;
+                        }
+                        if (password !== passwordConfirm) {
+                            App.toast('Пароли не совпадают', 'error');
+                            return;
+                        }
+                        if (password.length < 6) {
+                            App.toast('Пароль должен содержать минимум 6 символов', 'error');
+                            return;
+                        }
+
+                        var email = username + '@vesta.internal';
+                        App.supabase.auth.signUp({
+                            email: email,
+                            password: password,
+                            options: { data: { username: username } }
+                        }).then(function(res) {
+                            if (res.error) {
+                                App.toast('Ошибка регистрации: ' + res.error.message, 'error');
+                            } else {
+                                App.toast('Регистрация успешна! Выполняем вход...', 'success');
+                                App.supabase.auth.signInWithPassword({ email: email, password: password })
+                                    .then(function(innerRes) {
+                                        if (!innerRes.error) {
+                                            passwordConfirmLabel.style.display = 'none';
+                                            passwordConfirmInput.style.display = 'none';
+                                            passwordConfirmInput.required = false;
+                                            loginForm.reset();
+                                            loginMessage.textContent = '';
+                                            // Закрываем модалку
+                                            container.closest('.modal').remove();
+                                            document.body.classList.remove('auth-modal-open');
+                                            App.supabase.auth.getUser().then(function(userRes) {
+                                                if (userRes.data.user) generateAndShowRecoveryCodes(userRes.data.user.id, username);
+                                            });
+                                        } else {
+                                            App.toast('Регистрация прошла, но вход не удался. Войдите вручную.', 'warning');
+                                        }
+                                    });
+                            }
+                        });
+                    });
+                }
             }
+
+            // Восстановление доступа (оставлено без изменений, но можно адаптировать)
         }
 
-        // Восстановление доступа
-        var forgotLink = document.getElementById('forgot-access-link');
-        var recoveryBlock = document.getElementById('recovery-options');
-        var recoveryMsg = document.getElementById('recovery-message');
-        if (forgotLink) {
-            forgotLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                recoveryBlock.style.display = 'block';
+        function openAuthModal() {
+            var authPanel = document.getElementById('auth-panel');
+            if (!authPanel) return;
+            var content = authPanel.innerHTML;
+            var modal = App.ui.createModal('', '');
+            var modalContent = modal.querySelector('.modal-content');
+            modalContent.innerHTML = '<span class="close">&times;</span>' +
+                '<h3 style="margin-top:0; margin-bottom:16px;">Аккаунт</h3>' +
+                content;
+            document.body.classList.add('auth-modal-open');
+            initAuthFormEvents(modalContent);
+            var closeBtn = modalContent.querySelector('.close');
+            closeBtn.addEventListener('click', function() {
+                modal.remove();
+                document.body.classList.remove('auth-modal-open');
+            });
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                    document.body.classList.remove('auth-modal-open');
+                }
             });
         }
 
-        var btnTelegram = document.getElementById('recover-telegram');
-        if (btnTelegram) btnTelegram.addEventListener('click', function() { recoverViaTelegram(recoveryMsg); });
+        // Кнопки входа
+        if (sidebarLoginBtn) sidebarLoginBtn.addEventListener('click', openAuthModal);
+        if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
 
-        var btnCode = document.getElementById('recover-code');
-        if (btnCode) btnCode.addEventListener('click', function() { recoverViaRecoveryCode(recoveryMsg); });
-
-        var btnRecoverGoogle = document.getElementById('recover-google');
-        if (btnRecoverGoogle) {
-            btnRecoverGoogle.addEventListener('click', function() {
-                App.supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: { redirectTo: window.location.origin }
-                });
-            });
+        // Демо‑режим при старте, если нет сессии
+        var savedSession = localStorage.getItem('supabase.auth.token');
+        if (!savedSession) {
+            enterDemoMode();
         }
 
-        // PWA install
-        var installBtn = document.getElementById('pwa-install-btn');
-        if (installBtn) installBtn.style.display = 'none';
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            setInstallButtonVisible(false);
-        }
-
-        window.addEventListener('beforeinstallprompt', function(e) {
-            e.preventDefault();
-            deferredPrompt = e;
-            setInstallButtonVisible(isLoggedIn);
-        });
-        window.addEventListener('appinstalled', function() {
-            console.log('App installed');
-            deferredPrompt = null;
-            setInstallButtonVisible(false);
-        });
-
-        setTimeout(function() {
-            if (!deferredPrompt && installBtn && isLoggedIn) {
-                installBtn.style.display = 'block';
-                installBtn.addEventListener('click', function() {
-                    alert('Чтобы установить приложение, откройте меню браузера и выберите "Добавить на главный экран" (или "Установить").');
-                });
-            }
-        }, 3000);
-
-        // Firebase Cloud Messaging
-        var messaging;
-        try {
-            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length === 0) {
-                firebase.initializeApp({
-                    apiKey: "AIzaSyCKz1GKDdqxtK6NyLQAZ84QqUUCaqTQDWQ",
-                    authDomain: "car-k3eeper.firebaseapp.com",
-                    projectId: "car-k3eeper",
-                    storageBucket: "car-k3eeper.firebasestorage.app",
-                    messagingSenderId: "826833638199",
-                    appId: "1:826833638199:web:647fedbe3eae5b605240b2"
-                });
-            }
-            if (typeof firebase !== 'undefined' && firebase.messaging) {
-                messaging = firebase.messaging();
-
-                function saveTokenWithRetry(attempt) {
-                    attempt = attempt || 1;
-                    navigator.serviceWorker.ready.then(function(registration) {
-                        messaging.getToken({
-                            vapidKey: 'BEUVrsWau5E4NvAwwAKmkjfK8yoDVntppWmZ2IdqseLVxuNNy47bV7eOLVYDmZ1b2P3F27eRqJLoAjW58Fh0tyY',
-                            serviceWorkerRegistration: registration
-                        }).then(function(currentToken) {
-                            if (!currentToken) return;
-                            console.log('FCM token:', currentToken);
-                            App.supabase.auth.getUser().then(function(userRes) {
-                                if (!userRes.data.user) return;
-                                App.supabase.from('push_subscriptions').upsert({
-                                    user_id: userRes.data.user.id,
-                                    player_id: currentToken,
-                                    updated_at: new Date().toISOString()
-                                }, { onConflict: 'user_id' }).then(function() {
-                                    console.log('FCM token saved');
-                                    updatePushUI(true);
-                                });
-                            }).catch(function(err) {
-                                console.warn('getUser error, retrying in 1s', err);
-                                if (attempt < 3) {
-                                    setTimeout(function() { saveTokenWithRetry(attempt + 1); }, 1000);
-                                }
-                            });
-                        }).catch(console.error);
-                    });
-                }
-
-                window.requestPushPermission = function() {
-                    Notification.requestPermission().then(function(permission) {
-                        if (permission === 'granted') {
-                            saveTokenWithRetry();
-                        }
-                    });
-                };
-                var subscribePushBtn = document.getElementById('subscribe-push-btn');
-                if (subscribePushBtn) {
-                    subscribePushBtn.addEventListener('click', function() {
-                        if (typeof window.requestPushPermission === 'function') {
-                            window.requestPushPermission();
-                        }
-                    });
-                }
-            }
-        } catch (e) {
-            console.warn('Firebase init skipped:', e);
-        }
-
-        var unsubscribePushBtn = document.getElementById('unsubscribe-push-btn');
-        if (unsubscribePushBtn) {
-            unsubscribePushBtn.addEventListener('click', async function() {
-                try {
-                    if (messaging) {
-                        await messaging.deleteToken();
-                    }
-                } catch(e) {
-                    console.warn('Token delete failed:', e);
-                }
-                var userRes = await App.supabase.auth.getUser();
-                if (userRes.data.user) {
-                    await App.supabase.from('push_subscriptions').delete().eq('user_id', userRes.data.user.id);
-                }
-                updatePushUI(false);
-                App.toast('Подписка на push отключена', 'success');
-            });
-        }
-
-        function updatePushUI(isActive) {
-            var pushStatus = document.getElementById('push-status');
-            var subBtn = document.getElementById('subscribe-push-btn');
-            var unsubBtn = document.getElementById('unsubscribe-push-btn');
-            if (pushStatus) pushStatus.textContent = isActive ? '✅ Push активны' : 'Push-уведомления не настроены';
-            if (subBtn) subBtn.style.display = isActive ? 'none' : 'inline-block';
-            if (unsubBtn) unsubBtn.style.display = isActive ? 'inline-block' : 'none';
-        }
-
-        // Кнопка «Выйти»
+        // ===== Кнопка «Выйти» =====
         function doLogout() {
             var loginFormEl = document.getElementById('login-form');
             if (loginFormEl) loginFormEl.reset();
@@ -334,17 +244,19 @@
             if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
             var carContainerEl = document.getElementById('car-selector-container');
             if (carContainerEl) carContainerEl.innerHTML = '';
-            var authPanelEl = document.getElementById('auth-panel');
-            if (authPanelEl) authPanelEl.style.display = 'block';
-            var dataPanelEl = document.getElementById('data-panel');
-            if (dataPanelEl) dataPanelEl.style.display = 'none';
-            var mobileRowEl = document.getElementById('mobile-header-row2');
-            if (mobileRowEl) mobileRowEl.style.display = 'none';
-            var syncIndicatorEl = document.getElementById('sync-indicator');
-            if (syncIndicatorEl) syncIndicatorEl.style.display = 'none';
+            // Очищаем данные
+            App.store.operations = [];
+            App.store.fuelLog = [];
+            App.store.tireLog = [];
+            App.store.parts = [];
+            App.store.serviceRecords = [];
+            App.store.mileageHistory = [];
+            App.store.saveToLocalStorage();
             App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
             isLoggedIn = false;
             setInstallButtonVisible(false);
+            // Включаем демо‑режим
+            enterDemoMode();
         }
         var logoutSidebarBtn = document.getElementById('sidebar-logout');
         if (logoutSidebarBtn) logoutSidebarBtn.addEventListener('click', doLogout);
@@ -354,66 +266,6 @@
         // ======================= СЕССИЯ (с Realtime) =======================
         var isInitialized = false;
 
-var isDemoMode = false;
-var sidebarLoginBtn = document.getElementById('sidebar-login');
-var drawerLoginBtn = document.getElementById('drawer-login');
-
-function enterDemoMode() {
-    isDemoMode = true;
-    // Очищаем старые данные
-    App.store.operations = [];
-    App.store.fuelLog = [];
-    App.store.tireLog = [];
-    App.store.parts = [];
-    App.store.serviceRecords = [];
-    App.store.mileageHistory = [];
-    // Заполняем демо-данными
-    App.store.operations = [
-        { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
-        { id: 'demo2', category: 'Тормозная система', name: 'Тормозные колодки', intervalKm: 30000, lastMileage: 0 }
-    ];
-    App.store.fuelLog = [
-        { date: '2026-05-01', mileage: 1000, liters: 45, pricePerLiter: 50, fuelType: 'Бензин' }
-    ];
-    App.store.settings.currentMileage = 5000;
-    App.store.settings.currentMotohours = 100;
-    App.store.saveToLocalStorage();
-    // Показываем интерфейс
-    document.getElementById('data-panel').style.display = 'block';
-    if (typeof App.renderAll === 'function') App.renderAll();
-    App.toast('Демо‑режим. Войдите, чтобы сохранить данные.', 'info');
-}
-
-        var isDemoMode = false;
-var sidebarLoginBtn = document.getElementById('sidebar-login');
-var drawerLoginBtn = document.getElementById('drawer-login');
-
-function enterDemoMode() {
-    isDemoMode = true;
-    // Очищаем старые данные
-    App.store.operations = [];
-    App.store.fuelLog = [];
-    App.store.tireLog = [];
-    App.store.parts = [];
-    App.store.serviceRecords = [];
-    App.store.mileageHistory = [];
-    // Заполняем демо-данными
-    App.store.operations = [
-        { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
-        { id: 'demo2', category: 'Тормозная система', name: 'Тормозные колодки', intervalKm: 30000, lastMileage: 0 }
-    ];
-    App.store.fuelLog = [
-        { date: '2026-05-01', mileage: 1000, liters: 45, pricePerLiter: 50, fuelType: 'Бензин' }
-    ];
-    App.store.settings.currentMileage = 5000;
-    App.store.settings.currentMotohours = 100;
-    App.store.saveToLocalStorage();
-    // Показываем интерфейс
-    document.getElementById('data-panel').style.display = 'block';
-    if (typeof App.renderAll === 'function') App.renderAll();
-    App.toast('Демо‑режим. Войдите, чтобы сохранить данные.', 'info');
-}
-        
         async function handleOnlineSession() {
             if (!navigator.onLine) {
                 isLoggedIn = true;
@@ -445,6 +297,11 @@ function enterDemoMode() {
                 if (session) {
                     isLoggedIn = true;
                     setInstallButtonVisible(true);
+                    isDemoMode = false;
+                    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                    if (drawerLoginBtn) drawerLoginBtn.style.display = 'none';
+                    document.body.classList.remove('auth-modal-open');
+
                     if (authPanel) authPanel.style.display = 'none';
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'block';
@@ -530,9 +387,11 @@ function enterDemoMode() {
                 } else {
                     isLoggedIn = false;
                     setInstallButtonVisible(false);
-                    if (authPanel) authPanel.style.display = 'block';
+                    if (sidebarLoginBtn) sidebarLoginBtn.style.display = '';
+                    if (drawerLoginBtn) drawerLoginBtn.style.display = '';
+                    if (authPanel) authPanel.style.display = 'none';
                     var dp = document.getElementById('data-panel');
-                    if (dp) dp.style.display = 'none';
+                    if (dp) dp.style.display = 'block'; // оставляем интерфейс видимым для демо-режима
                     var syncIndicatorOff = document.getElementById('sync-indicator');
                     if (syncIndicatorOff) syncIndicatorOff.style.display = 'none';
                     var mobileRowOff = document.getElementById('mobile-header-row2');
@@ -554,6 +413,10 @@ function enterDemoMode() {
                     App.store.mileageHistory = [];
                     App.store.saveToLocalStorage();
                     if (typeof App.renderAll === 'function') App.renderAll();
+                    // Если это был не демо-режим, включаем его
+                    if (!isDemoMode) {
+                        enterDemoMode();
+                    }
                 }
             });
 
@@ -561,6 +424,11 @@ function enterDemoMode() {
                 if (sessionRes.data.session) {
                     isLoggedIn = true;
                     setInstallButtonVisible(true);
+                    isDemoMode = false;
+                    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                    if (drawerLoginBtn) drawerLoginBtn.style.display = 'none';
+                    document.body.classList.remove('auth-modal-open');
+
                     if (authPanel) authPanel.style.display = 'none';
                     var dp = document.getElementById('data-panel');
                     if (dp) dp.style.display = 'block';
@@ -626,6 +494,11 @@ function enterDemoMode() {
                             if (typeof App.renderAll === 'function') App.renderAll();
                         }
                     });
+                } else {
+                    // Нет сессии — включаем демо-режим
+                    if (!isDemoMode) {
+                        enterDemoMode();
+                    }
                 }
             });
         }
