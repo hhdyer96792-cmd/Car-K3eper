@@ -128,7 +128,16 @@
                     var email = username + '@vesta.internal';
                     App.supabase.auth.signInWithPassword({ email: email, password: password })
                         .then(function(res) {
-                            if (res.error) loginMessage.textContent = 'Неверный логин или пароль.';
+                            if (res.error) {
+    loginMessage.textContent = 'Неверный логин или пароль.';
+} else {
+    // Закрываем модалку после успешного входа
+    var modal = container.closest('.modal');
+    if (modal) {
+        modal.remove();
+        document.body.classList.remove('auth-modal-open');
+    }
+                            }
                         });
                 });
 
