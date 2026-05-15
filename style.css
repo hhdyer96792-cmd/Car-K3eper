@@ -1316,8 +1316,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     z-index: 1100;
 }
 .fab-main {
-    width: 72px;               /* ← увеличена */
-    height: 72px;              /* ← увеличена */
+    width: 60px;               /* ← увеличена */
+    height: 60px;              /* ← увеличена */
     border-radius: 50%;
     background: var(--primary);
     color: #fff;
@@ -1360,8 +1360,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 }
 
 .fab-action {
-    width: 60px;               /* ← увеличена */
-    height: 60px;              /* ← увеличена */
+    width: 50px;               /* ← увеличена */
+    height: 50px;              /* ← увеличена */
     border-radius: 50%;
     background: var(--card-bg);
     color: var(--text);
