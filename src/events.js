@@ -55,11 +55,12 @@ App.events.setupDelegation = function() {
                 if (part) App.ui.pages.openPartForm(part);
                 break;
             case 'delete-part':
-                var delPartId = target.dataset.id;
-                if (!delPartId) return;
-                if (!confirm('Удалить запчасть?')) return;
-                App.ui.pages.deletePart(delPartId);
-                break;
+    var delPartId = target.dataset.id;
+    if (!delPartId) return;
+    App.ui.confirmModal('Удалить запчасть?', function() {
+        App.ui.pages.deletePart(delPartId);
+    });
+    break;
             case 'search-part':
                 var oem = target.dataset.oem;
                 if (oem) App.ui.pages.showCatalogMenu(target, oem);
