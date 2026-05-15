@@ -1316,8 +1316,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     z-index: 1100;
 }
 .fab-main {
-    width: 60px;               /* ← увеличена */
-    height: 60px;              /* ← увеличена */
+    width: 62px;               /* ← увеличена */
+    height: 62px;              /* ← увеличена */
     border-radius: 50%;
     background: var(--primary);
     color: #fff;
@@ -1348,7 +1348,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .fab-actions {
     position: absolute;
     bottom: 80px;
-    right: 6px;                /* центровка относительно кнопки-родителя */
+    right: 4px;                /* центровка относительно кнопки-родителя */
     display: flex;
     flex-direction: column;
     gap: 12px;
