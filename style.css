@@ -1316,8 +1316,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     z-index: 1100;
 }
 .fab-main {
-    width: 56px;
-    height: 56px;
+    width: 72px;               /* ← увеличена */
+    height: 72px;              /* ← увеличена */
     border-radius: 50%;
     background: var(--primary);
     color: #fff;
@@ -1331,7 +1331,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     position: relative;
     z-index: 2;
 }
-.fab-main i { width: 36px !important; height: 36px !important; }
 .fab-main:hover {
     background: var(--primary-hover);
     transform: scale(1.1);
@@ -1348,8 +1347,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 /* Действия (вертикально вверх) */
 .fab-actions {
     position: absolute;
-    bottom: 70px;
-    right: 0;
+    bottom: 80px;
+    right: 6px;                /* центровка относительно кнопки-родителя */
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1361,8 +1360,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 }
 
 .fab-action {
-    width: 48px;
-    height: 48px;
+    width: 60px;               /* ← увеличена */
+    height: 60px;              /* ← увеличена */
     border-radius: 50%;
     background: var(--card-bg);
     color: var(--text);
@@ -1376,11 +1375,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     transform: translateY(20px) scale(0.5);
     opacity: 0;
 }
-#fab-menu .fab-action i.lucide,
-#fab-menu .fab-action i svg [data-lucide] {
-    width: 40px !important;
-    height: 40px !important;
-}
 
 .fab-actions.open .fab-action {
     transform: translateY(0) scale(1);
@@ -1390,6 +1384,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .fab-actions.open .fab-action:nth-child(1) { transition-delay: 0.05s; }
 .fab-actions.open .fab-action:nth-child(2) { transition-delay: 0.1s; }
 .fab-actions.open .fab-action:nth-child(3) { transition-delay: 0.15s; }
+.fab-actions.open .fab-action:nth-child(4) { transition-delay: 0.2s; }
 
 .fab-action:hover {
     background: var(--bg);
