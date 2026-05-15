@@ -1399,3 +1399,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
         bottom: 80px;
     }
 }
+
+body.auth-modal-open #drawer-menu,
+body.auth-modal-open #fab-menu {
+    display: none !important;
+}
