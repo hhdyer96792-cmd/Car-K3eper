@@ -1331,6 +1331,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     position: relative;
     z-index: 2;
 }
+.fab-main i { width: 24px; height: 24px; }  /* фиксированный размер иконки */
 .fab-main:hover {
     background: var(--primary-hover);
     transform: scale(1.1);
@@ -1344,20 +1345,24 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     z-index: 1;
 }
 
-/* Действия (полукруг) */
+/* Действия (вертикально вверх) */
 .fab-actions {
     position: absolute;
     bottom: 70px;
     right: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 12px;
     z-index: 2;
+    pointer-events: none;
 }
+.fab-actions.open {
+    pointer-events: auto;
+}
+
 .fab-action {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: var(--card-bg);
     color: var(--text);
@@ -1367,26 +1372,20 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s, background 0.2s;
-    transform: translateY(0) scale(0);
+    transition: transform 0.2s, opacity 0.2s;
+    transform: translateY(20px) scale(0.5);
     opacity: 0;
-    animation: fabIn 0.2s forwards;
 }
-.fab-actions[style*="display: flex"] .fab-action {
+.fab-action i { width: 22px; height: 22px; }
+
+.fab-actions.open .fab-action {
     transform: translateY(0) scale(1);
     opacity: 1;
 }
 
-.fab-action:nth-child(1) { animation-delay: 0.05s; }
-.fab-action:nth-child(2) { animation-delay: 0.1s; }
-.fab-action:nth-child(3) { animation-delay: 0.15s; }
-
-@keyframes fabIn {
-    to {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
-}
+.fab-actions.open .fab-action:nth-child(1) { transition-delay: 0.05s; }
+.fab-actions.open .fab-action:nth-child(2) { transition-delay: 0.1s; }
+.fab-actions.open .fab-action:nth-child(3) { transition-delay: 0.15s; }
 
 .fab-action:hover {
     background: var(--bg);
