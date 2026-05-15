@@ -380,7 +380,6 @@ App.ui.pages.initRecoveryCodesUI = function() {
          App.ui.alertModal('Новые коды:\n\n' + codes.join('\n'));
     document.getElementById('show-recovery-btn').click();
 });
-};
 
 // Инициализация UI резервных кодов при загрузке
 App.ui.pages.initRecoveryCodesUI();
