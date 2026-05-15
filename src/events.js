@@ -31,7 +31,9 @@ App.events.setupDelegation = function() {
             case 'delete-op':
                 var delOpId = target.dataset.opId;
                 if (!delOpId) return;
-                if (!confirm('Удалить операцию? Это действие нельзя отменить.')) return;
+                App.ui.confirmModal('Удалить операцию? Это действие нельзя отменить.', function() {
+    App.storage.deleteOperation(delOpId).then(...).catch(...);
+});
                 App.storage.deleteOperation(delOpId).then(function() {
                     App.storage.loadAllData();
                     App.toast('Операция удалена', 'success');
