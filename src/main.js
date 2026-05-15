@@ -615,69 +615,70 @@
         });
 
         // ===== ПЛАВАЮЩАЯ FAB-КНОПКА (фиксированная, без перетаскивания) =====
-(function() {
-    var fab = document.createElement('div');
-    fab.id = 'fab-menu';
-    fab.innerHTML =
-        '<div id="fab-overlay" class="fab-overlay" style="display:none;"></div>' +
-        '<button id="fab-main-btn" class="fab-main"><i data-lucide="plus"></i></button>' +
-        '<div id="fab-actions" class="fab-actions">' +
-            '<button id="fab-fuel" class="fab-action" title="Заправка"><i data-lucide="fuel"></i></button>' +
-            '<button id="fab-service" class="fab-action" title="ТО"><i data-lucide="wrench"></i></button>' +
-            '<button id="fab-part" class="fab-action" title="Запчасть"><i data-lucide="package"></i></button>' +
-        '</div>';
-    document.body.appendChild(fab);
-    App.initIcons();
+        (function() {
+            var fab = document.createElement('div');
+            fab.id = 'fab-menu';
+            fab.innerHTML =
+                '<div id="fab-overlay" class="fab-overlay" style="display:none;"></div>' +
+                '<button id="fab-main-btn" class="fab-main"><i data-lucide="plus"></i></button>' +
+                '<div id="fab-actions" class="fab-actions">' +
+                    '<button id="fab-fuel" class="fab-action" title="Заправка"><i data-lucide="fuel"></i></button>' +
+                    '<button id="fab-service" class="fab-action" title="ТО"><i data-lucide="wrench"></i></button>' +
+                    '<button id="fab-part" class="fab-action" title="Запчасть"><i data-lucide="package"></i></button>' +
+                '</div>';
+            document.body.appendChild(fab);
+            App.initIcons();
 
-    var mainBtn = document.getElementById('fab-main-btn');
-    var actions = document.getElementById('fab-actions');
-    var overlay = document.getElementById('fab-overlay');
-    var actionsOpen = false;
+            var mainBtn = document.getElementById('fab-main-btn');
+            var actions = document.getElementById('fab-actions');
+            var overlay = document.getElementById('fab-overlay');
+            var actionsOpen = false;
 
-    function setFabIcon(name) {
-        var icon = mainBtn.querySelector('i');
-        if (icon) {
-            icon.setAttribute('data-lucide', name);
-            if (typeof lucide !== 'undefined' && lucide.createIcons) {
-                lucide.createIcons({ elements: [mainBtn] });
+            function setFabIcon(name) {
+                var icon = mainBtn.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', name);
+                    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                        lucide.createIcons({ elements: [mainBtn] });
+                    }
+                }
             }
-        }
+
+            function openActions() {
+                actionsOpen = true;
+                overlay.style.display = 'block';
+                actions.classList.add('open');
+                setFabIcon('x');
+            }
+
+            function closeActions() {
+                actionsOpen = false;
+                overlay.style.display = 'none';
+                actions.classList.remove('open');
+                setFabIcon('plus');
+            }
+
+            mainBtn.addEventListener('click', function() {
+                if (actionsOpen) closeActions();
+                else openActions();
+            });
+
+            overlay.addEventListener('click', closeActions);
+
+            document.getElementById('fab-fuel').addEventListener('click', function() {
+                closeActions();
+                if (typeof App.ui.pages.openFuelModal === 'function') App.ui.pages.openFuelModal(null);
+            });
+            document.getElementById('fab-service').addEventListener('click', function() {
+                closeActions();
+                if (typeof App.ui.pages.openOperationForm === 'function') App.ui.pages.openOperationForm(null);
+            });
+            document.getElementById('fab-part').addEventListener('click', function() {
+                closeActions();
+                if (typeof App.ui.pages.openPartForm === 'function') App.ui.pages.openPartForm(null);
+            });
+        })();
     }
-
-    function openActions() {
-        actionsOpen = true;
-        overlay.style.display = 'block';
-        actions.classList.add('open');
-        setFabIcon('x');
-    }
-
-    function closeActions() {
-        actionsOpen = false;
-        overlay.style.display = 'none';
-        actions.classList.remove('open');
-        setFabIcon('plus');
-    }
-
-    mainBtn.addEventListener('click', function() {
-        if (actionsOpen) closeActions();
-        else openActions();
-    });
-
-    overlay.addEventListener('click', closeActions);
-
-    document.getElementById('fab-fuel').addEventListener('click', function() {
-        closeActions();
-        if (typeof App.ui.pages.openFuelModal === 'function') App.ui.pages.openFuelModal(null);
-    });
-    document.getElementById('fab-service').addEventListener('click', function() {
-        closeActions();
-        if (typeof App.ui.pages.openOperationForm === 'function') App.ui.pages.openOperationForm(null);
-    });
-    document.getElementById('fab-part').addEventListener('click', function() {
-        closeActions();
-        if (typeof App.ui.pages.openPartForm === 'function') App.ui.pages.openPartForm(null);
-    });
-})();
 
     // Функции восстановления
     async function recoverViaTelegram(msgEl) {
