@@ -143,62 +143,154 @@
                 if (signUpBtn) {
                     signUpBtn.addEventListener('click', function() {
                         passwordConfirmLabel.style.display = 'block';
-                        passwordConfirmInput.style.display = 'block';
-                        passwordConfirmInput.required = true;
+var authPanel = document.getElementById('auth-panel'); // уже не используется, но пусть будет для обратной совместимости
+var sidebarLoginBtn = document.getElementById('sidebar-login');
+var drawerLoginBtn = document.getElementById('drawer-login');
 
-                        var formData = new FormData(loginForm);
-                        var username = formData.get('username').trim();
-                        var password = formData.get('password');
-                        var passwordConfirm = formData.get('password_confirm');
-                        if (!username || !password || !passwordConfirm) {
-                            App.toast('Все поля обязательны', 'error');
-                            return;
-                        }
-                        if (password !== passwordConfirm) {
-                            App.toast('Пароли не совпадают', 'error');
-                            return;
-                        }
-                        if (password.length < 6) {
-                            App.toast('Пароль должен содержать минимум 6 символов', 'error');
-                            return;
-                        }
-
-                        var email = username + '@vesta.internal';
-                        App.supabase.auth.signUp({
-                            email: email,
-                            password: password,
-                            options: { data: { username: username } }
-                        }).then(function(res) {
-                            if (res.error) {
-                                App.toast('Ошибка регистрации: ' + res.error.message, 'error');
-                            } else {
-                                App.toast('Регистрация успешна! Выполняем вход...', 'success');
-                                App.supabase.auth.signInWithPassword({ email: email, password: password })
-                                    .then(function(innerRes) {
-                                        if (!innerRes.error) {
-                                            passwordConfirmLabel.style.display = 'none';
-                                            passwordConfirmInput.style.display = 'none';
-                                            passwordConfirmInput.required = false;
-                                            loginForm.reset();
-                                            loginMessage.textContent = '';
-                                            // Закрываем модалку
-                                            container.closest('.modal').remove();
-                                            document.body.classList.remove('auth-modal-open');
-                                            App.supabase.auth.getUser().then(function(userRes) {
-                                                if (userRes.data.user) generateAndShowRecoveryCodes(userRes.data.user.id, username);
-                                            });
-                                        } else {
-                                            App.toast('Регистрация прошла, но вход не удался. Войдите вручную.', 'warning');
-                                        }
-                                    });
-                            }
-                        });
-                    });
-                }
-            }
-
-            // Восстановление доступа (оставлено без изменений, но можно адаптировать)
+function openAuthModal() {
+    var template = document.getElementById('auth-template');
+    if (!template) {
+        console.error('Шаблон auth-template не найден');
+        return;
+    }
+    var content = template.content.cloneNode(true);
+    var modal = App.ui.createModal('Аккаунт', '');  // заголовок зададим внутри
+    var modalContent = modal.querySelector('.modal-content');
+    // Очищаем стандартный заголовок и вставляем свой вместе с формой
+    modalContent.innerHTML = '<span class="close">&times;</span>' +
+        '<h3 style="margin-top:0; margin-bottom:16px;">Аккаунт</h3>';
+    modalContent.appendChild(content);
+    document.body.classList.add('auth-modal-open');
+    // Инициализируем обработчики для формы внутри модалки
+    initAuthFormEvents(modalContent);
+    // Закрытие по крестику и оверлею
+    var closeBtn = modalContent.querySelector('.close');
+    closeBtn.addEventListener('click', function() {
+        modal.remove();
+        document.body.classList.remove('auth-modal-open');
+    });
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+            document.body.classList.remove('auth-modal-open');
         }
+    });
+    // Принудительно показываем модалку (она могла быть скрыта)
+    modal.style.display = 'flex';
+    App.initIcons();
+}
+
+function initAuthFormEvents(container) {
+    // Табы
+    var tabLogin = container.querySelector('#tab-login');
+    var tabSocial = container.querySelector('#tab-social');
+    var authLoginDiv = container.querySelector('#auth-login');
+    var authSocialDiv = container.querySelector('#auth-social');
+    if (tabLogin) tabLogin.addEventListener('click', function() {
+        tabLogin.classList.add('active'); tabSocial.classList.remove('active');
+        authLoginDiv.style.display = 'block'; authSocialDiv.style.display = 'none';
+    });
+    if (tabSocial) tabSocial.addEventListener('click', function() {
+        tabSocial.classList.add('active'); tabLogin.classList.remove('active');
+        authSocialDiv.style.display = 'block'; authLoginDiv.style.display = 'none';
+    });
+
+    // Google
+    var googleBtn = container.querySelector('#supabase-auth-btn');
+    if (googleBtn) {
+        googleBtn.addEventListener('click', function() {
+            App.supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin }
+            }).catch(function(err) { App.toast('Ошибка входа через Google', 'error'); });
+        });
+    }
+
+    // Логин + пароль
+    var loginForm = container.querySelector('#login-form');
+    var loginMessage = container.querySelector('#login-message');
+    var passwordConfirmLabel = container.querySelector('#password-confirm-label');
+    var passwordConfirmInput = container.querySelector('#password-confirm-input');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(loginForm);
+            var username = formData.get('username').trim();
+            var password = formData.get('password');
+            if (!username || !password) {
+                App.toast('Введите логин и пароль', 'error');
+                return;
+            }
+            var email = username + '@vesta.internal';
+            App.supabase.auth.signInWithPassword({ email: email, password: password })
+                .then(function(res) {
+                    if (res.error) loginMessage.textContent = 'Неверный логин или пароль.';
+                });
+        });
+
+        var signUpBtn = container.querySelector('#login-sign-up-btn');
+        if (signUpBtn) {
+            signUpBtn.addEventListener('click', function() {
+                passwordConfirmLabel.style.display = 'block';
+                passwordConfirmInput.style.display = 'block';
+                passwordConfirmInput.required = true;
+
+                var formData = new FormData(loginForm);
+                var username = formData.get('username').trim();
+                var password = formData.get('password');
+                var passwordConfirm = formData.get('password_confirm');
+                if (!username || !password || !passwordConfirm) {
+                    App.toast('Все поля обязательны', 'error');
+                    return;
+                }
+                if (password !== passwordConfirm) {
+                    App.toast('Пароли не совпадают', 'error');
+                    return;
+                }
+                if (password.length < 6) {
+                    App.toast('Пароль должен содержать минимум 6 символов', 'error');
+                    return;
+                }
+
+                var email = username + '@vesta.internal';
+                App.supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: { data: { username: username } }
+                }).then(function(res) {
+                    if (res.error) {
+                        App.toast('Ошибка регистрации: ' + res.error.message, 'error');
+                    } else {
+                        App.toast('Регистрация успешна! Выполняем вход...', 'success');
+                        App.supabase.auth.signInWithPassword({ email: email, password: password })
+                            .then(function(innerRes) {
+                                if (!innerRes.error) {
+                                    passwordConfirmLabel.style.display = 'none';
+                                    passwordConfirmInput.style.display = 'none';
+                                    passwordConfirmInput.required = false;
+                                    loginForm.reset();
+                                    loginMessage.textContent = '';
+                                    // Закрываем модалку
+                                    container.closest('.modal').remove();
+                                    document.body.classList.remove('auth-modal-open');
+                                    App.supabase.auth.getUser().then(function(userRes) {
+                                        if (userRes.data.user) generateAndShowRecoveryCodes(userRes.data.user.id, username);
+                                    });
+                                } else {
+                                    App.toast('Регистрация прошла, но вход не удался. Войдите вручную.', 'warning');
+                                }
+                            });
+                    }
+                });
+            });
+        }
+    }
+}
+
+// Привязываем кнопки
+if (sidebarLoginBtn) sidebarLoginBtn.addEventListener('click', openAuthModal);
+if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
 
         function openAuthModal() {
             var authPanel = document.getElementById('auth-panel');
