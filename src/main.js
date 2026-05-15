@@ -730,6 +730,7 @@
 
     // --- Быстрое перетаскивание с requestAnimationFrame ---
     mainBtn.addEventListener('pointerdown', function(e) {
+    if (window.innerWidth > 768) return;   // на десктопе не перетаскиваем  
     if (actionsOpen) return;   // ← не перетаскиваем, если меню раскрыто
     if (e.target.closest('#fab-actions')) return;
         isDragging = true;
