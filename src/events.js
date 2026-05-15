@@ -23,25 +23,19 @@ App.events.setupDelegation = function() {
                 var opName = target.dataset.opName;
                 if (opId && opName) App.ui.pages.openServiceModal(opId, opName);
                 break;
-            case 'edit-op':
-                var editOpId = target.dataset.opId;
-                var op = App.store.operations.find(function(o) { return o.id == editOpId; });
-                if (op) App.ui.pages.openOperationForm(op);
-                break;
             case 'delete-op':
-                var delOpId = target.dataset.opId;
-                if (!delOpId) return;
-                App.ui.confirmModal('Удалить операцию? Это действие нельзя отменить.', function() {
-    App.storage.deleteOperation(delOpId).then(...).catch(...);
-});
-                App.storage.deleteOperation(delOpId).then(function() {
-                    App.storage.loadAllData();
-                    App.toast('Операция удалена', 'success');
-                }).catch(function(err) {
-                    console.error(err);
-                    App.toast('Не удалось удалить операцию (недостаточно прав)', 'error');
-                });
-                break;
+    var delOpId = target.dataset.opId;
+    if (!delOpId) return;
+    App.ui.confirmModal('Удалить операцию? Это действие нельзя отменить.', function() {
+        App.storage.deleteOperation(delOpId).then(function() {
+            App.storage.loadAllData();
+            App.toast('Операция удалена', 'success');
+        }).catch(function(err) {
+            console.error(err);
+            App.toast('Не удалось удалить операцию (недостаточно прав)', 'error');
+        });
+    });
+    break;
             case 'calendar':
                 var calOpId = target.dataset.opId;
                 var calOpName = target.dataset.opName;
