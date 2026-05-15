@@ -1392,3 +1392,20 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     background: var(--bg);
     transform: scale(1.1);
 }
+
+@media (min-width: 768px) {
+    #fab-menu {
+        left: 20px;
+        right: auto;
+        bottom: 80px;         /* над кнопками темы/выхода */
+    }
+}
+
+#fab-main-btn i {
+    width: 36px !important;
+    height: 36px !important;
+}
+.fab-action i {
+    width: 30px !important;
+    height: 30px !important;
+}
