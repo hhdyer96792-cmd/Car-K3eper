@@ -519,7 +519,7 @@ App.ui.pages.openServiceModal = function(opId, opName) {
             var photoUrl = photoUrls.filter(function(url) { return url !== ''; })[0] || '';
             var fullNotes = notes;
             if (isOsago) fullNotes = 'ОСАГО. Стоимость: ' + cost + ' ₽. Срок: ' + (data.get('osagoMonths') || '12') + ' мес. Ссылка: ' + (data.get('fileLink') || '') + '. ' + notes;
-            if (photoUrls.length) fullNotes += '\nФото: ' + photoUrls.join(', ');
+           // if (photoUrls.length) fullNotes += '\nФото: ' + photoUrls.join(', ');
 
             if (App.config.USE_SUPABASE) {
                 var record = {
