@@ -805,38 +805,68 @@ document.getElementById('doc-file-input').onchange = async function(e) {
 };
 
     container.addEventListener('click', async function(e) {
-        var target = e.target.closest('.edit-doc-btn');
-        if (target) {
-            var idx = parseInt(target.dataset.idx);
-            var doc = App.ui.pages._carDocuments[idx];
-            if (!doc) return;
-            var newType = prompt('Тип (ОСАГО, Чек, Заказ-наряд, Прочее):', doc.type);
-            if (newType) doc.type = newType;
-            var newAmount = prompt('Сумма:', doc.amount);
-            if (newAmount !== null) doc.amount = parseFloat(newAmount) || 0;
-            var newNotes = prompt('Примечание:', doc.notes);
-            if (newNotes !== null) doc.notes = newNotes;
+    var target = e.target.closest('.edit-doc-btn');
+    if (target) {
+        var idx = parseInt(target.dataset.idx);
+        var doc = App.ui.pages._carDocuments[idx];
+        if (!doc) return;
+
+        // Создаём форму редактирования вместо трёх prompt()
+        var content =
+            '<form id="edit-doc-form">' +
+                '<label>Тип</label>' +
+                '<select name="type">' +
+                    '<option value="ОСАГО" ' + (doc.type === 'ОСАГО' ? 'selected' : '') + '>ОСАГО</option>' +
+                    '<option value="Чек" ' + (doc.type === 'Чек' ? 'selected' : '') + '>Чек</option>' +
+                    '<option value="Заказ-наряд" ' + (doc.type === 'Заказ-наряд' ? 'selected' : '') + '>Заказ-наряд</option>' +
+                    '<option value="Прочее" ' + (doc.type === 'Прочее' ? 'selected' : '') + '>Прочее</option>' +
+                '</select>' +
+                '<label>Сумма</label>' +
+                '<input type="number" name="amount" step="0.01" value="' + (doc.amount || '') + '">' +
+                '<label>Примечание</label>' +
+                '<textarea name="notes" rows="2">' + App.utils.escapeHtml(doc.notes || '') + '</textarea>' +
+                '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
+                    '<button type="submit" class="primary-btn">Сохранить</button>' +
+                    '<button type="button" class="cancel-btn secondary-btn">Отмена</button>' +
+                '</div>' +
+            '</form>';
+
+        var modal = App.ui.createModal('Редактировать документ', content);
+        var form = modal.querySelector('#edit-doc-form');
+
+        form.onsubmit = async function(ev) {
+            ev.preventDefault();
+            var data = new FormData(form);
+            doc.type = data.get('type') || 'Прочее';
+            doc.amount = parseFloat(data.get('amount')) || 0;
+            doc.notes = data.get('notes') || '';
             await App.ui.pages.updateCarDocument(doc.id, {
                 type: doc.type,
                 date: doc.date,
                 amount: doc.amount,
                 notes: doc.notes
             });
+            modal.remove();
             App.ui.pages.renderDocuments();
-            return;
+        };
+
+        modal.querySelector('.cancel-btn').onclick = function() {
+            modal.remove();
+        };
+        return;
+    }
+
+    target = e.target.closest('.delete-doc-btn');
+    if (target) {
+        var idx = parseInt(target.dataset.idx);
+        var doc = App.ui.pages._carDocuments[idx];
+        if (!doc) return;
+        if (confirm('Удалить документ?')) {
+            await App.ui.pages.deleteCarDocument(doc.id);
+            App.ui.pages.renderDocuments();
         }
-        target = e.target.closest('.delete-doc-btn');
-        if (target) {
-            var idx = parseInt(target.dataset.idx);
-            var doc = App.ui.pages._carDocuments[idx];
-            if (!doc) return;
-            if (confirm('Удалить документ?')) {
-                await App.ui.pages.deleteCarDocument(doc.id);
-                App.ui.pages.renderDocuments();
-            }
-        }
-    });
-};
+    }
+});
 
 // ---------- Модальное окно начальных параметров ----------
 App.ui.pages.showInitialParamsModal = function() {
