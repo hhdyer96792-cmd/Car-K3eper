@@ -3,6 +3,7 @@ window.App = window.App || {};
 App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
+// Инициализация фильтров (заполнение селектов)
 App.ui.pages.initHistoryFilters = function() {
     App.ui.pages.populateHistoryOperationFilter();
     App.ui.pages.populateHistoryCategoryFilter();
@@ -10,6 +11,7 @@ App.ui.pages.initHistoryFilters = function() {
     App.ui.pages.bindHistoryFilterEvents();
 };
 
+// Заполнение селекта операций
 App.ui.pages.populateHistoryOperationFilter = function() {
     var select = document.getElementById('history-operation-filter');
     if (!select) return;
@@ -25,6 +27,7 @@ App.ui.pages.populateHistoryOperationFilter = function() {
     if (current) select.value = current;
 };
 
+// Заполнение селекта категорий
 App.ui.pages.populateHistoryCategoryFilter = function() {
     var select = document.getElementById('history-category-filter');
     if (!select) return;
@@ -40,6 +43,7 @@ App.ui.pages.populateHistoryCategoryFilter = function() {
     if (current) select.value = current;
 };
 
+// Заполнение селекта исполнителей
 App.ui.pages.populateHistoryExecutorFilter = function() {
     var select = document.getElementById('history-executor-filter');
     if (!select) return;
@@ -55,12 +59,13 @@ App.ui.pages.populateHistoryExecutorFilter = function() {
     if (current) select.value = current;
 };
 
+// Привязка событий фильтров
 App.ui.pages.bindHistoryFilterEvents = function() {
-    var filterIds = [
+    var filters = [
         'history-period-select', 'history-operation-filter', 'history-category-filter', 'history-executor-filter',
         'history-sort-order', 'history-diy-only'
     ];
-    filterIds.forEach(function(id) {
+    filters.forEach(function(id) {
         var el = document.getElementById(id);
         if (el) {
             el.addEventListener('change', function() {
@@ -68,7 +73,6 @@ App.ui.pages.bindHistoryFilterEvents = function() {
             });
         }
     });
-
     ['history-search', 'history-cost-min', 'history-cost-max', 'history-mileage-min', 'history-mileage-max'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) {
@@ -96,6 +100,7 @@ App.ui.pages.bindHistoryFilterEvents = function() {
     }
 };
 
+// Получение отфильтрованных записей с новыми фильтрами
 App.ui.pages.getFilteredHistory = function() {
     var period = document.getElementById('history-period-select')?.value || 'all';
     var opFilter = document.getElementById('history-operation-filter')?.value || '';
@@ -172,6 +177,7 @@ App.ui.pages.getFilteredHistory = function() {
     return filtered;
 };
 
+// Рендер карточек
 App.ui.pages.renderHistoryCards = function() {
     var container = document.getElementById('history-cards-container');
     if (!container) return;
@@ -199,9 +205,9 @@ App.ui.pages.renderHistoryCards = function() {
             html += 'DIY: ' + (diyFlag ? '<i data-lucide="check"></i>' : '<i data-lucide="x"></i>') + '<br>';
             html += 'Исполнитель: ' + (record.user_id ? record.user_id.substring(0,8) : '—') + '<br>';
             if (record.photo_url) {
-    html += '<div><img src="' + record.photo_url + '" style="max-width:120px; max-height:80px; border-radius:6px; margin-top:4px;" /></div>';
-}
-if (record.notes) html += 'Прим.: ' + App.utils.escapeHtml(record.notes);
+                html += '<div style="margin-top:8px;"><img src="' + record.photo_url + '" style="max-width:120px; max-height:90px; border-radius:6px;" /></div>';
+            }
+            if (record.notes) html += 'Прим.: ' + App.utils.escapeHtml(record.notes);
             html += '</div>';
             html += '<div class="actions">';
             html += '<button class="icon-btn" data-action="edit-history" data-row="' + record.rowIndex + '"><i data-lucide="pencil"></i></button>';
@@ -218,14 +224,14 @@ if (record.notes) html += 'Прим.: ' + App.utils.escapeHtml(record.notes);
             html += '<div><strong>Работа</strong><br>' + (record.work_cost || '0') + ' ₽</div>';
             html += '<div><strong>DIY</strong><br>' + (diyFlag ? '<i data-lucide="check"></i> Да' : '<i data-lucide="x"></i> Нет') + '</div>';
             html += '</div>';
+            if (record.photo_url) {
+                html += '<div style="margin-top:8px;"><img src="' + record.photo_url + '" style="max-width:100px; max-height:75px; border-radius:6px;" /></div>';
+            }
             html += '<div class="history-card-footer">';
             html += '<span>Исполнитель: ' + (record.user_id ? record.user_id.substring(0,8) : '—') + '</span>';
-if (record.photo_url) {
-    html += '<img src="' + record.photo_url + '" style="max-width:80px; max-height:60px; border-radius:6px; margin-left:8px;" />';
-}
-if (record.notes) {
-    html += '<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Прим.: ' + App.utils.escapeHtml(record.notes) + '</div>';
-}
+            if (record.notes) {
+                html += '<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Прим.: ' + App.utils.escapeHtml(record.notes) + '</div>';
+            }
             html += '<div class="history-card-actions">';
             html += '<button class="icon-btn" data-action="edit-history" data-row="' + record.rowIndex + '"><i data-lucide="pencil"></i></button>';
             html += '<button class="icon-btn" data-action="delete-history" data-row="' + record.rowIndex + '"><i data-lucide="trash-2"></i></button>';
@@ -236,9 +242,35 @@ if (record.notes) {
     });
 
     container.innerHTML = html;
-    App.initIcons();
+    // Принудительно заменяем иконки Lucide в контейнере
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons({ target: container });
+    }
 };
 
+// Удаление записи с удалением фото из Supabase Storage
+App.ui.pages.deleteHistoryEntry = async function(rowIndex) {
+    var record = App.store.serviceRecords.find(function(r) { return r.rowIndex == rowIndex; });
+    try {
+        // Удаляем фото, если оно есть
+        if (record && record.photo_url) {
+            var path = record.photo_url.split('/public/vesta-photos/')[1];
+            if (path) {
+                var decodedPath = decodeURIComponent(path);
+                await App.supabase.storage.from('vesta-photos').remove([decodedPath]);
+            }
+        }
+        await App.storage.deleteHistoryRecord(rowIndex);
+        await App.storage.loadAllData();
+        App.ui.pages.renderHistoryCards();
+        App.toast('Запись удалена', 'success');
+    } catch (err) {
+        console.error(err);
+        App.toast('Не удалось удалить запись (недостаточно прав)', 'error');
+    }
+};
+
+// Редактирование записи (без изменений)
 App.ui.pages.openHistoryEdit = function(rowIndex) {
     var record = App.store.serviceRecords.find(function(r) { return r.rowIndex == rowIndex; });
     if (!record) return;
@@ -293,16 +325,4 @@ App.ui.pages.openHistoryEdit = function(rowIndex) {
         });
     };
     modal.querySelector('.cancel-btn').onclick = function() { modal.remove(); };
-};
-
-App.ui.pages.deleteHistoryEntry = function(rowIndex) {
-    App.storage.deleteHistoryRecord(rowIndex).then(function() {
-        App.storage.loadAllData().then(function() {
-            App.ui.pages.renderHistoryCards();
-        });
-        App.toast('Запись удалена', 'success');
-    }).catch(function(err) {
-        console.error(err);
-        App.toast('Не удалось удалить запись (недостаточно прав)', 'error');
-    });
 };
