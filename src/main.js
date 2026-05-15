@@ -613,6 +613,119 @@
         window.addEventListener('load', function() {
             setTimeout(App.initIcons, 200);
         });
+
+        // ===== ПЛАВАЮЩАЯ FAB-КНОПКА (Speed Dial, draggable) =====
+        (function() {
+            var fab = document.createElement('div');
+            fab.id = 'fab-menu';
+            fab.innerHTML =
+                '<div id="fab-overlay" class="fab-overlay" style="display:none;"></div>' +
+                '<button id="fab-main-btn" class="fab-main"><i data-lucide="plus"></i></button>' +
+                '<div id="fab-actions" class="fab-actions">' +
+                    '<button id="fab-fuel" class="fab-action" title="Заправка"><i data-lucide="fuel"></i></button>' +
+                    '<button id="fab-service" class="fab-action" title="ТО"><i data-lucide="wrench"></i></button>' +
+                    '<button id="fab-part" class="fab-action" title="Запчасть"><i data-lucide="package"></i></button>' +
+                '</div>';
+            document.body.appendChild(fab);
+            App.initIcons();
+
+            var mainBtn = document.getElementById('fab-main-btn');
+            var actions = document.getElementById('fab-actions');
+            var overlay = document.getElementById('fab-overlay');
+            var actionsOpen = false;
+            var isDragging = false, startX, startY, startLeft, startTop, dragThreshold = 5, moved = false;
+
+            mainBtn.addEventListener('pointerdown', function(e) {
+                if (actionsOpen) return;
+                if (window.innerWidth > 768) return;   // на десктопе не перетаскиваем
+                if (e.target.closest('#fab-actions')) return;
+                isDragging = true;
+                moved = false;
+                startX = e.clientX;
+                startY = e.clientY;
+                var rect = fab.getBoundingClientRect();
+                startLeft = rect.left;
+                startTop = rect.top;
+                fab.style.transition = 'none';
+                mainBtn.setPointerCapture(e.pointerId);
+            });
+
+            window.addEventListener('pointermove', function(e) {
+                if (!isDragging) return;
+                var dx = e.clientX - startX;
+                var dy = e.clientY - startY;
+                if (Math.abs(dx) < dragThreshold && Math.abs(dy) < dragThreshold) return;
+                moved = true;
+                var newLeft = Math.min(window.innerWidth - 64, Math.max(0, startLeft + dx));
+                var newTop = Math.min(window.innerHeight - 64, Math.max(0, startTop + dy));
+                fab.style.left = newLeft + 'px';
+                fab.style.top = newTop + 'px';
+            });
+
+            window.addEventListener('pointerup', function() {
+                if (!isDragging) return;
+                isDragging = false;
+                fab.style.transition = 'left 0.2s, top 0.2s';
+                if (moved) {
+                    localStorage.setItem('fab_position', JSON.stringify({ left: fab.style.left, top: fab.style.top }));
+                }
+            });
+
+            // Восстановление позиции
+            var saved = localStorage.getItem('fab_position');
+            if (saved) {
+                try {
+                    var pos = JSON.parse(saved);
+                    if (pos.left) fab.style.left = pos.left;
+                    if (pos.top) fab.style.top = pos.top;
+                } catch(e) {}
+            }
+
+            function setFabIcon(name) {
+                var icon = mainBtn.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', name);
+                    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                        lucide.createIcons({ elements: [mainBtn] });
+                    }
+                }
+            }
+
+            function openActions() {
+                actionsOpen = true;
+                overlay.style.display = 'block';
+                actions.classList.add('open');
+                setFabIcon('x');
+            }
+
+            function closeActions() {
+                actionsOpen = false;
+                overlay.style.display = 'none';
+                actions.classList.remove('open');
+                setFabIcon('plus');
+            }
+
+            mainBtn.addEventListener('click', function() {
+                if (moved) { moved = false; return; }
+                if (actionsOpen) closeActions();
+                else openActions();
+            });
+
+            overlay.addEventListener('click', closeActions);
+
+            document.getElementById('fab-fuel').addEventListener('click', function() {
+                closeActions();
+                if (typeof App.ui.pages.openFuelModal === 'function') App.ui.pages.openFuelModal(null);
+            });
+            document.getElementById('fab-service').addEventListener('click', function() {
+                closeActions();
+                if (typeof App.ui.pages.openOperationForm === 'function') App.ui.pages.openOperationForm(null);
+            });
+            document.getElementById('fab-part').addEventListener('click', function() {
+                closeActions();
+                if (typeof App.ui.pages.openPartForm === 'function') App.ui.pages.openPartForm(null);
+            });
+        })();
     }
 
     // Функции восстановления
@@ -707,128 +820,9 @@
         alert(msg);
     }
 
-// ===== ПЛАВАЮЩАЯ FAB-КНОПКА (Speed Dial, исправленная) =====
-(function() {
-    var fab = document.createElement('div');
-    fab.id = 'fab-menu';
-    fab.innerHTML =
-        '<div id="fab-overlay" class="fab-overlay" style="display:none;"></div>' +
-        '<button id="fab-main-btn" class="fab-main"><i data-lucide="plus"></i></button>' +
-        '<div id="fab-actions" class="fab-actions">' +
-            '<button id="fab-fuel" class="fab-action" title="Заправка"><i data-lucide="fuel"></i></button>' +
-            '<button id="fab-service" class="fab-action" title="ТО"><i data-lucide="wrench"></i></button>' +
-            '<button id="fab-part" class="fab-action" title="Запчасть"><i data-lucide="package"></i></button>' +
-        '</div>';
-    document.body.appendChild(fab);
-    App.initIcons();
-
-    var mainBtn = document.getElementById('fab-main-btn');
-    var actions = document.getElementById('fab-actions');
-    var overlay = document.getElementById('fab-overlay');
-    var actionsOpen = false;
-    var isDragging = false, startX, startY, startLeft, startTop, dragThreshold = 5, moved = false;
-
-    // --- Быстрое перетаскивание с requestAnimationFrame ---
-    mainBtn.addEventListener('pointerdown', function(e) {
-    if (window.innerWidth > 768) return;   // на десктопе не перетаскиваем  
-    if (actionsOpen) return;   // ← не перетаскиваем, если меню раскрыто
-    if (e.target.closest('#fab-actions')) return;
-        isDragging = true;
-        moved = false;
-        startX = e.clientX;
-        startY = e.clientY;
-        var rect = fab.getBoundingClientRect();
-        startLeft = rect.left;
-        startTop = rect.top;
-        fab.style.transition = 'none';
-        mainBtn.setPointerCapture(e.pointerId);
-    });
-
-    window.addEventListener('pointermove', function(e) {
-    if (!isDragging) return;
-    var dx = e.clientX - startX;
-    var dy = e.clientY - startY;
-    if (Math.abs(dx) < dragThreshold && Math.abs(dy) < dragThreshold) return;
-    moved = true;
-    // Сразу обновляем позицию, без rAF
-    var newLeft = Math.min(window.innerWidth - 64, Math.max(0, startLeft + dx));
-    var newTop = Math.min(window.innerHeight - 64, Math.max(0, startTop + dy));
-    fab.style.left = newLeft + 'px';
-    fab.style.top = newTop + 'px';
-});
-    });
-
-    window.addEventListener('pointerup', function() {
-        if (!isDragging) return;
-        isDragging = false;
-        fab.style.transition = 'left 0.2s, top 0.2s';
-        if (moved) {
-            localStorage.setItem('fab_position', JSON.stringify({ left: fab.style.left, top: fab.style.top }));
-        }
-    });
-
-    // Восстановление позиции
-    var saved = localStorage.getItem('fab_position');
-    if (saved) {
-        try {
-            var pos = JSON.parse(saved);
-            if (pos.left) fab.style.left = pos.left;
-            if (pos.top) fab.style.top = pos.top;
-        } catch(e) {}
-    }
-
-    // --- Переключение иконки (безопасно) ---
-    function setFabIcon(name) {
-        var icon = mainBtn.querySelector('i');
-        if (icon) {
-            icon.setAttribute('data-lucide', name);
-            if (typeof lucide !== 'undefined' && lucide.createIcons) {
-                lucide.createIcons({ elements: [mainBtn] });
-            }
-        }
-    }
-
-    function openActions() {
-        actionsOpen = true;
-        overlay.style.display = 'block';
-        actions.classList.add('open');
-        setFabIcon('x');
-    }
-
-    function closeActions() {
-        actionsOpen = false;
-        overlay.style.display = 'none';
-        actions.classList.remove('open');
-        setFabIcon('plus');
-    }
-
-    // Обработчик клика: не открываем после перетаскивания
-    mainBtn.addEventListener('click', function() {
-        if (moved) { moved = false; return; }
-        if (actionsOpen) closeActions();
-        else openActions();
-    });
-
-    overlay.addEventListener('click', closeActions);
-
-    // Кнопки действий
-    document.getElementById('fab-fuel').addEventListener('click', function() {
-        closeActions();
-        if (typeof App.ui.pages.openFuelModal === 'function') App.ui.pages.openFuelModal(null);
-    });
-    document.getElementById('fab-service').addEventListener('click', function() {
-        closeActions();
-        if (typeof App.ui.pages.openOperationForm === 'function') App.ui.pages.openOperationForm(null);
-    });
-    document.getElementById('fab-part').addEventListener('click', function() {
-        closeActions();
-        if (typeof App.ui.pages.openPartForm === 'function') App.ui.pages.openPartForm(null);
-    });
-})();
-    
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', onReady);
     } else {
         onReady();
     }
-)();
+})();
