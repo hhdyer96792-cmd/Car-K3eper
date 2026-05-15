@@ -198,7 +198,10 @@ App.ui.pages.renderHistoryCards = function() {
             html += 'Запчасти: ' + (record.parts_cost || '0') + ' ₽ · Работа: ' + (record.work_cost || '0') + ' ₽ · ';
             html += 'DIY: ' + (diyFlag ? '<i data-lucide="check"></i>' : '<i data-lucide="x"></i>') + '<br>';
             html += 'Исполнитель: ' + (record.user_id ? record.user_id.substring(0,8) : '—') + '<br>';
-            if (record.notes) html += 'Прим.: ' + App.utils.escapeHtml(record.notes);
+            if (record.photo_url) {
+    html += '<div><img src="' + record.photo_url + '" style="max-width:120px; max-height:80px; border-radius:6px; margin-top:4px;" /></div>';
+}
+if (record.notes) html += 'Прим.: ' + App.utils.escapeHtml(record.notes);
             html += '</div>';
             html += '<div class="actions">';
             html += '<button class="icon-btn" data-action="edit-history" data-row="' + record.rowIndex + '"><i data-lucide="pencil"></i></button>';
