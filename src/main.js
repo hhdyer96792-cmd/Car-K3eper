@@ -730,6 +730,8 @@
 
     // --- Быстрое перетаскивание с requestAnimationFrame ---
     mainBtn.addEventListener('pointerdown', function(e) {
+    if (actionsOpen) return;   // ← не перетаскиваем, если меню раскрыто
+    if (e.target.closest('#fab-actions')) return;
         isDragging = true;
         moved = false;
         startX = e.clientX;
