@@ -369,17 +369,17 @@ App.ui.pages.initRecoveryCodesUI = function() {
     genBtn.addEventListener('click', async function() {
         var { data: { user } } = await App.supabase.auth.getUser();
         if (!user) return;
-        if (!confirm('Старые коды будут удалены. Продолжить?')) return;
-        await App.supabase.from('recovery_codes').delete().eq('user_id', user.id);
-        var codes = [];
+        App.ui.confirmModal('Старые коды будут удалены. Продолжить?', async function() {
+    await App.supabase.from('recovery_codes').delete().eq('user_id', user.id);
+    var codes = [];
         for (var i = 0; i < 8; i++) {
             var code = Array.from({length: 8}, () => Math.floor(Math.random() * 10)).join('');
             codes.push(code);
             await App.supabase.from('recovery_codes').insert({ user_id: user.id, code_hash: code });
         }
-        alert('Новые коды:\n' + codes.join('\n'));
-        document.getElementById('show-recovery-btn').click();
-    });
+         App.ui.alertModal('Новые коды:\n\n' + codes.join('\n'));
+    document.getElementById('show-recovery-btn').click();
+});
 };
 
 // Инициализация UI резервных кодов при загрузке
