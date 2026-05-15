@@ -707,14 +707,14 @@
         alert(msg);
     }
 
-// ===== ПЛАВАЮЩАЯ FAB-КНОПКА (Speed Dial, draggable) =====
+// ===== ПЛАВАЮЩАЯ FAB-КНОПКА (Speed Dial, исправленная) =====
 (function() {
     var fab = document.createElement('div');
     fab.id = 'fab-menu';
     fab.innerHTML =
         '<div id="fab-overlay" class="fab-overlay" style="display:none;"></div>' +
         '<button id="fab-main-btn" class="fab-main"><i data-lucide="plus"></i></button>' +
-        '<div id="fab-actions" class="fab-actions" style="display:none;">' +
+        '<div id="fab-actions" class="fab-actions">' +
             '<button id="fab-fuel" class="fab-action" title="Заправка"><i data-lucide="fuel"></i></button>' +
             '<button id="fab-service" class="fab-action" title="ТО"><i data-lucide="wrench"></i></button>' +
             '<button id="fab-part" class="fab-action" title="Запчасть"><i data-lucide="package"></i></button>' +
@@ -722,16 +722,16 @@
     document.body.appendChild(fab);
     App.initIcons();
 
-    // Перетаскивание
-    var isDragging = false, startX, startY, startLeft, startTop;
     var mainBtn = document.getElementById('fab-main-btn');
     var actions = document.getElementById('fab-actions');
     var overlay = document.getElementById('fab-overlay');
     var actionsOpen = false;
+    var isDragging = false, startX, startY, startLeft, startTop, dragThreshold = 5, moved = false;
 
+    // --- Быстрое перетаскивание с requestAnimationFrame ---
     mainBtn.addEventListener('pointerdown', function(e) {
-        if (e.target.closest('#fab-actions')) return;
         isDragging = true;
+        moved = false;
         startX = e.clientX;
         startY = e.clientY;
         var rect = fab.getBoundingClientRect();
@@ -745,17 +745,23 @@
         if (!isDragging) return;
         var dx = e.clientX - startX;
         var dy = e.clientY - startY;
-        var newLeft = Math.min(window.innerWidth - 60, Math.max(0, startLeft + dx));
-        var newTop = Math.min(window.innerHeight - 60, Math.max(0, startTop + dy));
-        fab.style.left = newLeft + 'px';
-        fab.style.top = newTop + 'px';
+        if (Math.abs(dx) < dragThreshold && Math.abs(dy) < dragThreshold) return;
+        moved = true;
+        requestAnimationFrame(function() {
+            var newLeft = Math.min(window.innerWidth - 64, Math.max(0, startLeft + dx));
+            var newTop = Math.min(window.innerHeight - 64, Math.max(0, startTop + dy));
+            fab.style.left = newLeft + 'px';
+            fab.style.top = newTop + 'px';
+        });
     });
 
     window.addEventListener('pointerup', function() {
         if (!isDragging) return;
         isDragging = false;
-        fab.style.transition = '';
-        localStorage.setItem('fab_position', JSON.stringify({ left: fab.style.left, top: fab.style.top }));
+        fab.style.transition = 'left 0.2s, top 0.2s';
+        if (moved) {
+            localStorage.setItem('fab_position', JSON.stringify({ left: fab.style.left, top: fab.style.top }));
+        }
     });
 
     // Восстановление позиции
@@ -768,48 +774,52 @@
         } catch(e) {}
     }
 
-    // Раскрытие/скрытие Speed Dial
+    // --- Переключение иконки (безопасно) ---
+    function setFabIcon(name) {
+        var icon = mainBtn.querySelector('i');
+        if (icon) {
+            icon.setAttribute('data-lucide', name);
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons({ elements: [mainBtn] });
+            }
+        }
+    }
+
     function openActions() {
         actionsOpen = true;
         overlay.style.display = 'block';
-        actions.style.display = 'flex';
-        mainBtn.querySelector('i').setAttribute('data-lucide', 'x');
-        App.initIcons();
+        actions.classList.add('open');
+        setFabIcon('x');
     }
 
     function closeActions() {
         actionsOpen = false;
         overlay.style.display = 'none';
-        actions.style.display = 'none';
-        mainBtn.querySelector('i').setAttribute('data-lucide', 'plus');
-        App.initIcons();
+        actions.classList.remove('open');
+        setFabIcon('plus');
     }
 
-    mainBtn.addEventListener('click', function(e) {
-        if (isDragging) return;
-        if (actionsOpen) {
-            closeActions();
-        } else {
-            openActions();
-        }
+    // Обработчик клика: не открываем после перетаскивания
+    mainBtn.addEventListener('click', function() {
+        if (moved) { moved = false; return; }
+        if (actionsOpen) closeActions();
+        else openActions();
     });
 
-    overlay.addEventListener('click', function() {
-        closeActions();
-    });
+    overlay.addEventListener('click', closeActions);
 
-    // Обработчики для кнопок действий
+    // Кнопки действий
     document.getElementById('fab-fuel').addEventListener('click', function() {
         closeActions();
-        App.ui.pages.openFuelModal(null);
+        if (typeof App.ui.pages.openFuelModal === 'function') App.ui.pages.openFuelModal(null);
     });
     document.getElementById('fab-service').addEventListener('click', function() {
         closeActions();
-        App.ui.pages.openOperationForm(null);
+        if (typeof App.ui.pages.openOperationForm === 'function') App.ui.pages.openOperationForm(null);
     });
     document.getElementById('fab-part').addEventListener('click', function() {
         closeActions();
-        App.ui.pages.openPartForm(null);
+        if (typeof App.ui.pages.openPartForm === 'function') App.ui.pages.openPartForm(null);
     });
 })();
     
