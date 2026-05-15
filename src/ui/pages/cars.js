@@ -792,7 +792,7 @@ document.getElementById('doc-file-input').onchange = async function(e) {
             date: ocrData.date || new Date().toISOString().split('T')[0],
             photoUrl: url,
             amount: ocrData.amount || 0,
-            notes: ocrData.rawText || ''
+            notes: ''
         };
         await App.ui.pages.addCarDocument(newDoc);
         App.ui.pages.renderDocuments();
