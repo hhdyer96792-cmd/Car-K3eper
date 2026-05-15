@@ -520,7 +520,6 @@ App.ui.pages.renderBasicParams = async function() {
     App.ui.pages.updateOwnershipCost();
 
     // ---- Обработчики ----
-
     document.getElementById('save-params-btn').onclick = async function() {
         var newBaseMileage = parseInt(document.getElementById('set-base-mileage').value) || 0;
         var newBaseMotohours = parseInt(document.getElementById('set-base-motohours').value) || 0;
@@ -733,140 +732,134 @@ App.ui.pages.renderDocuments = function() {
     };
 
     // Упрощённое распознавание Tesseract.js прямо в браузере
-async function recognizeWithTesseract(imageUrl) {
-    try {
-        // Динамически загружаем Tesseract.js (если ещё не загружен)
-        if (!window.Tesseract) {
-            await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+    async function recognizeWithTesseract(imageUrl) {
+        try {
+            if (!window.Tesseract) {
+                await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+            }
+            const worker = await Tesseract.createWorker('rus');
+            const { data: { text } } = await worker.recognize(imageUrl);
+            await worker.terminate();
+            return text;
+        } catch (e) {
+            console.warn('Tesseract не смог распознать:', e);
+            return '';
         }
-        const worker = await Tesseract.createWorker('rus');
-        const { data: { text } } = await worker.recognize(imageUrl);
-        await worker.terminate();
-        return text;
-    } catch (e) {
-        console.warn('Tesseract не смог распознать:', e);
-        return '';
-    }
-}
-
-// Копия parseRawText из Edge Function (чтобы не зависеть от неё)
-function parseRawText(text) {
-    const lower = text.toLowerCase();
-    let type = "Прочее";
-    if (lower.includes("осаго") || lower.includes("страхов") || lower.includes("полис")) type = "ОСАГО";
-    else if (lower.includes("заказ-наряд") || lower.includes("наряд-заказ") || lower.includes("ремонт")) type = "Заказ-наряд";
-    else if (lower.includes("чек") || lower.includes("касс") || lower.includes("итог")) type = "Чек";
-
-    let amount = null;
-    const am = text.match(/(\d{1,3}(?:[.,]\d{2})?)\s?[₽р]|(?:итог|сумма|всего)[^\d]*(\d{1,3}(?:[.,]\d{2})?)/i);
-    if (am) {
-        const n = (am[1] || am[2]).replace(",", ".");
-        amount = parseFloat(n);
-        if (isNaN(amount)) amount = null;
     }
 
-    let date = null;
-    const dm = text.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{4})/);
-    if (dm) {
-        const parts = dm[1].replace(/\//g, ".").split(".");
-        if (parts.length === 3) date = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    function parseRawText(text) {
+        const lower = text.toLowerCase();
+        let type = "Прочее";
+        if (lower.includes("осаго") || lower.includes("страхов") || lower.includes("полис")) type = "ОСАГО";
+        else if (lower.includes("заказ-наряд") || lower.includes("наряд-заказ") || lower.includes("ремонт")) type = "Заказ-наряд";
+        else if (lower.includes("чек") || lower.includes("касс") || lower.includes("итог")) type = "Чек";
+
+        let amount = null;
+        const am = text.match(/(\d{1,3}(?:[.,]\d{2})?)\s?[₽р]|(?:итог|сумма|всего)[^\d]*(\d{1,3}(?:[.,]\d{2})?)/i);
+        if (am) {
+            const n = (am[1] || am[2]).replace(",", ".");
+            amount = parseFloat(n);
+            if (isNaN(amount)) amount = null;
+        }
+
+        let date = null;
+        const dm = text.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{4})/);
+        if (dm) {
+            const parts = dm[1].replace(/\//g, ".").split(".");
+            if (parts.length === 3) date = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+
+        return { type, amount, date, rawText: text.substring(0, 500) };
     }
 
-    return { type, amount, date, rawText: text.substring(0, 500) };
-}
+    document.getElementById('doc-file-input').onchange = async function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        try {
+            var url = await App.supa.uploadPhoto(file);
+            var rawText = await recognizeWithTesseract(url);
+            var ocrData = parseRawText(rawText);
 
-document.getElementById('doc-file-input').onchange = async function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    try {
-        var url = await App.supa.uploadPhoto(file);
-        
-        // Распознаём текст с помощью Tesseract.js
-        var rawText = await recognizeWithTesseract(url);
-        
-        // Парсим распознанный текст
-        var ocrData = parseRawText(rawText);
-        
-        var newDoc = {
-            type: ocrData.type || 'Чек',
-            date: ocrData.date || new Date().toISOString().split('T')[0],
-            photoUrl: url,
-            amount: ocrData.amount || 0,
-            notes: ''
-        };
-        await App.ui.pages.addCarDocument(newDoc);
-        App.ui.pages.renderDocuments();
-        App.toast('Документ добавлен и распознан', 'success');
-    } catch (uploadError) {
-        console.error('Upload failed:', uploadError);
-        App.toast('Ошибка загрузки фото', 'error');
-    }
-    e.target.value = '';
-};
+            var newDoc = {
+                type: ocrData.type || 'Чек',
+                date: ocrData.date || new Date().toISOString().split('T')[0],
+                photoUrl: url,
+                amount: ocrData.amount || 0,
+                notes: ''
+            };
+            await App.ui.pages.addCarDocument(newDoc);
+            App.ui.pages.renderDocuments();
+            App.toast('Документ добавлен и распознан', 'success');
+        } catch (uploadError) {
+            console.error('Upload failed:', uploadError);
+            App.toast('Ошибка загрузки фото', 'error');
+        }
+        e.target.value = '';
+    };
 
     container.addEventListener('click', async function(e) {
-    var target = e.target.closest('.edit-doc-btn');
-    if (target) {
-        var idx = parseInt(target.dataset.idx);
-        var doc = App.ui.pages._carDocuments[idx];
-        if (!doc) return;
+        var target = e.target.closest('.edit-doc-btn');
+        if (target) {
+            var idx = parseInt(target.dataset.idx);
+            var doc = App.ui.pages._carDocuments[idx];
+            if (!doc) return;
 
-        // Создаём форму редактирования вместо трёх prompt()
-        var content =
-            '<form id="edit-doc-form">' +
-                '<label>Тип</label>' +
-                '<select name="type">' +
-                    '<option value="ОСАГО" ' + (doc.type === 'ОСАГО' ? 'selected' : '') + '>ОСАГО</option>' +
-                    '<option value="Чек" ' + (doc.type === 'Чек' ? 'selected' : '') + '>Чек</option>' +
-                    '<option value="Заказ-наряд" ' + (doc.type === 'Заказ-наряд' ? 'selected' : '') + '>Заказ-наряд</option>' +
-                    '<option value="Прочее" ' + (doc.type === 'Прочее' ? 'selected' : '') + '>Прочее</option>' +
-                '</select>' +
-                '<label>Сумма</label>' +
-                '<input type="number" name="amount" step="0.01" value="' + (doc.amount || '') + '">' +
-                '<label>Примечание</label>' +
-                '<textarea name="notes" rows="2">' + App.utils.escapeHtml(doc.notes || '') + '</textarea>' +
-                '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
-                    '<button type="submit" class="primary-btn">Сохранить</button>' +
-                    '<button type="button" class="cancel-btn secondary-btn">Отмена</button>' +
-                '</div>' +
-            '</form>';
+            var content =
+                '<form id="edit-doc-form">' +
+                    '<label>Тип</label>' +
+                    '<select name="type">' +
+                        '<option value="ОСАГО" ' + (doc.type === 'ОСАГО' ? 'selected' : '') + '>ОСАГО</option>' +
+                        '<option value="Чек" ' + (doc.type === 'Чек' ? 'selected' : '') + '>Чек</option>' +
+                        '<option value="Заказ-наряд" ' + (doc.type === 'Заказ-наряд' ? 'selected' : '') + '>Заказ-наряд</option>' +
+                        '<option value="Прочее" ' + (doc.type === 'Прочее' ? 'selected' : '') + '>Прочее</option>' +
+                    '</select>' +
+                    '<label>Сумма</label>' +
+                    '<input type="number" name="amount" step="0.01" value="' + (doc.amount || '') + '">' +
+                    '<label>Примечание</label>' +
+                    '<textarea name="notes" rows="2">' + App.utils.escapeHtml(doc.notes || '') + '</textarea>' +
+                    '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
+                        '<button type="submit" class="primary-btn">Сохранить</button>' +
+                        '<button type="button" class="cancel-btn secondary-btn">Отмена</button>' +
+                    '</div>' +
+                '</form>';
 
-        var modal = App.ui.createModal('Редактировать документ', content);
-        var form = modal.querySelector('#edit-doc-form');
+            var modal = App.ui.createModal('Редактировать документ', content);
+            var form = modal.querySelector('#edit-doc-form');
 
-        form.onsubmit = async function(ev) {
-            ev.preventDefault();
-            var data = new FormData(form);
-            doc.type = data.get('type') || 'Прочее';
-            doc.amount = parseFloat(data.get('amount')) || 0;
-            doc.notes = data.get('notes') || '';
-            await App.ui.pages.updateCarDocument(doc.id, {
-                type: doc.type,
-                date: doc.date,
-                amount: doc.amount,
-                notes: doc.notes
-            });
-            modal.remove();
-            App.ui.pages.renderDocuments();
-        };
+            form.onsubmit = async function(ev) {
+                ev.preventDefault();
+                var data = new FormData(form);
+                doc.type = data.get('type') || 'Прочее';
+                doc.amount = parseFloat(data.get('amount')) || 0;
+                doc.notes = data.get('notes') || '';
+                await App.ui.pages.updateCarDocument(doc.id, {
+                    type: doc.type,
+                    date: doc.date,
+                    amount: doc.amount,
+                    notes: doc.notes
+                });
+                modal.remove();
+                App.ui.pages.renderDocuments();
+            };
 
-        modal.querySelector('.cancel-btn').onclick = function() {
-            modal.remove();
-        };
-        return;
-    }
-
-    target = e.target.closest('.delete-doc-btn');
-    if (target) {
-        var idx = parseInt(target.dataset.idx);
-        var doc = App.ui.pages._carDocuments[idx];
-        if (!doc) return;
-        if (confirm('Удалить документ?')) {
-            await App.ui.pages.deleteCarDocument(doc.id);
-            App.ui.pages.renderDocuments();
+            modal.querySelector('.cancel-btn').onclick = function() {
+                modal.remove();
+            };
+            return;
         }
-    }
-});
+
+        target = e.target.closest('.delete-doc-btn');
+        if (target) {
+            var idx = parseInt(target.dataset.idx);
+            var doc = App.ui.pages._carDocuments[idx];
+            if (!doc) return;
+            if (confirm('Удалить документ?')) {
+                await App.ui.pages.deleteCarDocument(doc.id);
+                App.ui.pages.renderDocuments();
+            }
+        }
+    });
+};
 
 // ---------- Модальное окно начальных параметров ----------
 App.ui.pages.showInitialParamsModal = function() {
