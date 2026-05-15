@@ -216,7 +216,13 @@ App.ui.pages.renderHistoryCards = function() {
             html += '<div><strong>DIY</strong><br>' + (diyFlag ? '<i data-lucide="check"></i> Да' : '<i data-lucide="x"></i> Нет') + '</div>';
             html += '</div>';
             html += '<div class="history-card-footer">';
-            html += '<span>Исполнитель: ' + (record.user_id ? record.user_id.substring(0,8) : '—') + (record.notes ? ' | Прим.: ' + App.utils.escapeHtml(record.notes) : '') + '</span>';
+            html += '<span>Исполнитель: ' + (record.user_id ? record.user_id.substring(0,8) : '—') + '</span>';
+if (record.photo_url) {
+    html += '<img src="' + record.photo_url + '" style="max-width:80px; max-height:60px; border-radius:6px; margin-left:8px;" />';
+}
+if (record.notes) {
+    html += '<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Прим.: ' + App.utils.escapeHtml(record.notes) + '</div>';
+}
             html += '<div class="history-card-actions">';
             html += '<button class="icon-btn" data-action="edit-history" data-row="' + record.rowIndex + '"><i data-lucide="pencil"></i></button>';
             html += '<button class="icon-btn" data-action="delete-history" data-row="' + record.rowIndex + '"><i data-lucide="trash-2"></i></button>';
