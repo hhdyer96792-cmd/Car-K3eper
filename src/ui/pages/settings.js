@@ -58,7 +58,7 @@ App.ui.pages.populateSettingsFields = function() {
     }
 
     // Заглушка для отсутствующей функции, чтобы не падала ошибка
-App.ui.pages.updateOwnershipDisplay = function() {};
+    App.ui.pages.updateOwnershipDisplay = function() {};
 
     // Кнопка с информацией о подключении Telegram
     var telegramInfoBtn = document.getElementById('telegram-info-btn');
@@ -370,16 +370,18 @@ App.ui.pages.initRecoveryCodesUI = function() {
         var { data: { user } } = await App.supabase.auth.getUser();
         if (!user) return;
         App.ui.confirmModal('Старые коды будут удалены. Продолжить?', async function() {
-    await App.supabase.from('recovery_codes').delete().eq('user_id', user.id);
-    var codes = [];
-        for (var i = 0; i < 8; i++) {
-            var code = Array.from({length: 8}, () => Math.floor(Math.random() * 10)).join('');
-            codes.push(code);
-            await App.supabase.from('recovery_codes').insert({ user_id: user.id, code_hash: code });
-        }
-         App.ui.alertModal('Новые коды:\n\n' + codes.join('\n'));
-    document.getElementById('show-recovery-btn').click();
-});
+            await App.supabase.from('recovery_codes').delete().eq('user_id', user.id);
+            var codes = [];
+            for (var i = 0; i < 8; i++) {
+                var code = Array.from({length: 8}, () => Math.floor(Math.random() * 10)).join('');
+                codes.push(code);
+                await App.supabase.from('recovery_codes').insert({ user_id: user.id, code_hash: code });
+            }
+            App.ui.alertModal('Новые коды:\n\n' + codes.join('\n'));
+            document.getElementById('show-recovery-btn').click();
+        });
+    });
+};
 
 // Инициализация UI резервных кодов при загрузке
 App.ui.pages.initRecoveryCodesUI();
