@@ -635,8 +635,8 @@
                 document.querySelectorAll('#fab-menu svg').forEach(function(svg) {
                     svg.removeAttribute('width');
                     svg.removeAttribute('height');
-                    svg.style.width = '32px';
-                    svg.style.height = '32px';
+                    svg.style.width = '40px';
+                    svg.style.height = '40px';
                 });
             }, 100);
 
