@@ -833,5 +833,43 @@
 <script src="src/events.js"></script>
 <script src="src/main.js"></script>
 
+<!-- Скрытый шаблон формы логина (для модалки) -->
+<template id="auth-template">
+    <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab active">Логин</button>
+        <button id="tab-social" class="auth-tab">Соцсети</button>
+    </div>
+    <div id="auth-login" class="auth-method active">
+        <form id="login-form">
+            <label>Логин</label>
+            <input type="text" name="username" required placeholder="Driver Name" autocomplete="username">
+            <label>Пароль</label>
+            <input type="password" name="password" required minlength="6" placeholder="Минимум 6 символов" autocomplete="current-password">
+            <label id="password-confirm-label" style="display:none;">Подтвердите пароль</label>
+            <input type="password" name="password_confirm" id="password-confirm-input" minlength="6" placeholder="Повторите пароль" style="display:none;" autocomplete="new-password">
+            <div class="modal-actions" style="margin-top:12px;">
+                <button type="submit" class="primary-btn" id="login-sign-in-btn">Войти</button>
+                <button type="button" class="secondary-btn" id="login-sign-up-btn">Регистрация</button>
+            </div>
+        </form>
+        <div id="login-message" class="hint" style="margin-top:8px;"></div>
+        <p class="hint" style="margin-top:12px;">
+            <a href="#" id="forgot-access-link">Забыли пароль?</a>
+        </p>
+        <div id="recovery-options" style="display:none;">
+            <p class="hint">Выберите способ восстановления:</p>
+            <button class="secondary-btn" id="recover-telegram">Через Telegram</button>
+            <button class="secondary-btn" id="recover-code">Резервный код</button>
+            <button class="secondary-btn" id="recover-google">Войти через Google</button>
+            <div id="recovery-message" class="hint" style="margin-top:8px;"></div>
+        </div>
+    </div>
+    <div id="auth-social" class="auth-method" style="display:none;">
+        <button id="supabase-auth-btn" class="primary-btn" style="width:100%; margin-bottom:8px;">
+            <i data-lucide="earth"></i> Войти через Google
+        </button>
+    </div>
+</template>
+    
 </body>
 </html>
