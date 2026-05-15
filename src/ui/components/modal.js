@@ -6,11 +6,19 @@ App.ui = App.ui || {};
  * Создаёт модальное окно, автоматически выбирая центрированное (десктоп) или bottom sheet (мобильные).
  * На десктопе (>768px) — центрированное окно с анимацией scale.
  * На мобильных — bottom sheet, выезжающий снизу.
+ * При создании автоматически закрывает предыдущее модальное окно.
  * @param {string} title - Заголовок
  * @param {string} content - HTML-содержимое
  * @returns {HTMLElement} DOM-элемент модального окна
  */
 App.ui.createModal = function(title, content) {
+    // Закрываем предыдущее модальное окно, если оно открыто
+    if (App.ui.currentModal) {
+        App.ui.currentModal.remove();
+        document.body.style.overflow = '';
+        App.ui.currentModal = null;
+    }
+
     var modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'flex';
@@ -22,12 +30,6 @@ App.ui.createModal = function(title, content) {
             '<h3 style="margin-top:0; margin-bottom:16px;">' + App.utils.escapeHtml(title) + '</h3>' +
             content +
         '</div>';
-
-    // На мобильных не добавляем дополнительную обёртку, т.к. modal-content уже стилизован как bottom sheet через медиа-запрос.
-    // Но для обратной совместимости оставим возможность переопределить.
-    if (window.innerWidth < 768) {
-        // Можно оставить как есть, стили применятся через CSS
-    }
 
     modal.innerHTML = innerHtml;
     document.body.appendChild(modal);
@@ -75,38 +77,42 @@ App.ui.createModal = function(title, content) {
                 modalEl.remove();
                 document.body.style.overflow = '';
             }
+            if (App.ui.currentModal === modalEl) {
+                App.ui.currentModal = null;
+            }
         }, 250);
     }
 
+    // Сохраняем ссылку на текущее модальное окно
+    App.ui.currentModal = modal;
+
     // Инициализируем иконки внутри модалки
-App.initIcons();
+    App.initIcons();
 
-// Прилепляем модалку к клавиатуре (мобильные)
-if (window.visualViewport && window.innerWidth < 768) {
-    var content = modal.querySelector('.modal-content');
-    function adjustForKeyboard() {
-        if (!modal.parentNode) return;
-        var viewport = window.visualViewport;
-        var bottomOffset = window.innerHeight - (viewport.height + viewport.offsetTop);
-        if (bottomOffset > 0) {
-            // Клавиатура открыта — поднимаем модалку ровно на высоту клавиатуры
-            content.style.transform = 'translateY(-' + bottomOffset + 'px)';
-        } else {
-            // Клавиатура скрыта — возвращаем на место
-            content.style.transform = 'translateY(0)';
+    // Прилепляем модалку к клавиатуре (мобильные)
+    if (window.visualViewport && window.innerWidth < 768) {
+        var contentEl = modal.querySelector('.modal-content');
+        function adjustForKeyboard() {
+            if (!modal.parentNode) return;
+            var viewport = window.visualViewport;
+            var bottomOffset = window.innerHeight - (viewport.height + viewport.offsetTop);
+            if (bottomOffset > 0) {
+                contentEl.style.transform = 'translateY(-' + bottomOffset + 'px)';
+            } else {
+                contentEl.style.transform = 'translateY(0)';
+            }
         }
+        window.visualViewport.addEventListener('resize', adjustForKeyboard);
+        window.visualViewport.addEventListener('scroll', adjustForKeyboard);
+        var observer = new MutationObserver(function() {
+            if (!document.body.contains(modal)) {
+                window.visualViewport.removeEventListener('resize', adjustForKeyboard);
+                window.visualViewport.removeEventListener('scroll', adjustForKeyboard);
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.body, { childList: true });
     }
-    window.visualViewport.addEventListener('resize', adjustForKeyboard);
-    window.visualViewport.addEventListener('scroll', adjustForKeyboard);
-    var observer = new MutationObserver(function() {
-        if (!document.body.contains(modal)) {
-            window.visualViewport.removeEventListener('resize', adjustForKeyboard);
-            window.visualViewport.removeEventListener('scroll', adjustForKeyboard);
-            observer.disconnect();
-        }
-    });
-    observer.observe(document.body, { childList: true });
-}
 
-return modal;
+    return modal;
 };
