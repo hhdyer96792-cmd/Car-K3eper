@@ -51,9 +51,7 @@
 
         App.store.initFromLocalStorage();
 
-        var authPanel = document.getElementById('auth-panel');
-        if (authPanel) authPanel.style.display = 'none'; // Скрываем, будем показывать в модалке
-
+        var authPanel = document.getElementById('auth-panel'); // может быть скрыт, не используется
         var mobileRow = document.getElementById('mobile-header-row2');
         if (mobileRow) mobileRow.style.display = 'none';
         var syncIndicator = document.getElementById('sync-indicator');
@@ -66,14 +64,13 @@
 
         function enterDemoMode() {
             isDemoMode = true;
-            // Очищаем старые данные
             App.store.operations = [];
             App.store.fuelLog = [];
             App.store.tireLog = [];
             App.store.parts = [];
             App.store.serviceRecords = [];
             App.store.mileageHistory = [];
-            // Заполняем демо-данными
+            // демо‑данные
             App.store.operations = [
                 { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
                 { id: 'demo2', category: 'Тормозная система', name: 'Тормозные колодки', intervalKm: 30000, lastMileage: 0 }
@@ -84,14 +81,12 @@
             App.store.settings.currentMileage = 5000;
             App.store.settings.currentMotohours = 100;
             App.store.saveToLocalStorage();
-            // Показываем интерфейс
             document.getElementById('data-panel').style.display = 'block';
             if (typeof App.renderAll === 'function') App.renderAll();
             App.toast('Демо‑режим. Войдите, чтобы сохранить данные.', 'info');
         }
 
         function initAuthFormEvents(container) {
-            // Табы
             var tabLogin = container.querySelector('#tab-login');
             var tabSocial = container.querySelector('#tab-social');
             var authLoginDiv = container.querySelector('#auth-login');
@@ -105,7 +100,6 @@
                 authSocialDiv.style.display = 'block'; authLoginDiv.style.display = 'none';
             });
 
-            // Google
             var googleBtn = container.querySelector('#supabase-auth-btn');
             if (googleBtn) {
                 googleBtn.addEventListener('click', function() {
@@ -116,7 +110,6 @@
                 });
             }
 
-            // Логин + пароль
             var loginForm = container.querySelector('#login-form');
             var loginMessage = container.querySelector('#login-message');
             var passwordConfirmLabel = container.querySelector('#password-confirm-label');
@@ -143,164 +136,72 @@
                 if (signUpBtn) {
                     signUpBtn.addEventListener('click', function() {
                         passwordConfirmLabel.style.display = 'block';
-var authPanel = document.getElementById('auth-panel'); // уже не используется, но пусть будет для обратной совместимости
-var sidebarLoginBtn = document.getElementById('sidebar-login');
-var drawerLoginBtn = document.getElementById('drawer-login');
+                        passwordConfirmInput.style.display = 'block';
+                        passwordConfirmInput.required = true;
 
-function openAuthModal() {
-    var template = document.getElementById('auth-template');
-    if (!template) {
-        console.error('Шаблон auth-template не найден');
-        return;
-    }
-    var content = template.content.cloneNode(true);
-    var modal = App.ui.createModal('Аккаунт', '');  // заголовок зададим внутри
-    var modalContent = modal.querySelector('.modal-content');
-    // Очищаем стандартный заголовок и вставляем свой вместе с формой
-    modalContent.innerHTML = '<span class="close">&times;</span>' +
-        '<h3 style="margin-top:0; margin-bottom:16px;">Аккаунт</h3>';
-    modalContent.appendChild(content);
-    document.body.classList.add('auth-modal-open');
-    // Инициализируем обработчики для формы внутри модалки
-    initAuthFormEvents(modalContent);
-    // Закрытие по крестику и оверлею
-    var closeBtn = modalContent.querySelector('.close');
-    closeBtn.addEventListener('click', function() {
-        modal.remove();
-        document.body.classList.remove('auth-modal-open');
-    });
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.remove();
-            document.body.classList.remove('auth-modal-open');
-        }
-    });
-    // Принудительно показываем модалку (она могла быть скрыта)
-    modal.style.display = 'flex';
-    App.initIcons();
-}
+                        var formData = new FormData(loginForm);
+                        var username = formData.get('username').trim();
+                        var password = formData.get('password');
+                        var passwordConfirm = formData.get('password_confirm');
+                        if (!username || !password || !passwordConfirm) {
+                            App.toast('Все поля обязательны', 'error');
+                            return;
+                        }
+                        if (password !== passwordConfirm) {
+                            App.toast('Пароли не совпадают', 'error');
+                            return;
+                        }
+                        if (password.length < 6) {
+                            App.toast('Пароль должен содержать минимум 6 символов', 'error');
+                            return;
+                        }
 
-function initAuthFormEvents(container) {
-    // Табы
-    var tabLogin = container.querySelector('#tab-login');
-    var tabSocial = container.querySelector('#tab-social');
-    var authLoginDiv = container.querySelector('#auth-login');
-    var authSocialDiv = container.querySelector('#auth-social');
-    if (tabLogin) tabLogin.addEventListener('click', function() {
-        tabLogin.classList.add('active'); tabSocial.classList.remove('active');
-        authLoginDiv.style.display = 'block'; authSocialDiv.style.display = 'none';
-    });
-    if (tabSocial) tabSocial.addEventListener('click', function() {
-        tabSocial.classList.add('active'); tabLogin.classList.remove('active');
-        authSocialDiv.style.display = 'block'; authLoginDiv.style.display = 'none';
-    });
-
-    // Google
-    var googleBtn = container.querySelector('#supabase-auth-btn');
-    if (googleBtn) {
-        googleBtn.addEventListener('click', function() {
-            App.supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.origin }
-            }).catch(function(err) { App.toast('Ошибка входа через Google', 'error'); });
-        });
-    }
-
-    // Логин + пароль
-    var loginForm = container.querySelector('#login-form');
-    var loginMessage = container.querySelector('#login-message');
-    var passwordConfirmLabel = container.querySelector('#password-confirm-label');
-    var passwordConfirmInput = container.querySelector('#password-confirm-input');
-
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            var formData = new FormData(loginForm);
-            var username = formData.get('username').trim();
-            var password = formData.get('password');
-            if (!username || !password) {
-                App.toast('Введите логин и пароль', 'error');
-                return;
-            }
-            var email = username + '@vesta.internal';
-            App.supabase.auth.signInWithPassword({ email: email, password: password })
-                .then(function(res) {
-                    if (res.error) loginMessage.textContent = 'Неверный логин или пароль.';
-                });
-        });
-
-        var signUpBtn = container.querySelector('#login-sign-up-btn');
-        if (signUpBtn) {
-            signUpBtn.addEventListener('click', function() {
-                passwordConfirmLabel.style.display = 'block';
-                passwordConfirmInput.style.display = 'block';
-                passwordConfirmInput.required = true;
-
-                var formData = new FormData(loginForm);
-                var username = formData.get('username').trim();
-                var password = formData.get('password');
-                var passwordConfirm = formData.get('password_confirm');
-                if (!username || !password || !passwordConfirm) {
-                    App.toast('Все поля обязательны', 'error');
-                    return;
-                }
-                if (password !== passwordConfirm) {
-                    App.toast('Пароли не совпадают', 'error');
-                    return;
-                }
-                if (password.length < 6) {
-                    App.toast('Пароль должен содержать минимум 6 символов', 'error');
-                    return;
-                }
-
-                var email = username + '@vesta.internal';
-                App.supabase.auth.signUp({
-                    email: email,
-                    password: password,
-                    options: { data: { username: username } }
-                }).then(function(res) {
-                    if (res.error) {
-                        App.toast('Ошибка регистрации: ' + res.error.message, 'error');
-                    } else {
-                        App.toast('Регистрация успешна! Выполняем вход...', 'success');
-                        App.supabase.auth.signInWithPassword({ email: email, password: password })
-                            .then(function(innerRes) {
-                                if (!innerRes.error) {
-                                    passwordConfirmLabel.style.display = 'none';
-                                    passwordConfirmInput.style.display = 'none';
-                                    passwordConfirmInput.required = false;
-                                    loginForm.reset();
-                                    loginMessage.textContent = '';
-                                    // Закрываем модалку
-                                    container.closest('.modal').remove();
-                                    document.body.classList.remove('auth-modal-open');
-                                    App.supabase.auth.getUser().then(function(userRes) {
-                                        if (userRes.data.user) generateAndShowRecoveryCodes(userRes.data.user.id, username);
+                        var email = username + '@vesta.internal';
+                        App.supabase.auth.signUp({
+                            email: email,
+                            password: password,
+                            options: { data: { username: username } }
+                        }).then(function(res) {
+                            if (res.error) {
+                                App.toast('Ошибка регистрации: ' + res.error.message, 'error');
+                            } else {
+                                App.toast('Регистрация успешна! Выполняем вход...', 'success');
+                                App.supabase.auth.signInWithPassword({ email: email, password: password })
+                                    .then(function(innerRes) {
+                                        if (!innerRes.error) {
+                                            passwordConfirmLabel.style.display = 'none';
+                                            passwordConfirmInput.style.display = 'none';
+                                            passwordConfirmInput.required = false;
+                                            loginForm.reset();
+                                            loginMessage.textContent = '';
+                                            container.closest('.modal').remove();
+                                            document.body.classList.remove('auth-modal-open');
+                                            App.supabase.auth.getUser().then(function(userRes) {
+                                                if (userRes.data.user) generateAndShowRecoveryCodes(userRes.data.user.id, username);
+                                            });
+                                        } else {
+                                            App.toast('Регистрация прошла, но вход не удался. Войдите вручную.', 'warning');
+                                        }
                                     });
-                                } else {
-                                    App.toast('Регистрация прошла, но вход не удался. Войдите вручную.', 'warning');
-                                }
-                            });
-                    }
-                });
-            });
+                            }
+                        });
+                    });
+                }
+            }
         }
-    }
-}
-
-// Привязываем кнопки
-if (sidebarLoginBtn) sidebarLoginBtn.addEventListener('click', openAuthModal);
-if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
 
         function openAuthModal() {
-            var authPanel = document.getElementById('auth-panel');
-            if (!authPanel) return;
-            var content = authPanel.innerHTML;
+            var template = document.getElementById('auth-template');
+            if (!template) {
+                console.error('Шаблон auth-template не найден');
+                return;
+            }
+            var content = template.content.cloneNode(true);
             var modal = App.ui.createModal('', '');
             var modalContent = modal.querySelector('.modal-content');
             modalContent.innerHTML = '<span class="close">&times;</span>' +
-                '<h3 style="margin-top:0; margin-bottom:16px;">Аккаунт</h3>' +
-                content;
+                '<h3 style="margin-top:0; margin-bottom:16px;">Аккаунт</h3>';
+            modalContent.appendChild(content);
             document.body.classList.add('auth-modal-open');
             initAuthFormEvents(modalContent);
             var closeBtn = modalContent.querySelector('.close');
@@ -314,9 +215,10 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
                     document.body.classList.remove('auth-modal-open');
                 }
             });
+            modal.style.display = 'flex';
+            App.initIcons();
         }
 
-        // Кнопки входа
         if (sidebarLoginBtn) sidebarLoginBtn.addEventListener('click', openAuthModal);
         if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
 
@@ -336,7 +238,6 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
             if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
             var carContainerEl = document.getElementById('car-selector-container');
             if (carContainerEl) carContainerEl.innerHTML = '';
-            // Очищаем данные
             App.store.operations = [];
             App.store.fuelLog = [];
             App.store.tireLog = [];
@@ -347,7 +248,6 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
             App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
             isLoggedIn = false;
             setInstallButtonVisible(false);
-            // Включаем демо‑режим
             enterDemoMode();
         }
         var logoutSidebarBtn = document.getElementById('sidebar-logout');
@@ -362,9 +262,7 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
             if (!navigator.onLine) {
                 isLoggedIn = true;
                 setInstallButtonVisible(true);
-                if (authPanel) authPanel.style.display = 'none';
-                var dp = document.getElementById('data-panel');
-                if (dp) dp.style.display = 'block';
+                document.getElementById('data-panel').style.display = 'block';
                 var syncIndicatorOffline = document.getElementById('sync-indicator');
                 if (syncIndicatorOffline) syncIndicatorOffline.style.display = '';
                 var mobileRowOffline = document.getElementById('mobile-header-row2');
@@ -393,10 +291,7 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
                     if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
                     if (drawerLoginBtn) drawerLoginBtn.style.display = 'none';
                     document.body.classList.remove('auth-modal-open');
-
-                    if (authPanel) authPanel.style.display = 'none';
-                    var dp = document.getElementById('data-panel');
-                    if (dp) dp.style.display = 'block';
+                    document.getElementById('data-panel').style.display = 'block';
                     var syncIndicatorOnline = document.getElementById('sync-indicator');
                     if (syncIndicatorOnline) syncIndicatorOnline.style.display = '';
                     var mobileRowOnline = document.getElementById('mobile-header-row2');
@@ -430,14 +325,6 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
                         }
                     }
 
-                    App.supabase.auth.getUser().then(function(userRes) {
-                        if (!userRes.data.user) return;
-                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', userRes.data.user.id).limit(1).then(function(subRes) {
-                            if (subRes.error) { console.warn('Ошибка проверки подписки:', subRes.error); return; }
-                            updatePushUI(!!(subRes.data && subRes.data.length > 0));
-                        });
-                    });
-
                     App.store.loadCars().then(async function() {
                         if (App.store.cars.length === 0) {
                             try {
@@ -461,15 +348,6 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
                             }
                             App.storage.loadAllData().then(function() {
                                 if (typeof App.renderAll === 'function') App.renderAll();
-                                var redirect = sessionStorage.redirect;
-                                if (redirect) {
-                                    sessionStorage.removeItem('redirect');
-                                    var url = new URL(redirect);
-                                    var inviteCode = url.searchParams.get('invite');
-                                    if (inviteCode) {
-                                        App.ui.pages.checkPendingInvites();
-                                    }
-                                }
                                 App.ui.pages.checkAndShowInitialParamsModal();
                             });
                         } else {
@@ -481,9 +359,7 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
                     setInstallButtonVisible(false);
                     if (sidebarLoginBtn) sidebarLoginBtn.style.display = '';
                     if (drawerLoginBtn) drawerLoginBtn.style.display = '';
-                    if (authPanel) authPanel.style.display = 'none';
-                    var dp = document.getElementById('data-panel');
-                    if (dp) dp.style.display = 'block'; // оставляем интерфейс видимым для демо-режима
+                    document.getElementById('data-panel').style.display = 'none';
                     var syncIndicatorOff = document.getElementById('sync-indicator');
                     if (syncIndicatorOff) syncIndicatorOff.style.display = 'none';
                     var mobileRowOff = document.getElementById('mobile-header-row2');
@@ -505,10 +381,6 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
                     App.store.mileageHistory = [];
                     App.store.saveToLocalStorage();
                     if (typeof App.renderAll === 'function') App.renderAll();
-                    // Если это был не демо-режим, включаем его
-                    if (!isDemoMode) {
-                        enterDemoMode();
-                    }
                 }
             });
 
@@ -520,10 +392,7 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
                     if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
                     if (drawerLoginBtn) drawerLoginBtn.style.display = 'none';
                     document.body.classList.remove('auth-modal-open');
-
-                    if (authPanel) authPanel.style.display = 'none';
-                    var dp = document.getElementById('data-panel');
-                    if (dp) dp.style.display = 'block';
+                    document.getElementById('data-panel').style.display = 'block';
                     var syncIndicatorSess = document.getElementById('sync-indicator');
                     if (syncIndicatorSess) syncIndicatorSess.style.display = '';
                     var mobileRowSess = document.getElementById('mobile-header-row2');
@@ -540,13 +409,6 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
                         if (sidebarUsernameSess && user.user_metadata && user.user_metadata.username) {
                             sidebarUsernameSess.textContent = '👤 ' + user.user_metadata.username;
                         }
-                    }
-
-                    if (user) {
-                        App.supabase.from('push_subscriptions').select('player_id').eq('user_id', user.id).limit(1).then(function(subRes) {
-                            if (subRes.error) { console.warn('Ошибка проверки подписки:', subRes.error); return; }
-                            updatePushUI(!!(subRes.data && subRes.data.length > 0));
-                        });
                     }
 
                     App.store.loadCars().then(async function() {
@@ -571,26 +433,12 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
                             }
                             App.storage.loadAllData().then(function() {
                                 if (typeof App.renderAll === 'function') App.renderAll();
-                                var redirect = sessionStorage.redirect;
-                                if (redirect) {
-                                    sessionStorage.removeItem('redirect');
-                                    var url = new URL(redirect);
-                                    var inviteCode = url.searchParams.get('invite');
-                                    if (inviteCode) {
-                                        App.ui.pages.checkPendingInvites();
-                                    }
-                                }
                                 App.ui.pages.checkAndShowInitialParamsModal();
                             });
                         } else {
                             if (typeof App.renderAll === 'function') App.renderAll();
                         }
                     });
-                } else {
-                    // Нет сессии — включаем демо-режим
-                    if (!isDemoMode) {
-                        enterDemoMode();
-                    }
                 }
             });
         }
@@ -623,7 +471,6 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
             handleOnlineSession();
         }
 
-        // Регистрация сервис-воркера
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register(new URL('./service-worker.js', location.href)).then(function(registration) {
                 console.log('✅ Сервис-воркер зарегистрирован:', registration.scope);
@@ -639,7 +486,7 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
             setTimeout(App.initIcons, 200);
         });
 
-        // ===== ПЛАВАЮЩАЯ FAB-КНОПКА (финальная версия с автоочисткой SVG) =====
+        // ===== ПЛАВАЮЩАЯ FAB-КНОПКА (финальная версия) =====
         (function() {
             var fab = document.createElement('div');
             fab.id = 'fab-menu';
@@ -655,7 +502,6 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
             document.body.appendChild(fab);
             App.initIcons();
 
-            // Автоматическая очистка всех SVG, которые появляются внутри FAB
             var observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     mutation.addedNodes.forEach(function(node) {
@@ -674,7 +520,6 @@ if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
             });
             observer.observe(fab, { childList: true, subtree: true });
 
-            // Однократная очистка всех уже существующих SVG
             fab.querySelectorAll('svg').forEach(function(svg) {
                 svg.removeAttribute('width');
                 svg.removeAttribute('height');
