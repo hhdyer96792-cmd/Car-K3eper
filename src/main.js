@@ -354,6 +354,36 @@
         // ======================= СЕССИЯ (с Realtime) =======================
         var isInitialized = false;
 
+        var isDemoMode = false;
+var sidebarLoginBtn = document.getElementById('sidebar-login');
+var drawerLoginBtn = document.getElementById('drawer-login');
+
+function enterDemoMode() {
+    isDemoMode = true;
+    // Очищаем старые данные
+    App.store.operations = [];
+    App.store.fuelLog = [];
+    App.store.tireLog = [];
+    App.store.parts = [];
+    App.store.serviceRecords = [];
+    App.store.mileageHistory = [];
+    // Заполняем демо-данными
+    App.store.operations = [
+        { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
+        { id: 'demo2', category: 'Тормозная система', name: 'Тормозные колодки', intervalKm: 30000, lastMileage: 0 }
+    ];
+    App.store.fuelLog = [
+        { date: '2026-05-01', mileage: 1000, liters: 45, pricePerLiter: 50, fuelType: 'Бензин' }
+    ];
+    App.store.settings.currentMileage = 5000;
+    App.store.settings.currentMotohours = 100;
+    App.store.saveToLocalStorage();
+    // Показываем интерфейс
+    document.getElementById('data-panel').style.display = 'block';
+    if (typeof App.renderAll === 'function') App.renderAll();
+    App.toast('Демо‑режим. Войдите, чтобы сохранить данные.', 'info');
+}
+        
         async function handleOnlineSession() {
             if (!navigator.onLine) {
                 isLoggedIn = true;
