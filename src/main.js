@@ -622,6 +622,7 @@
                 '<div id="fab-overlay" class="fab-overlay" style="display:none;"></div>' +
                 '<button id="fab-main-btn" class="fab-main"><i data-lucide="plus"></i></button>' +
                 '<div id="fab-actions" class="fab-actions">' +
+                    '<button id="fab-mileage" class="fab-action" title="Пробег"><i data-lucide="gauge"></i></button>' +
                     '<button id="fab-fuel" class="fab-action" title="Заправка"><i data-lucide="fuel"></i></button>' +
                     '<button id="fab-service" class="fab-action" title="ТО"><i data-lucide="wrench"></i></button>' +
                     '<button id="fab-part" class="fab-action" title="Запчасть"><i data-lucide="package"></i></button>' +
