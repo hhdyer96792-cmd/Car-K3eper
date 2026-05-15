@@ -1376,7 +1376,10 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     transform: translateY(20px) scale(0.5);
     opacity: 0;
 }
-.fab-action i { width: 38px !important; height: 38px !important; }
+#fab-menu .fab-action i {
+    width: 38px !important;
+    height: 38px !important;
+}
 
 .fab-actions.open .fab-action {
     transform: translateY(0) scale(1);
