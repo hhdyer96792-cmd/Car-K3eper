@@ -1377,7 +1377,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     opacity: 0;
 }
 #fab-menu .fab-action i.lucide,
-#fab-menu .fab-action i[data-lucide] {
+#fab-menu .fab-action i svg [data-lucide] {
     width: 40px !important;
     height: 40px !important;
 }
