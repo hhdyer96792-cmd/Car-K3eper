@@ -707,6 +707,112 @@
         alert(msg);
     }
 
+// ===== ПЛАВАЮЩАЯ FAB-КНОПКА (Speed Dial, draggable) =====
+(function() {
+    var fab = document.createElement('div');
+    fab.id = 'fab-menu';
+    fab.innerHTML =
+        '<div id="fab-overlay" class="fab-overlay" style="display:none;"></div>' +
+        '<button id="fab-main-btn" class="fab-main"><i data-lucide="plus"></i></button>' +
+        '<div id="fab-actions" class="fab-actions" style="display:none;">' +
+            '<button id="fab-fuel" class="fab-action" title="Заправка"><i data-lucide="fuel"></i></button>' +
+            '<button id="fab-service" class="fab-action" title="ТО"><i data-lucide="wrench"></i></button>' +
+            '<button id="fab-part" class="fab-action" title="Запчасть"><i data-lucide="package"></i></button>' +
+        '</div>';
+    document.body.appendChild(fab);
+    App.initIcons();
+
+    // Перетаскивание
+    var isDragging = false, startX, startY, startLeft, startTop;
+    var mainBtn = document.getElementById('fab-main-btn');
+    var actions = document.getElementById('fab-actions');
+    var overlay = document.getElementById('fab-overlay');
+    var actionsOpen = false;
+
+    mainBtn.addEventListener('pointerdown', function(e) {
+        if (e.target.closest('#fab-actions')) return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        var rect = fab.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        fab.style.transition = 'none';
+        mainBtn.setPointerCapture(e.pointerId);
+    });
+
+    window.addEventListener('pointermove', function(e) {
+        if (!isDragging) return;
+        var dx = e.clientX - startX;
+        var dy = e.clientY - startY;
+        var newLeft = Math.min(window.innerWidth - 60, Math.max(0, startLeft + dx));
+        var newTop = Math.min(window.innerHeight - 60, Math.max(0, startTop + dy));
+        fab.style.left = newLeft + 'px';
+        fab.style.top = newTop + 'px';
+    });
+
+    window.addEventListener('pointerup', function() {
+        if (!isDragging) return;
+        isDragging = false;
+        fab.style.transition = '';
+        localStorage.setItem('fab_position', JSON.stringify({ left: fab.style.left, top: fab.style.top }));
+    });
+
+    // Восстановление позиции
+    var saved = localStorage.getItem('fab_position');
+    if (saved) {
+        try {
+            var pos = JSON.parse(saved);
+            if (pos.left) fab.style.left = pos.left;
+            if (pos.top) fab.style.top = pos.top;
+        } catch(e) {}
+    }
+
+    // Раскрытие/скрытие Speed Dial
+    function openActions() {
+        actionsOpen = true;
+        overlay.style.display = 'block';
+        actions.style.display = 'flex';
+        mainBtn.querySelector('i').setAttribute('data-lucide', 'x');
+        App.initIcons();
+    }
+
+    function closeActions() {
+        actionsOpen = false;
+        overlay.style.display = 'none';
+        actions.style.display = 'none';
+        mainBtn.querySelector('i').setAttribute('data-lucide', 'plus');
+        App.initIcons();
+    }
+
+    mainBtn.addEventListener('click', function(e) {
+        if (isDragging) return;
+        if (actionsOpen) {
+            closeActions();
+        } else {
+            openActions();
+        }
+    });
+
+    overlay.addEventListener('click', function() {
+        closeActions();
+    });
+
+    // Обработчики для кнопок действий
+    document.getElementById('fab-fuel').addEventListener('click', function() {
+        closeActions();
+        App.ui.pages.openFuelModal(null);
+    });
+    document.getElementById('fab-service').addEventListener('click', function() {
+        closeActions();
+        App.ui.pages.openOperationForm(null);
+    });
+    document.getElementById('fab-part').addEventListener('click', function() {
+        closeActions();
+        App.ui.pages.openPartForm(null);
+    });
+})();
+    
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', onReady);
     } else {
