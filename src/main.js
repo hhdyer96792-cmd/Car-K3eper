@@ -577,49 +577,41 @@
             overlay.addEventListener('click', closeActions);
 
             document.getElementById('fab-mileage').addEventListener('click', function() {
-                closeActions();
-                var currentMileage = App.store.settings.currentMileage || 0;
-                var currentMotohours = App.store.settings.currentMotohours || 0;
-                var content =
-    '<form id="mileage-form" style="display:flex; flex-direction:column; gap:12px;">' +
-        '<label>Моточасы, ч</label>' +
-        '<input type="number" id="fab-motohours-input" value="' + currentMotohours + '" required>' +
-        '<label>Пробег, км</label>' +
-        '<input type="number" id="fab-mileage-input" value="' + currentMileage + '" required>' +
-
-                        '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
-                            '<button type="submit" class="primary-btn">Обновить</button>' +
-                            '<button type="button" class="cancel-btn secondary-btn">Отмена</button>' +
-                        '</div>' +
-                    '</form>';
-                var modal = App.ui.createModal('Обновить пробег', content);
-                var form = modal.querySelector('#mileage-form');
-                form.onsubmit = function(e) {
-                    e.preventDefault();
-                    var newM = parseFloat(document.getElementById('fab-mileage-input').value);
-                    var newH = parseFloat(document.getElementById('fab-motohours-input').value);
-                    if (isNaN(newM) || isNaN(newH)) {
-                        App.toast('Введите числа', 'error');
-                        return;
-                    }
-                    var tempM = document.createElement('input');
-                    tempM.type = 'number';
-                    tempM.id = 'dash-new-mileage';
-                    tempM.value = newM;
-                    var tempH = document.createElement('input');
-                    tempH.type = 'number';
-                    tempH.id = 'dash-new-motohours';
-                    tempH.value = newH;
-                    document.body.appendChild(tempM);
-                    document.body.appendChild(tempH);
-                    App.events.updateMileageAndAverages();
-                    tempM.remove();
-                    tempH.remove();
-                    modal.remove();
-                    App.toast('Пробег и моточасы обновлены', 'success');
-                };
-                modal.querySelector('.cancel-btn').onclick = function() { modal.remove(); };
-            });
+    closeActions();
+    var currentMileage = App.store.settings.currentMileage || 0;
+    var currentMotohours = App.store.settings.currentMotohours || 0;
+    var content =
+        '<form id="mileage-form" style="display:flex; flex-direction:column; gap:12px;">' +
+            '<label>Моточасы, ч</label>' +
+            '<input type="number" id="fab-motohours-input" value="' + currentMotohours + '" required>' +
+            '<label>Пробег, км</label>' +
+            '<input type="number" id="fab-mileage-input" value="' + currentMileage + '" required>' +
+            '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
+                '<button type="submit" class="primary-btn">Обновить</button>' +
+                '<button type="button" class="cancel-btn secondary-btn">Отмена</button>' +
+            '</div>' +
+        '</form>';
+    var modal = App.ui.createModal('Обновить пробег', content);
+    var form = modal.querySelector('#mileage-form');
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        var newM = parseFloat(document.getElementById('fab-mileage-input').value);
+        var newH = parseFloat(document.getElementById('fab-motohours-input').value);
+        if (isNaN(newM) || isNaN(newH)) {
+            App.toast('Введите числа', 'error');
+            return;
+        }
+        // Записываем напрямую в поля дашборда, если они есть
+        var dashM = document.getElementById('dash-new-mileage');
+        var dashH = document.getElementById('dash-new-motohours');
+        if (dashM) dashM.value = newM;
+        if (dashH) dashH.value = newH;
+        App.events.updateMileageAndAverages();
+        modal.remove();
+        App.toast('Пробег и моточасы обновлены', 'success');
+    };
+    modal.querySelector('.cancel-btn').onclick = function() { modal.remove(); };
+});
 
             document.getElementById('fab-fuel').addEventListener('click', function() {
                 closeActions();
