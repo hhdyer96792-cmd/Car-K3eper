@@ -581,11 +581,12 @@
                 var currentMileage = App.store.settings.currentMileage || 0;
                 var currentMotohours = App.store.settings.currentMotohours || 0;
                 var content =
-                    '<form id="mileage-form" style="display:flex; flex-direction:column; gap:12px;">' +
-                        '<label>Пробег, км</label>' +
-                        '<input type="number" id="fab-mileage-input" value="' + currentMileage + '" required>' +
-                        '<label>Моточасы, ч</label>' +
-                        '<input type="number" id="fab-motohours-input" value="' + currentMotohours + '" required>' +
+    '<form id="mileage-form" style="display:flex; flex-direction:column; gap:12px;">' +
+        '<label>Моточасы, ч</label>' +
+        '<input type="number" id="fab-motohours-input" value="' + currentMotohours + '" required>' +
+        '<label>Пробег, км</label>' +
+        '<input type="number" id="fab-mileage-input" value="' + currentMileage + '" required>' +
+
                         '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
                             '<button type="submit" class="primary-btn">Обновить</button>' +
                             '<button type="button" class="cancel-btn secondary-btn">Отмена</button>' +
