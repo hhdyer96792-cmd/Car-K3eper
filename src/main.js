@@ -744,17 +744,17 @@
     });
 
     window.addEventListener('pointermove', function(e) {
-        if (!isDragging) return;
-        var dx = e.clientX - startX;
-        var dy = e.clientY - startY;
-        if (Math.abs(dx) < dragThreshold && Math.abs(dy) < dragThreshold) return;
-        moved = true;
-        requestAnimationFrame(function() {
-            var newLeft = Math.min(window.innerWidth - 64, Math.max(0, startLeft + dx));
-            var newTop = Math.min(window.innerHeight - 64, Math.max(0, startTop + dy));
-            fab.style.left = newLeft + 'px';
-            fab.style.top = newTop + 'px';
-        });
+    if (!isDragging) return;
+    var dx = e.clientX - startX;
+    var dy = e.clientY - startY;
+    if (Math.abs(dx) < dragThreshold && Math.abs(dy) < dragThreshold) return;
+    moved = true;
+    // Сразу обновляем позицию, без rAF
+    var newLeft = Math.min(window.innerWidth - 64, Math.max(0, startLeft + dx));
+    var newTop = Math.min(window.innerHeight - 64, Math.max(0, startTop + dy));
+    fab.style.left = newLeft + 'px';
+    fab.style.top = newTop + 'px';
+});
     });
 
     window.addEventListener('pointerup', function() {
