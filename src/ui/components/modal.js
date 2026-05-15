@@ -73,14 +73,14 @@ App.ui.createModal = function(title, content) {
             }
         }
         setTimeout(function() {
-            if (modalEl.parentNode) {
-                modalEl.remove();
-                document.body.style.overflow = '';
-            }
-            if (App.ui.currentModal === modalEl) {
-                App.ui.currentModal = null;
-            }
-        }, 250);
+    if (modalEl.parentNode) {
+        modalEl.remove();
+    }
+    document.body.style.overflow = '';   // всегда сбрасываем
+    if (App.ui.currentModal === modalEl) {
+        App.ui.currentModal = null;
+    }
+}, 250);
     }
 
     // Сохраняем ссылку на текущее модальное окно
