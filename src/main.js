@@ -230,26 +230,32 @@
 
         // ===== Кнопка «Выйти» =====
         function doLogout() {
-            var loginFormEl = document.getElementById('login-form');
-            if (loginFormEl) loginFormEl.reset();
-            var usernameDisplayEl = document.getElementById('username-display');
-            if (usernameDisplayEl) usernameDisplayEl.textContent = '';
-            var sidebarUsernameEl = document.getElementById('sidebar-username');
-            if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
-            var carContainerEl = document.getElementById('car-selector-container');
-            if (carContainerEl) carContainerEl.innerHTML = '';
-            App.store.operations = [];
-            App.store.fuelLog = [];
-            App.store.tireLog = [];
-            App.store.parts = [];
-            App.store.serviceRecords = [];
-            App.store.mileageHistory = [];
-            App.store.saveToLocalStorage();
-            App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
-            isLoggedIn = false;
-            setInstallButtonVisible(false);
-            enterDemoMode();
-        }
+    var loginFormEl = document.getElementById('login-form');
+    if (loginFormEl) loginFormEl.reset();
+    var usernameDisplayEl = document.getElementById('username-display');
+    if (usernameDisplayEl) usernameDisplayEl.textContent = '';
+    var sidebarUsernameEl = document.getElementById('sidebar-username');
+    if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
+    var carContainerEl = document.getElementById('car-selector-container');
+    if (carContainerEl) carContainerEl.innerHTML = '';
+    App.store.operations = [];
+    App.store.fuelLog = [];
+    App.store.tireLog = [];
+    App.store.parts = [];
+    App.store.serviceRecords = [];
+    App.store.mileageHistory = [];
+    App.store.saveToLocalStorage();
+    App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
+    isLoggedIn = false;
+    setInstallButtonVisible(false);
+    if (sidebarLoginBtn) sidebarLoginBtn.style.display = '';
+    if (drawerLoginBtn) drawerLoginBtn.style.display = '';
+    // Закрываем drawer при выходе
+    if (typeof App.events.closeDrawer === 'function') {
+        App.events.closeDrawer();
+    }
+    enterDemoMode();
+}
         var logoutSidebarBtn = document.getElementById('sidebar-logout');
         if (logoutSidebarBtn) logoutSidebarBtn.addEventListener('click', doLogout);
         var logoutDrawerBtn = document.getElementById('drawer-logout');
