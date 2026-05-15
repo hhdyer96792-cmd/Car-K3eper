@@ -638,7 +638,7 @@
                     svg.style.width = '32px';
                     svg.style.height = '32px';
                 });
-            }, 50);
+            }, 100);
 
             var mainBtn = document.getElementById('fab-main-btn');
             var actions = document.getElementById('fab-actions');
