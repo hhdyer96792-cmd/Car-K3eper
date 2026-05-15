@@ -199,6 +199,7 @@ App.events.initNavigation = function() {
 };
 
 App.events.switchToTab = function(tabId) {
+    document.body.style.overflow = '';
     var allTabs = document.querySelectorAll('.tab-content');
     allTabs.forEach(function(tab) {
         if (tab.id === 'tab-' + tabId) {
