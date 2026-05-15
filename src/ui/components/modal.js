@@ -2,17 +2,7 @@
 window.App = window.App || {};
 App.ui = App.ui || {};
 
-/**
- * Создаёт модальное окно, автоматически выбирая центрированное (десктоп) или bottom sheet (мобильные).
- * На десктопе (>768px) — центрированное окно с анимацией scale.
- * На мобильных — bottom sheet, выезжающий снизу.
- * При создании автоматически закрывает предыдущее модальное окно.
- * @param {string} title - Заголовок
- * @param {string} content - HTML-содержимое
- * @returns {HTMLElement} DOM-элемент модального окна
- */
 App.ui.createModal = function(title, content) {
-    // Закрываем предыдущее модальное окно, если оно открыто
     if (App.ui.currentModal) {
         App.ui.currentModal.remove();
         document.body.style.overflow = '';
@@ -23,7 +13,6 @@ App.ui.createModal = function(title, content) {
     modal.className = 'modal';
     modal.style.display = 'flex';
 
-    // Внутренняя часть (всегда modal-content)
     var innerHtml =
         '<div class="modal-content">' +
             '<span class="close">&times;</span>' +
@@ -37,56 +26,41 @@ App.ui.createModal = function(title, content) {
     // Блокируем скролл фона
     document.body.style.overflow = 'hidden';
 
+    // *** ПЕРЕОПРЕДЕЛЯЕМ remove, чтобы всегда сбрасывать overflow ***
+    var origRemove = modal.remove;
+    modal.remove = function() {
+        document.body.style.overflow = '';
+        if (App.ui.currentModal === modal) {
+            App.ui.currentModal = null;
+        }
+        origRemove.call(this);
+    };
+
     // Закрытие по крестику
     var closeBtn = modal.querySelector('.close');
     if (closeBtn) {
         closeBtn.onclick = function() {
-            closeModal(modal);
+            modal.remove();   // теперь вызовет переопределённый метод
         };
     }
 
-    // Закрытие по клику на оверлей (сам modal)
+    // Закрытие по клику на оверлей
     modal.addEventListener('click', function(e) {
         if (e.target === modal) {
-            closeModal(modal);
+            modal.remove();
         }
     });
 
     // Закрытие по Escape
     function escapeHandler(e) {
         if (e.key === 'Escape') {
-            closeModal(modal);
+            modal.remove();
             document.removeEventListener('keydown', escapeHandler);
         }
     }
     document.addEventListener('keydown', escapeHandler);
 
-    // Плавное закрытие с анимацией
-    function closeModal(modalEl) {
-        modalEl.style.opacity = '0';
-        var contentEl = modalEl.querySelector('.modal-content');
-        if (contentEl) {
-            if (window.innerWidth < 768) {
-                contentEl.style.transform = 'translateY(100%)';
-            } else {
-                contentEl.style.transform = 'scale(0.96)';
-            }
-        }
-        setTimeout(function() {
-    if (modalEl.parentNode) {
-        modalEl.remove();
-    }
-    document.body.style.overflow = '';   // всегда сбрасываем
-    if (App.ui.currentModal === modalEl) {
-        App.ui.currentModal = null;
-    }
-}, 250);
-    }
-
-    // Сохраняем ссылку на текущее модальное окно
     App.ui.currentModal = modal;
-
-    // Инициализируем иконки внутри модалки
     App.initIcons();
 
     // Прилепляем модалку к клавиатуре (мобильные)
