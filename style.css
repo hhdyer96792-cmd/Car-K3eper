@@ -1350,6 +1350,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     position: absolute;
     bottom: 70px;
     right: 0;
+    left: auto; 
     display: flex;
     flex-direction: column;
     gap: 12px;
