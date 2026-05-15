@@ -23,10 +23,8 @@ App.ui.createModal = function(title, content) {
     modal.innerHTML = innerHtml;
     document.body.appendChild(modal);
 
-    // Блокируем скролл фона
     document.body.style.overflow = 'hidden';
 
-    // *** ПЕРЕОПРЕДЕЛЯЕМ remove, чтобы всегда сбрасывать overflow ***
     var origRemove = modal.remove;
     modal.remove = function() {
         document.body.style.overflow = '';
@@ -36,22 +34,19 @@ App.ui.createModal = function(title, content) {
         origRemove.call(this);
     };
 
-    // Закрытие по крестику
     var closeBtn = modal.querySelector('.close');
     if (closeBtn) {
         closeBtn.onclick = function() {
-            modal.remove();   // теперь вызовет переопределённый метод
+            modal.remove();
         };
     }
 
-    // Закрытие по клику на оверлей
     modal.addEventListener('click', function(e) {
         if (e.target === modal) {
             modal.remove();
         }
     });
 
-    // Закрытие по Escape
     function escapeHandler(e) {
         if (e.key === 'Escape') {
             modal.remove();
@@ -63,7 +58,6 @@ App.ui.createModal = function(title, content) {
     App.ui.currentModal = modal;
     App.initIcons();
 
-    // Прилепляем модалку к клавиатуре (мобильные)
     if (window.visualViewport && window.innerWidth < 768) {
         var contentEl = modal.querySelector('.modal-content');
         function adjustForKeyboard() {
@@ -89,4 +83,70 @@ App.ui.createModal = function(title, content) {
     }
 
     return modal;
+};
+
+/**
+ * Показывает модальное окно подтверждения и вызывает callback при согласии.
+ * @param {string} message - текст вопроса
+ * @param {function} onConfirm - функция, вызываемая при ответе «Да»
+ */
+App.ui.confirmModal = function(message, onConfirm) {
+    var content = '<p style="margin-bottom:16px;">' + App.utils.escapeHtml(message) + '</p>' +
+        '<div class="modal-actions" style="display:flex; gap:8px; justify-content:center;">' +
+            '<button id="confirm-yes-btn" class="primary-btn">Да</button>' +
+            '<button id="confirm-no-btn" class="secondary-btn">Нет</button>' +
+        '</div>';
+    var modal = App.ui.createModal('Подтверждение', content);
+    document.getElementById('confirm-yes-btn').addEventListener('click', function() {
+        modal.remove();
+        if (typeof onConfirm === 'function') onConfirm();
+    });
+    document.getElementById('confirm-no-btn').addEventListener('click', function() {
+        modal.remove();
+    });
+};
+
+/**
+ * Показывает модальное окно с полем ввода и вызывает callback с введённым значением.
+ * @param {string} title - заголовок
+ * @param {string} defaultValue - начальное значение
+ * @param {function} onSubmit - функция, принимающая введённую строку
+ */
+App.ui.promptModal = function(title, defaultValue, onSubmit) {
+    var content = '<input type="text" id="prompt-input" value="' + App.utils.escapeHtml(defaultValue || '') + '" style="margin-bottom:16px;">' +
+        '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
+            '<button id="prompt-ok-btn" class="primary-btn">ОК</button>' +
+            '<button id="prompt-cancel-btn" class="secondary-btn">Отмена</button>' +
+        '</div>';
+    var modal = App.ui.createModal(title, content);
+    var input = document.getElementById('prompt-input');
+    input.focus();
+    input.select();
+    document.getElementById('prompt-ok-btn').addEventListener('click', function() {
+        modal.remove();
+        if (typeof onSubmit === 'function') onSubmit(input.value);
+    });
+    document.getElementById('prompt-cancel-btn').addEventListener('click', function() {
+        modal.remove();
+    });
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('prompt-ok-btn').click();
+        }
+    });
+};
+
+/**
+ * Показывает информационное модальное окно с кнопкой «ОК».
+ * @param {string} message - текст сообщения
+ */
+App.ui.alertModal = function(message) {
+    var content = '<p style="margin-bottom:16px; white-space:pre-wrap;">' + App.utils.escapeHtml(message) + '</p>' +
+        '<div class="modal-actions" style="display:flex; gap:8px; justify-content:center;">' +
+            '<button id="alert-ok-btn" class="primary-btn">ОК</button>' +
+        '</div>';
+    var modal = App.ui.createModal('Информация', content);
+    document.getElementById('alert-ok-btn').addEventListener('click', function() {
+        modal.remove();
+    });
 };
