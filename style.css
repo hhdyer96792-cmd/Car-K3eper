@@ -1331,7 +1331,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     position: relative;
     z-index: 2;
 }
-.fab-main i { width: 24px; height: 24px; }  /* фиксированный размер иконки */
+.fab-main i { width: 36px !important; height: 36px !important; }
 .fab-main:hover {
     background: var(--primary-hover);
     transform: scale(1.1);
@@ -1350,7 +1350,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     position: absolute;
     bottom: 70px;
     right: 0;
-    left: auto; 
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1377,7 +1376,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     transform: translateY(20px) scale(0.5);
     opacity: 0;
 }
-.fab-action i { width: 22px; height: 22px; }
+.fab-action i { width: 30px !important; height: 30px !important; }
 
 .fab-actions.open .fab-action {
     transform: translateY(0) scale(1);
@@ -1393,19 +1392,11 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     transform: scale(1.1);
 }
 
+/* Десктоп: фиксируем в левом нижнем углу над кнопками сайдбара */
 @media (min-width: 768px) {
     #fab-menu {
         left: 20px;
         right: auto;
-        bottom: 80px;         /* над кнопками темы/выхода */
+        bottom: 80px;
     }
-}
-
-#fab-main-btn i {
-    width: 36px !important;
-    height: 36px !important;
-}
-.fab-action i {
-    width: 30px !important;
-    height: 30px !important;
 }
