@@ -51,12 +51,23 @@
 
         App.store.initFromLocalStorage();
 
+        // Глобальная функция перерисовки текущей вкладки – определена ДО первого использования
+        App.renderAll = function() {
+            var activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return;
+            var tabId = activeTab.id.replace('tab-', '');
+            if (typeof App.events.switchToTab === 'function') {
+                App.events.switchToTab(tabId);
+            }
+        };
+
         var authPanel = document.getElementById('auth-panel');
         var mobileRow = document.getElementById('mobile-header-row2');
         if (mobileRow) mobileRow.style.display = 'none';
         var syncIndicator = document.getElementById('sync-indicator');
         if (syncIndicator) syncIndicator.style.display = 'none';
 
+        // ======================= ДЕМО‑РЕЖИМ И АВТОРИЗАЦИЯ =======================
         var isDemoMode = false;
         var sidebarLoginBtn = document.getElementById('sidebar-login');
         var drawerLoginBtn = document.getElementById('drawer-login');
@@ -72,9 +83,21 @@
             ];
             App.store.settings.currentMileage = 5000;
             App.store.settings.currentMotohours = 100;
+
+            // Демо‑автомобиль
+            if (!App.store.cars || App.store.cars.length === 0) {
+                App.store.cars = [{
+                    id: 'demo-car',
+                    name: 'Мой автомобиль',
+                    user_id: 'demo'
+                }];
+                App.store.activeCarId = 'demo-car';
+                localStorage.setItem('vesta_active_car_id', 'demo-car');
+            }
+
             App.store.saveToLocalStorage();
             document.getElementById('data-panel').style.display = 'block';
-            if (typeof App.renderAll === 'function') App.renderAll();
+            App.renderAll();
             App.toast('Демо‑режим. Войдите, чтобы сохранить данные.', 'info');
         }
 
@@ -222,11 +245,37 @@
         if (sidebarLoginBtn) sidebarLoginBtn.addEventListener('click', openAuthModal);
         if (drawerLoginBtn) drawerLoginBtn.addEventListener('click', openAuthModal);
 
+        // PWA install handler
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            setInstallButtonVisible(isLoggedIn);
+        });
+        window.addEventListener('appinstalled', function() {
+            console.log('App installed');
+            deferredPrompt = null;
+            setInstallButtonVisible(false);
+        });
+
+        setTimeout(function() {
+            if (!deferredPrompt && isLoggedIn) {
+                var installBtn = document.getElementById('pwa-install-btn');
+                if (installBtn) {
+                    installBtn.style.display = 'block';
+                    installBtn.addEventListener('click', function() {
+                        alert('Чтобы установить приложение, откройте меню браузера и выберите "Добавить на главный экран" (или "Установить").');
+                    });
+                }
+            }
+        }, 3000);
+
+        // Демо‑режим при старте, если нет сессии
         var savedSession = localStorage.getItem('supabase.auth.token');
         if (!savedSession) {
             enterDemoMode();
         }
 
+        // ===== Кнопка «Выйти» =====
         function doLogout() {
             var loginFormEl = document.getElementById('login-form');
             if (loginFormEl) loginFormEl.reset();
@@ -250,13 +299,14 @@
             if (drawerLoginBtn) drawerLoginBtn.style.display = '';
             if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
             enterDemoMode();
+            if (typeof App.ui.pages.renderCarSelector === 'function') App.ui.pages.renderCarSelector();
         }
-
         var logoutSidebarBtn = document.getElementById('sidebar-logout');
         if (logoutSidebarBtn) logoutSidebarBtn.addEventListener('click', doLogout);
         var logoutDrawerBtn = document.getElementById('drawer-logout');
         if (logoutDrawerBtn) logoutDrawerBtn.addEventListener('click', doLogout);
 
+        // ======================= СЕССИЯ (с Realtime) =======================
         var isInitialized = false;
 
         async function handleOnlineSession() {
@@ -278,10 +328,8 @@
                 if (sidebarUsernameOffline) sidebarUsernameOffline.textContent = cachedUsername ? '👤 ' + cachedUsername : '';
 
                 App.store.loadCars().then(function() {
-                    if (typeof App.ui.pages.renderCarSelector === 'function') {
-                        App.ui.pages.renderCarSelector();
-                    }
-                    if (typeof App.renderAll === 'function') App.renderAll();
+                    App.ui.pages.renderCarSelector();
+                    App.renderAll();
                 });
                 return;
             }
@@ -343,24 +391,19 @@
                             App.store.setActiveCar(App.store.cars[0].id);
                         }
 
-                        if (typeof App.ui.pages.renderCarSelector === 'function') {
-                            App.ui.pages.renderCarSelector();
-                        }
-                        if (typeof App.ui.pages.checkPendingInvites === 'function') {
-                            App.ui.pages.checkPendingInvites();
-                        }
+                        App.ui.pages.renderCarSelector();
+                        if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
+                        App.ui.pages.checkPendingInvites();
                         if (App.store.activeCarId) {
                             if (App.realtime && App.realtime.subscribeToCar) {
                                 App.realtime.subscribeToCar(App.store.activeCarId);
                             }
                             App.storage.loadAllData().then(function() {
-                                if (typeof App.renderAll === 'function') App.renderAll();
-                                if (typeof App.ui.pages.checkAndShowInitialParamsModal === 'function') {
-                                    App.ui.pages.checkAndShowInitialParamsModal();
-                                }
+                                App.renderAll();
+                                App.ui.pages.checkAndShowInitialParamsModal();
                             });
                         } else {
-                            if (typeof App.renderAll === 'function') App.renderAll();
+                            App.renderAll();
                         }
                     });
                 } else {
@@ -389,7 +432,7 @@
                     App.store.serviceRecords = [];
                     App.store.mileageHistory = [];
                     App.store.saveToLocalStorage();
-                    if (typeof App.renderAll === 'function') App.renderAll();
+                    App.renderAll();
                 }
             });
 
@@ -435,21 +478,18 @@
                             App.store.setActiveCar(App.store.cars[0].id);
                         }
 
-                        if (typeof App.ui.pages.renderCarSelector === 'function') {
-                            App.ui.pages.renderCarSelector();
-                        }
+                        App.ui.pages.renderCarSelector();
+                        if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
                         if (App.store.activeCarId) {
                             if (App.realtime && App.realtime.subscribeToCar) {
                                 App.realtime.subscribeToCar(App.store.activeCarId);
                             }
                             App.storage.loadAllData().then(function() {
-                                if (typeof App.renderAll === 'function') App.renderAll();
-                                if (typeof App.ui.pages.checkAndShowInitialParamsModal === 'function') {
-                                    App.ui.pages.checkAndShowInitialParamsModal();
-                                }
+                                App.renderAll();
+                                App.ui.pages.checkAndShowInitialParamsModal();
                             });
                         } else {
-                            if (typeof App.renderAll === 'function') App.renderAll();
+                            App.renderAll();
                         }
                     });
                 }
@@ -625,9 +665,97 @@
         })();
     }
 
-    async function recoverViaTelegram(msgEl) { /* ... без изменений ... */ }
-    async function recoverViaRecoveryCode(msgEl) { /* ... без изменений ... */ }
-    async function generateAndShowRecoveryCodes(userId, username) { /* ... без изменений ... */ }
+    // ===== Функции восстановления =====
+    async function recoverViaTelegram(msgEl) {
+        var username = prompt('Введите ваш логин:');
+        if (!username) return;
+
+        var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
+        if (res.error || !res.data || res.data.length === 0) { msgEl.textContent = 'Пользователь не найден'; return; }
+        var userData = res.data[0];
+
+        var setRes = await App.supabase.rpc('get_telegram_settings', { p_user_id: userData.id });
+        if (setRes.error || !setRes.data || !setRes.data.telegram_chat_id || !setRes.data.telegram_token) {
+            msgEl.textContent = 'Telegram не привязан. Используйте другой способ.'; return;
+        }
+
+        var code = Math.floor(100000 + Math.random() * 900000).toString();
+        await App.supabase.from('recovery_codes').insert({ user_id: userData.id, code_hash: code });
+        await fetch(`https://api.telegram.org/bot${setRes.data.telegram_token}/sendMessage`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ chat_id: setRes.data.telegram_chat_id, text: `Код для сброса пароля: ${code}` })
+        });
+
+        var input = prompt('Код отправлен в Telegram. Введите его:');
+        if (!input) return;
+
+        var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: input });
+        if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
+
+        var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
+        if (!newPassword || newPassword.length < 6) {
+            msgEl.textContent = 'Пароль должен содержать не менее 6 символов';
+            return;
+        }
+
+        var fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reset_token: tokenRes.data, newPassword: newPassword })
+        });
+
+        if (fetchRes.ok) {
+            msgEl.textContent = 'Пароль успешно изменён! Теперь войдите с новым паролем.';
+        } else {
+            var errText = await fetchRes.text();
+            msgEl.textContent = 'Ошибка при сбросе: ' + errText;
+        }
+    }
+
+    async function recoverViaRecoveryCode(msgEl) {
+        var username = prompt('Введите ваш логин:');
+        if (!username) return;
+
+        var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
+        if (res.error || !res.data || res.data.length === 0) { msgEl.textContent = 'Пользователь не найден'; return; }
+        var userData = res.data[0];
+
+        var code = prompt('Введите резервный код:');
+        if (!code) return;
+
+        var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: code });
+        if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
+
+        var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
+        if (!newPassword || newPassword.length < 6) {
+            msgEl.textContent = 'Пароль должен содержать не менее 6 символов';
+            return;
+        }
+
+        var fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reset_token: tokenRes.data, newPassword: newPassword })
+        });
+
+        if (fetchRes.ok) {
+            msgEl.textContent = 'Пароль успешно изменён! Теперь войдите с новым паролем.';
+        } else {
+            var errText = await fetchRes.text();
+            msgEl.textContent = 'Ошибка при сбросе: ' + errText;
+        }
+    }
+
+    async function generateAndShowRecoveryCodes(userId, username) {
+        var codes = [];
+        for (var i = 0; i < 8; i++) {
+            var code = Array.from({length: 8}, function() { return Math.floor(Math.random() * 10); }).join('');
+            codes.push(code);
+            await App.supabase.from('recovery_codes').insert({ user_id: userId, code_hash: code });
+        }
+        var msg = 'Ваши резервные коды для восстановления доступа (сохраните их!):\n\n' + codes.join('\n');
+        alert(msg);
+    }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', onReady);
