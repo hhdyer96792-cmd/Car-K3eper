@@ -252,14 +252,224 @@ App.ui.pages.deleteCar = async function() {
 };
 
 /* ========== ОСТАЛЬНЫЕ ФУНКЦИИ ========== */
-App.ui.pages.inviteUser = function() { /* ... без изменений ... */ };
-App.ui.pages.subscribeToCalendar = async function() { /* ... без изменений ... */ };
+App.ui.pages.inviteUser = function() {
+    var carId = App.store.activeCarId;
+    if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
+    App.supabase.from('car_shares')
+        .insert({ car_id: carId, invited_email: null })
+        .select()
+        .single()
+        .then(function(res) {
+            if (res.error) throw res.error;
+            var inviteCode = res.data.invite_code;
+            var inviteLink = window.location.origin + '/Car-K3eper/?invite=' + inviteCode;
+            var copyHtml = '<div style="margin-top:12px;">' +
+                '<p class="hint">Ссылка для приглашения:</p>' +
+                '<input type="text" value="' + inviteLink + '" readonly style="width:100%;" id="invite-link-input">' +
+                '<button id="copy-invite-link-btn" class="primary-btn" style="margin-top:8px;">Копировать</button>' +
+                '</div>';
+            var modal = App.ui.createModal('Пригласить пользователя', copyHtml);
+            document.getElementById('copy-invite-link-btn').addEventListener('click', function() {
+                var input = document.getElementById('invite-link-input');
+                input.select();
+                document.execCommand('copy');
+                App.toast('Ссылка скопирована в буфер обмена', 'success');
+            });
+        }).catch(function(err) {
+            console.error(err);
+            App.toast('Ошибка создания приглашения', 'error');
+        });
+};
+
+App.ui.pages.subscribeToCalendar = async function() {
+    var carId = App.store.activeCarId;
+    if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
+    var { data: existing, error: selectError } = await App.supabase
+        .from('calendar_tokens')
+        .select('token')
+        .eq('car_id', carId)
+        .maybeSingle();
+    if (selectError) {
+        console.error('Ошибка проверки токена:', selectError);
+        App.toast('Ошибка получения токена', 'error');
+        return;
+    }
+    var token;
+    if (existing && existing.token) {
+        token = existing.token;
+    } else {
+        var newToken = crypto.randomUUID();
+        var { data: inserted, error: insertError } = await App.supabase
+            .from('calendar_tokens')
+            .insert({ car_id: carId, token: newToken })
+            .select('token')
+            .single();
+        if (insertError) {
+            console.error('Ошибка создания токена:', insertError);
+            App.toast('Ошибка создания токена', 'error');
+            return;
+        }
+        token = inserted.token;
+    }
+    var feedUrl = `https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/calendar-feed?token=${token}`;
+    var copyHtml = '<div style="margin-top:12px;">' +
+        '<p class="hint">Скопируйте ссылку и добавьте в свой календарь как интернет-календарь:</p>' +
+        '<input type="text" value="' + feedUrl + '" readonly style="width:100%;" id="calendar-feed-url">' +
+        '<button id="copy-feed-url-btn" class="primary-btn" style="margin-top:8px;">Копировать</button>' +
+        '</div>';
+    var modal = App.ui.createModal('Подписка на календарь', copyHtml);
+    document.getElementById('copy-feed-url-btn').addEventListener('click', function() {
+        var input = document.getElementById('calendar-feed-url');
+        input.select();
+        document.execCommand('copy');
+        App.toast('Ссылка скопирована', 'success');
+    });
+};
+
 App.ui.pages.updateCurrentCarName = function() {
     var car = App.store.cars.find(function(c) { return c.id == App.store.activeCarId; });
     var el = document.getElementById('current-car-name');
     if (el) el.textContent = car ? car.name : '';
 };
-App.ui.pages.checkPendingInvites = function() { /* ... без изменений ... */ };
+
+App.ui.pages.checkPendingInvites = function() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var inviteCode = urlParams.get('invite');
+
+    if (inviteCode && !App.supabase.auth.getUser()) {
+        sessionStorage.setItem('pendingInvite', inviteCode);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+    }
+
+    if (inviteCode) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        App.supa.getInviteByCode(inviteCode).then(function({ data, error }) {
+            if (error || !data) {
+                App.toast('Приглашение не найдено', 'error');
+                return;
+            }
+            if (data.accepted) {
+                App.toast('Приглашение уже принято', 'warning');
+                return;
+            }
+            var carName = data.cars ? data.cars.name : 'автомобиль';
+            if (confirm(`Вас пригласили в автомобиль "${carName}". Принять?`)) {
+                App.supa.acceptInvite(data.id).then(function() {
+                    App.toast('Приглашение принято!', 'success');
+                    App.store.setActiveCar(data.car_id);
+                    App.store.loadCars().then(function() {
+                        App.ui.pages.renderCarSelector();
+                        App.storage.loadAllData();
+                    });
+                }).catch(function(err) {
+                    console.error(err);
+                    App.toast('Ошибка принятия приглашения', 'error');
+                });
+            }
+        });
+        return;
+    }
+
+    var pendingInvite = sessionStorage.getItem('pendingInvite');
+    if (pendingInvite) {
+        sessionStorage.removeItem('pendingInvite');
+        window.history.replaceState({}, document.title, window.location.pathname + '?invite=' + pendingInvite);
+        App.ui.pages.checkPendingInvites();
+        return;
+    }
+
+    App.supa.getPendingInvites().then(function({ data, error }) {
+        if (error || !data || data.length === 0) return;
+        data.forEach(function(inv) {
+            var carName = inv.cars ? inv.cars.name : 'автомобиль';
+            if (confirm(`Вас пригласили в автомобиль "${carName}". Принять?`)) {
+                App.supa.acceptInvite(inv.id).then(function() {
+                    App.toast('Приглашение принято!', 'success');
+                    App.store.setActiveCar(inv.car_id);
+                    App.store.loadCars().then(function() {
+                        App.ui.pages.renderCarSelector();
+                        App.storage.loadAllData();
+                    });
+                }).catch(function(err) {
+                    console.error(err);
+                    App.toast('Ошибка принятия приглашения', 'error');
+                });
+            } else {
+                App.supa.declineInvite(inv.id);
+            }
+        });
+    });
+};
+
+/* ========== НОВАЯ ВКЛАДКА «АВТОМОБИЛЬ» ========== */
+App.ui.pages.renderCarTab = function() {
+    var selector = document.getElementById('car-page-selector');
+    if (selector) {
+        selector.innerHTML = '<option value="">-- Выберите авто --</option>';
+        App.store.cars.forEach(function(car) {
+            var selected = car.id == App.store.activeCarId ? ' selected' : '';
+            selector.innerHTML += '<option value="' + car.id + '"' + selected + '>' + App.utils.escapeHtml(car.name) + '</option>';
+        });
+        selector.onchange = function() {
+            var carId = this.value;
+            if (carId) {
+                App.store.setActiveCar(carId);
+                if (App.realtime && App.realtime.subscribeToCar) {
+                    App.realtime.subscribeToCar(carId);
+                }
+                App.storage.loadAllData().then(function() {
+                    App.ui.pages.loadCarDetails(carId);
+                    App.ui.pages.renderCarSelector();
+                    App.ui.pages.updateCurrentCarName();
+                    App.ui.pages.renderSharingListForCarTab();
+                    App.ui.pages.renderBasicParams();
+                    App.ui.pages.loadCarDocuments().then(function() {
+                        App.ui.pages.renderDocuments();
+                    });
+                });
+            }
+        };
+    }
+
+    document.getElementById('add-car-btn').onclick = App.ui.pages.addCar;
+    document.getElementById('rename-car-btn').onclick = App.ui.pages.renameCar;
+    document.getElementById('delete-car-btn').onclick = App.ui.pages.deleteCar;
+    document.getElementById('save-car-details-btn').onclick = function() {
+        var brand = document.getElementById('car-brand').value.trim();
+        var model = document.getElementById('car-model').value.trim();
+        var year = parseInt(document.getElementById('car-year').value) || null;
+        var plate = document.getElementById('car-plate').value.trim();
+        var vin = document.getElementById('car-vin').value.trim();
+        App.store.settings.carBrand = brand;
+        App.store.settings.carModel = model;
+        App.store.settings.carYear = year;
+        App.store.settings.plateNumber = plate;
+        App.store.settings.vin = vin;
+        App.store.saveToLocalStorage();
+        App.storage.saveSettings(App.store.settings).then(function() {
+            App.toast('Данные автомобиля сохранены', 'success');
+        });
+    };
+
+    if (App.store.activeCarId) {
+        App.ui.pages.loadCarDetails(App.store.activeCarId);
+    } else {
+        document.getElementById('car-brand').value = '';
+        document.getElementById('car-model').value = '';
+        document.getElementById('car-year').value = '';
+        document.getElementById('car-plate').value = '';
+        document.getElementById('car-vin').value = '';
+    }
+
+    App.ui.pages.renderBasicParams();
+    App.ui.pages.renderSharingListForCarTab();
+    App.ui.pages.renderExportBlock();
+    App.ui.pages.loadCarDocuments().then(function() {
+        App.ui.pages.renderDocuments();
+    });
+    App.initIcons();
+};
 
 /* ========== НОВАЯ ВКЛАДКА «АВТОМОБИЛЬ» ========== */
 App.ui.pages.renderCarTab = function() {
@@ -539,7 +749,8 @@ App.ui.pages.renderDocuments = function() {
     });
 
     var html = '';
-    var types = ['ОСАГО', 'Чек', 'Заказ-наряд', 'Прочее'];
+    // Добавлен тип "PDF"
+    var types = ['ОСАГО', 'Чек', 'Заказ-наряд', 'PDF', 'Прочее'];
     types.forEach(function(type) {
         var items = grouped[type] || [];
         html += '<div class="accordion-group">';
@@ -561,12 +772,12 @@ App.ui.pages.renderDocuments = function() {
                 html += '</div>';
                 html += '</div>';
                 if (doc.photoUrl) {
-    var isPdf = doc.photoUrl.toLowerCase().endsWith('.pdf');
-    if (isPdf) {
-        html += '<div class="card-meta"><i data-lucide="file-text"></i> PDF-документ</div>';
-    } else {
-        html += '<img src="' + doc.photoUrl + '" class="doc-preview" />';
-    }
+                    var isPdf = doc.photoUrl.toLowerCase().endsWith('.pdf');
+                    if (isPdf) {
+                        html += '<div class="card-meta"><i data-lucide="file-text"></i> PDF-документ</div>';
+                    } else {
+                        html += '<img src="' + doc.photoUrl + '" class="doc-preview" />';
+                    }
                 }
                 if (doc.amount) html += '<div class="card-meta">Сумма: ' + doc.amount + ' ₽</div>';
                 if (doc.notes) html += '<div class="card-meta">' + App.utils.escapeHtml(doc.notes) + '</div>';
@@ -590,48 +801,69 @@ App.ui.pages.renderDocuments = function() {
     });
 
     // Кнопка "Сфотографировать" – запуск камеры
-document.getElementById('add-document-btn').onclick = function() {
-    document.getElementById('doc-file-input').click();
-};
-
-// Кнопка "Загрузить" – выбор любых файлов (изображения + PDF)
-document.getElementById('upload-document-btn').onclick = function() {
-    // Динамически создаём input для файлов, если его ещё нет
-    var fileInput = document.getElementById('doc-file-upload');
-    if (!fileInput) {
-        fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.id = 'doc-file-upload';
-        fileInput.accept = 'image/*,.pdf';
-        fileInput.style.display = 'none';
-        document.body.appendChild(fileInput);
-    }
-    fileInput.click();
-
-    fileInput.onchange = async function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        try {
-            var url = await App.supa.uploadPhoto(file);  // работает и для PDF
-            var extension = file.name.split('.').pop().toLowerCase();
-            var docType = (extension === 'pdf') ? 'PDF' : 'Чек';  // простейшее определение типа
-            var newDoc = {
-                type: docType,
-                date: new Date().toISOString().split('T')[0],
-                photoUrl: url,
-                amount: 0,
-                notes: ''
-            };
-            await App.ui.pages.addCarDocument(newDoc);
-            App.ui.pages.renderDocuments();
-            App.toast('Файл загружен', 'success');
-        } catch (err) {
-            console.error('Upload failed:', err);
-            App.toast('Ошибка загрузки файла', 'error');
-        }
-        e.target.value = '';
+    document.getElementById('add-document-btn').onclick = function() {
+        document.getElementById('doc-file-input').click();
     };
-};
+
+    // Кнопка "Загрузить" – выбор любых файлов (изображения + PDF)
+    document.getElementById('upload-document-btn').onclick = function() {
+        var fileInput = document.getElementById('doc-file-upload');
+        if (!fileInput) {
+            fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.id = 'doc-file-upload';
+            fileInput.accept = 'image/*,.pdf';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+        }
+        fileInput.click();
+
+        fileInput.onchange = async function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            try {
+                var url = await App.supa.uploadPhoto(file);
+                var extension = file.name.split('.').pop().toLowerCase();
+                var docType = (extension === 'pdf') ? 'PDF' : 'Чек';  // Для изображений будет "Чек"
+
+                // Для изображений пытаемся распознать через OCR
+                if (docType === 'Чек') {
+                    try {
+                        var rawText = await recognizeWithTesseract(url);
+                        var ocrData = parseRawText(rawText);
+                        var newDoc = {
+                            type: ocrData.type || 'Чек',
+                            date: ocrData.date || new Date().toISOString().split('T')[0],
+                            photoUrl: url,
+                            amount: ocrData.amount || 0,
+                            notes: ''
+                        };
+                        await App.ui.pages.addCarDocument(newDoc);
+                        App.ui.pages.renderDocuments();
+                        App.toast('Документ добавлен и распознан', 'success');
+                        return;
+                    } catch (ocrErr) {
+                        // OCR не удался – сохраняем как "Чек"
+                    }
+                }
+                // PDF или изображение без OCR
+                var newDoc = {
+                    type: docType,
+                    date: new Date().toISOString().split('T')[0],
+                    photoUrl: url,
+                    amount: 0,
+                    notes: ''
+                };
+                await App.ui.pages.addCarDocument(newDoc);
+                App.ui.pages.renderDocuments();
+                App.toast('Файл загружен', 'success');
+            } catch (err) {
+                console.error('Upload failed:', err);
+                App.toast('Ошибка загрузки файла', 'error');
+            }
+            e.target.value = '';
+        };
+    };
 
     // ----- Tesseract.js + OCR -----
     async function recognizeWithTesseract(imageUrl) {
@@ -714,6 +946,7 @@ document.getElementById('upload-document-btn').onclick = function() {
                         '<option value="ОСАГО" ' + (doc.type === 'ОСАГО' ? 'selected' : '') + '>ОСАГО</option>' +
                         '<option value="Чек" ' + (doc.type === 'Чек' ? 'selected' : '') + '>Чек</option>' +
                         '<option value="Заказ-наряд" ' + (doc.type === 'Заказ-наряд' ? 'selected' : '') + '>Заказ-наряд</option>' +
+                        '<option value="PDF" ' + (doc.type === 'PDF' ? 'selected' : '') + '>PDF</option>' +
                         '<option value="Прочее" ' + (doc.type === 'Прочее' ? 'selected' : '') + '>Прочее</option>' +
                     '</select>' +
                     '<label>Сумма</label>' +
