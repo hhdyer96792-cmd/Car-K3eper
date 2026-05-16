@@ -589,9 +589,49 @@ App.ui.pages.renderDocuments = function() {
         });
     });
 
-    document.getElementById('add-document-btn').onclick = function() {
-        document.getElementById('doc-file-input').click();
+    // Кнопка "Сфотографировать" – запуск камеры
+document.getElementById('add-document-btn').onclick = function() {
+    document.getElementById('doc-file-input').click();
+};
+
+// Кнопка "Загрузить" – выбор любых файлов (изображения + PDF)
+document.getElementById('upload-document-btn').onclick = function() {
+    // Динамически создаём input для файлов, если его ещё нет
+    var fileInput = document.getElementById('doc-file-upload');
+    if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'doc-file-upload';
+        fileInput.accept = 'image/*,.pdf';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+    }
+    fileInput.click();
+
+    fileInput.onchange = async function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        try {
+            var url = await App.supa.uploadPhoto(file);  // работает и для PDF
+            var extension = file.name.split('.').pop().toLowerCase();
+            var docType = (extension === 'pdf') ? 'PDF' : 'Чек';  // простейшее определение типа
+            var newDoc = {
+                type: docType,
+                date: new Date().toISOString().split('T')[0],
+                photoUrl: url,
+                amount: 0,
+                notes: ''
+            };
+            await App.ui.pages.addCarDocument(newDoc);
+            App.ui.pages.renderDocuments();
+            App.toast('Файл загружен', 'success');
+        } catch (err) {
+            console.error('Upload failed:', err);
+            App.toast('Ошибка загрузки файла', 'error');
+        }
+        e.target.value = '';
     };
+};
 
     // ----- Tesseract.js + OCR -----
     async function recognizeWithTesseract(imageUrl) {
