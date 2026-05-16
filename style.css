@@ -1404,3 +1404,8 @@ body.auth-modal-open #drawer-menu,
 body.auth-modal-open #fab-menu {
     display: none !important;
 }
+
+.card-meta i {
+    margin-right: 4px;
+    vertical-align: middle;
+}
