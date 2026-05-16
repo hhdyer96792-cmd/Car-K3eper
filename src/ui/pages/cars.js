@@ -561,7 +561,12 @@ App.ui.pages.renderDocuments = function() {
                 html += '</div>';
                 html += '</div>';
                 if (doc.photoUrl) {
-                    html += '<img src="' + doc.photoUrl + '" class="doc-preview" />';
+    var isPdf = doc.photoUrl.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+        html += '<div class="card-meta"><i data-lucide="file-text"></i> PDF-документ</div>';
+    } else {
+        html += '<img src="' + doc.photoUrl + '" class="doc-preview" />';
+    }
                 }
                 if (doc.amount) html += '<div class="card-meta">Сумма: ' + doc.amount + ' ₽</div>';
                 if (doc.notes) html += '<div class="card-meta">' + App.utils.escapeHtml(doc.notes) + '</div>';
