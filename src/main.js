@@ -3,8 +3,6 @@
     var isLoggedIn = false;
     var deferredPrompt = null;
     var authSubscribed = false;
-    // Кэш user ID для снижения нагрузки на auth
-    var cachedUserId = null;
 
     function setInstallButtonVisible(visible) {
         var installBtn = document.getElementById('pwa-install-btn');
@@ -18,37 +16,6 @@
         } else {
             installBtn.style.display = 'none';
         }
-    }
-
-    // Обёртка для Promise-асинхронных модальных окон (с поддержкой отмены)
-    function showPromptAsync(title, defaultValue) {
-        return new Promise(function(resolve) {
-            if (typeof App.ui.promptModal !== 'function') {
-                var result = prompt(title + '\n' + (defaultValue ? defaultValue : ''));
-                resolve(result);
-                return;
-            }
-            var originalCreateModal = App.ui.createModal;
-            var modalResolved = false;
-            function cleanup() {
-                if (modalResolved) return;
-                modalResolved = true;
-                App.ui.createModal = originalCreateModal;
-            }
-            App.ui.createModal = function(modalTitle, modalContent) {
-                var modal = originalCreateModal(modalTitle, modalContent);
-                var originalRemove = modal.remove;
-                modal.remove = function() {
-                    cleanup();
-                    originalRemove.call(modal);
-                };
-                return modal;
-            };
-            App.ui.promptModal(title, defaultValue || '', function(value) {
-                cleanup();
-                resolve(value);
-            });
-        });
     }
 
     function onReady() {
@@ -85,7 +52,6 @@
 
         App.store.initFromLocalStorage();
 
-        // Глобальная функция перерисовки
         App.renderAll = function() {
             var activeTab = document.querySelector('.tab-content.active');
             if (!activeTab) return;
@@ -286,12 +252,10 @@
                 console.error('App.ui.createModal не определён');
                 return;
             }
-            var modal = App.ui.createModal('', '');
+            var modal = App.ui.createModal('Аккаунт', '');
             if (!modal) return;
             var modalContent = modal.querySelector('.modal-content');
             if (!modalContent) return;
-            modalContent.innerHTML = '<span class="close">&times;</span>' +
-                '<h3 style="margin-top:0; margin-bottom:16px;">Аккаунт</h3>';
             modalContent.appendChild(content);
             document.body.classList.add('auth-modal-open');
             initAuthFormEvents(modalContent);
@@ -354,6 +318,9 @@
             if (sidebarLoginBtn) sidebarLoginBtn.style.display = '';
             if (drawerLoginBtn) drawerLoginBtn.style.display = '';
             if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
+            if (typeof App.supa !== 'undefined' && App.supa.clearUserIdCache) {
+                App.supa.clearUserIdCache();
+            }
             enterDemoMode();
             if (typeof App.ui.pages.renderCarSelector === 'function') App.ui.pages.renderCarSelector();
         }
@@ -397,7 +364,6 @@
                 return;
             }
 
-            // Подписка на изменения аутентификации (только один раз)
             if (!authSubscribed) {
                 authSubscribed = true;
                 App.supabase.auth.onAuthStateChange(function(event, session) {
@@ -414,11 +380,6 @@
                         if (syncIndicatorOnline) syncIndicatorOnline.style.display = '';
                         var mobileRowOnline = document.getElementById('mobile-header-row2');
                         if (mobileRowOnline) mobileRowOnline.style.display = 'flex';
-
-                        // Обновляем кэш userId
-                        if (session.user && session.user.id) {
-                            cachedUserId = session.user.id;
-                        }
 
                         App.supabase.auth.getUser().then(function(userRes) {
                             var displayEl = document.getElementById('username-display');
@@ -437,7 +398,24 @@
                         }
 
                         if (event === 'PASSWORD_RECOVERY') {
-                            showPromptAsync('Введите новый пароль', '').then(function(newPassword) {
+                            if (typeof App.ui.promptModalAsync === 'function') {
+                                App.ui.promptModalAsync('Введите новый пароль', '').then(function(newPassword) {
+                                    if (newPassword && newPassword.length >= 6) {
+                                        App.supabase.auth.updateUser({ password: newPassword }).then(function(res) {
+                                            if (res.error) {
+                                                if (typeof App.toast === 'function') App.toast('Ошибка при смене пароля', 'error');
+                                            } else {
+                                                if (typeof App.toast === 'function') App.toast('Пароль успешно изменён!', 'success');
+                                                window.location.hash = '';
+                                                window.location.search = '';
+                                            }
+                                        });
+                                    } else if (newPassword) {
+                                        if (typeof App.toast === 'function') App.toast('Пароль должен содержать не менее 6 символов', 'error');
+                                    }
+                                });
+                            } else {
+                                var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
                                 if (newPassword && newPassword.length >= 6) {
                                     App.supabase.auth.updateUser({ password: newPassword }).then(function(res) {
                                         if (res.error) {
@@ -448,17 +426,14 @@
                                             window.location.search = '';
                                         }
                                     });
-                                } else if (newPassword) {
-                                    if (typeof App.toast === 'function') App.toast('Пароль должен содержать не менее 6 символов', 'error');
                                 }
-                            });
+                            }
                         }
 
                         if (typeof App.store !== 'undefined' && typeof App.store.loadCars === 'function') {
                             App.store.loadCars().then(async function() {
                                 if (App.store.cars.length === 0) {
                                     try {
-                                        // Используем обёртку App.supa.createCar
                                         if (typeof App.supa !== 'undefined' && App.supa.createCar) {
                                             var newCar = await App.supa.createCar('Мой автомобиль');
                                             if (newCar && newCar.data) {
@@ -496,7 +471,9 @@
                     } else {
                         isLoggedIn = false;
                         setInstallButtonVisible(false);
-                        cachedUserId = null;
+                        if (typeof App.supa !== 'undefined' && App.supa.clearUserIdCache) {
+                            App.supa.clearUserIdCache();
+                        }
                         if (sidebarLoginBtn) sidebarLoginBtn.style.display = '';
                         if (drawerLoginBtn) drawerLoginBtn.style.display = '';
                         var dataPanel = document.getElementById('data-panel');
@@ -530,8 +507,6 @@
         }
 
         window.addEventListener('online', function() {
-            if (isInitialized) return;
-            isInitialized = true;
             if (typeof App.toast === 'function') App.toast('Сеть восстановлена', 'success');
             if (App.store && App.store.pendingActions && App.store.pendingActions.length > 0) {
                 if (typeof App.toast === 'function') App.toast('Синхронизация офлайн-изменений...', 'info');
@@ -695,10 +670,14 @@
         })();
     }
 
-    // ===== Глобальные функции восстановления (безопасные, без утечек) =====
+    // ===== Глобальные функции восстановления =====
     window.recoverViaTelegram = async function() {
         try {
-            var username = await showPromptAsync('Восстановление через Telegram', 'Введите ваш логин');
+            if (typeof App.ui.promptModalAsync !== 'function') {
+                App.toast('Функция модальных окон недоступна. Обновите страницу.', 'error');
+                return;
+            }
+            var username = await App.ui.promptModalAsync('Восстановление через Telegram', 'Введите ваш логин');
             if (username === null || username === undefined || username === '') return;
 
             if (!App.supabase || typeof App.supabase.functions === 'undefined') {
@@ -706,7 +685,6 @@
                 return;
             }
 
-            // Вызов Edge Function, которая сама отправит код в Telegram (токен не покидает сервер)
             const { data, error } = await App.supabase.functions.invoke('send-telegram-recovery', {
                 body: { username: username }
             });
@@ -717,10 +695,9 @@
 
             App.toast('Код отправлен в Telegram.', 'info');
 
-            var input = await showPromptAsync('Код из Telegram', 'Введите полученный код');
+            var input = await App.ui.promptModalAsync('Код из Telegram', 'Введите полученный код');
             if (input === null || input === undefined || input === '') return;
 
-            // Проверка кода через RPC (безопасно)
             const tokenRes = await App.supabase.rpc('verify_recovery_code', {
                 p_username: username,
                 p_code: input
@@ -731,7 +708,7 @@
             }
             var resetToken = tokenRes.data;
 
-            var newPassword = await showPromptAsync('Новый пароль', 'Введите новый пароль (минимум 6 символов)');
+            var newPassword = await App.ui.promptModalAsync('Новый пароль', 'Введите новый пароль (минимум 6 символов)');
             if (newPassword === null || newPassword === undefined || newPassword === '') return;
             if (newPassword.length < 6) {
                 App.toast('Пароль должен содержать не менее 6 символов', 'error');
@@ -762,7 +739,11 @@
 
     window.recoverViaRecoveryCode = async function() {
         try {
-            var username = await showPromptAsync('Восстановление по резервному коду', 'Введите ваш логин');
+            if (typeof App.ui.promptModalAsync !== 'function') {
+                App.toast('Функция модальных окон недоступна. Обновите страницу.', 'error');
+                return;
+            }
+            var username = await App.ui.promptModalAsync('Восстановление по резервному коду', 'Введите ваш логин');
             if (username === null || username === undefined || username === '') return;
 
             if (!App.supabase || typeof App.supabase.rpc !== 'function') {
@@ -770,7 +751,7 @@
                 return;
             }
 
-            var code = await showPromptAsync('Резервный код', 'Введите код');
+            var code = await App.ui.promptModalAsync('Резервный код', 'Введите код');
             if (code === null || code === undefined || code === '') return;
 
             const tokenRes = await App.supabase.rpc('verify_recovery_code', {
@@ -783,7 +764,7 @@
             }
             var resetToken = tokenRes.data;
 
-            var newPassword = await showPromptAsync('Новый пароль', 'Введите новый пароль (минимум 6 символов)');
+            var newPassword = await App.ui.promptModalAsync('Новый пароль', 'Введите новый пароль (минимум 6 символов)');
             if (newPassword === null || newPassword === undefined || newPassword === '') return;
             if (newPassword.length < 6) {
                 App.toast('Пароль должен содержать не менее 6 символов', 'error');
@@ -814,7 +795,6 @@
 
     window.generateAndShowRecoveryCodes = async function(userId, username) {
         try {
-            // Генерация и вставка кодов на сервере (через RPC с SECURITY DEFINER)
             const { data: codes, error } = await App.supabase.rpc('generate_recovery_codes', {
                 p_user_id: userId
             });
