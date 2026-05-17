@@ -323,37 +323,41 @@
         }
 
         function doLogout() {
-            if (typeof App.store === 'undefined') return;
-            var loginFormEl = document.getElementById('login-form');
-            if (loginFormEl) loginFormEl.reset();
-            var usernameDisplayEl = document.getElementById('username-display');
-            if (usernameDisplayEl) usernameDisplayEl.textContent = '';
-            var sidebarUsernameEl = document.getElementById('sidebar-username');
-            if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
-            var carContainerEl = document.getElementById('car-selector-container');
-            if (carContainerEl) carContainerEl.innerHTML = '';
-            App.store.operations = [];
-            App.store.fuelLog = [];
-            App.store.tireLog = [];
-            App.store.parts = [];
-            App.store.serviceRecords = [];
-            App.store.mileageHistory = [];
-            if (typeof App.store.saveToLocalStorage === 'function') App.store.saveToLocalStorage();
-            App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
-            isLoggedIn = false;
-            setInstallButtonVisible(false);
-            if (sidebarLoginBtn) sidebarLoginBtn.style.display = '';
-            if (drawerLoginBtn) drawerLoginBtn.style.display = '';
-            if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
-            if (typeof App.supa !== 'undefined' && App.supa.clearUserIdCache) {
-                App.supa.clearUserIdCache();
-            }
-            enterDemoMode();
-            if (typeof App.ui.pages.renderCarSelector === 'function') App.ui.pages.renderCarSelector();
-            if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
-            if (typeof App.ui.pages.populateSettingsFields === 'function') App.ui.pages.populateSettingsFields();
-            if (typeof App.renderAll === 'function') App.renderAll();
-        }
+    if (typeof App.store === 'undefined') return;
+    var loginFormEl = document.getElementById('login-form');
+    if (loginFormEl) loginFormEl.reset();
+    var usernameDisplayEl = document.getElementById('username-display');
+    if (usernameDisplayEl) usernameDisplayEl.textContent = '';
+    var sidebarUsernameEl = document.getElementById('sidebar-username');
+    if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
+    var carContainerEl = document.getElementById('car-selector-container');
+    if (carContainerEl) carContainerEl.innerHTML = '';
+    App.store.operations = [];
+    App.store.fuelLog = [];
+    App.store.tireLog = [];
+    App.store.parts = [];
+    App.store.serviceRecords = [];
+    App.store.mileageHistory = [];
+    // Очищаем список автомобилей и активный ID
+    App.store.cars = [];
+    App.store.activeCarId = null;
+    localStorage.removeItem('vesta_active_car_id');
+    if (typeof App.store.saveToLocalStorage === 'function') App.store.saveToLocalStorage();
+    App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
+    isLoggedIn = false;
+    setInstallButtonVisible(false);
+    if (sidebarLoginBtn) sidebarLoginBtn.style.display = '';
+    if (drawerLoginBtn) drawerLoginBtn.style.display = '';
+    if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
+    if (typeof App.supa !== 'undefined' && App.supa.clearUserIdCache) {
+        App.supa.clearUserIdCache();
+    }
+    enterDemoMode();
+    if (typeof App.ui.pages.renderCarSelector === 'function') App.ui.pages.renderCarSelector();
+    if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
+    if (typeof App.ui.pages.populateSettingsFields === 'function') App.ui.pages.populateSettingsFields();
+    if (typeof App.renderAll === 'function') App.renderAll();
+}
 
         var logoutSidebarBtn = document.getElementById('sidebar-logout');
         if (logoutSidebarBtn) logoutSidebarBtn.addEventListener('click', doLogout);
