@@ -123,14 +123,14 @@ App.ui.pages.sendPushNotification = function(title, body, tag) {
 
 App.ui.pages.subscribeToPush = function() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        alert('Push-уведомления не поддерживаются в этом браузере');
+    App.ui.alertModal('Push-уведомления не поддерживаются в этом браузере');
+    return;
+}
+Notification.requestPermission().then(function(perm) {
+    if (perm !== 'granted') {
+        App.ui.alertModal('Нет разрешения на уведомления');
         return;
     }
-    Notification.requestPermission().then(function(perm) {
-        if (perm !== 'granted') {
-            alert('Нет разрешения на уведомления');
-            return;
-        }
         localStorage.setItem('push_subscribed', 'true');
         var pushStatus = document.getElementById('push-status');
         if (pushStatus) pushStatus.textContent = '✅ Push активны';
