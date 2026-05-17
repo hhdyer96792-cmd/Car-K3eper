@@ -103,6 +103,11 @@
             // Сбрасываем статус push-уведомлений для демо-режима
             localStorage.removeItem('push_subscribed');
 
+            // Отключаем Realtime, если был активен (предотвращает бесконечную перерисовку)
+            if (App.realtime && typeof App.realtime.unsubscribeAll === 'function') {
+                App.realtime.unsubscribeAll();
+            }
+
             var demoCarId = crypto.randomUUID();
             if (!App.store.cars || App.store.cars.length === 0) {
                 App.store.cars = [{
@@ -323,41 +328,41 @@
         }
 
         function doLogout() {
-    if (typeof App.store === 'undefined') return;
-    var loginFormEl = document.getElementById('login-form');
-    if (loginFormEl) loginFormEl.reset();
-    var usernameDisplayEl = document.getElementById('username-display');
-    if (usernameDisplayEl) usernameDisplayEl.textContent = '';
-    var sidebarUsernameEl = document.getElementById('sidebar-username');
-    if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
-    var carContainerEl = document.getElementById('car-selector-container');
-    if (carContainerEl) carContainerEl.innerHTML = '';
-    App.store.operations = [];
-    App.store.fuelLog = [];
-    App.store.tireLog = [];
-    App.store.parts = [];
-    App.store.serviceRecords = [];
-    App.store.mileageHistory = [];
-    // Очищаем список автомобилей и активный ID
-    App.store.cars = [];
-    App.store.activeCarId = null;
-    localStorage.removeItem('vesta_active_car_id');
-    if (typeof App.store.saveToLocalStorage === 'function') App.store.saveToLocalStorage();
-    App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
-    isLoggedIn = false;
-    setInstallButtonVisible(false);
-    if (sidebarLoginBtn) sidebarLoginBtn.style.display = '';
-    if (drawerLoginBtn) drawerLoginBtn.style.display = '';
-    if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
-    if (typeof App.supa !== 'undefined' && App.supa.clearUserIdCache) {
-        App.supa.clearUserIdCache();
-    }
-    enterDemoMode();
-    if (typeof App.ui.pages.renderCarSelector === 'function') App.ui.pages.renderCarSelector();
-    if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
-    if (typeof App.ui.pages.populateSettingsFields === 'function') App.ui.pages.populateSettingsFields();
-    if (typeof App.renderAll === 'function') App.renderAll();
-}
+            if (typeof App.store === 'undefined') return;
+            var loginFormEl = document.getElementById('login-form');
+            if (loginFormEl) loginFormEl.reset();
+            var usernameDisplayEl = document.getElementById('username-display');
+            if (usernameDisplayEl) usernameDisplayEl.textContent = '';
+            var sidebarUsernameEl = document.getElementById('sidebar-username');
+            if (sidebarUsernameEl) sidebarUsernameEl.textContent = '';
+            var carContainerEl = document.getElementById('car-selector-container');
+            if (carContainerEl) carContainerEl.innerHTML = '';
+            App.store.operations = [];
+            App.store.fuelLog = [];
+            App.store.tireLog = [];
+            App.store.parts = [];
+            App.store.serviceRecords = [];
+            App.store.mileageHistory = [];
+            // Очищаем список автомобилей и активный ID
+            App.store.cars = [];
+            App.store.activeCarId = null;
+            localStorage.removeItem('vesta_active_car_id');
+            if (typeof App.store.saveToLocalStorage === 'function') App.store.saveToLocalStorage();
+            App.supabase.auth.signOut().catch(function(e) { console.warn('Signout error', e); });
+            isLoggedIn = false;
+            setInstallButtonVisible(false);
+            if (sidebarLoginBtn) sidebarLoginBtn.style.display = '';
+            if (drawerLoginBtn) drawerLoginBtn.style.display = '';
+            if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
+            if (typeof App.supa !== 'undefined' && App.supa.clearUserIdCache) {
+                App.supa.clearUserIdCache();
+            }
+            enterDemoMode();
+            if (typeof App.ui.pages.renderCarSelector === 'function') App.ui.pages.renderCarSelector();
+            if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
+            if (typeof App.ui.pages.populateSettingsFields === 'function') App.ui.pages.populateSettingsFields();
+            if (typeof App.renderAll === 'function') App.renderAll();
+        }
 
         var logoutSidebarBtn = document.getElementById('sidebar-logout');
         if (logoutSidebarBtn) logoutSidebarBtn.addEventListener('click', doLogout);
@@ -486,18 +491,17 @@
                                 if (typeof App.ui.pages.renderCarSelector === 'function') App.ui.pages.renderCarSelector();
                                 if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
                                 if (typeof App.ui.pages.checkPendingInvites === 'function') App.ui.pages.checkPendingInvites();
-                                if (App.store.activeCarId) {
+                                // Подписываемся на Realtime только если не демо-режим
+                                if (!isDemoMode && App.store.activeCarId) {
                                     if (App.realtime && typeof App.realtime.subscribeToCar === 'function') {
                                         App.realtime.subscribeToCar(App.store.activeCarId);
                                     }
-                                    if (!isDemoMode && typeof App.storage !== 'undefined' && typeof App.storage.loadAllData === 'function') {
-                                        App.storage.loadAllData().then(function() {
-                                            if (typeof App.renderAll === 'function') App.renderAll();
-                                            if (typeof App.ui.pages.checkAndShowInitialParamsModal === 'function') App.ui.pages.checkAndShowInitialParamsModal();
-                                        });
-                                    } else {
+                                }
+                                if (!isDemoMode && typeof App.storage !== 'undefined' && typeof App.storage.loadAllData === 'function') {
+                                    App.storage.loadAllData().then(function() {
                                         if (typeof App.renderAll === 'function') App.renderAll();
-                                    }
+                                        if (typeof App.ui.pages.checkAndShowInitialParamsModal === 'function') App.ui.pages.checkAndShowInitialParamsModal();
+                                    });
                                 } else {
                                     if (typeof App.renderAll === 'function') App.renderAll();
                                 }
@@ -705,145 +709,136 @@
         })();
     }
 
-    // ===== Глобальные функции восстановления с добавленным finally =====
+    // ===== Глобальные функции восстановления =====
     window.recoverViaTelegram = async function() {
-    try {
-        if (typeof App.ui.promptModalAsync !== 'function') {
-            App.toast('Функция модальных окон недоступна. Обновите страницу.', 'error');
-            return;
-        }
-        const username = await App.ui.promptModalAsync('Восстановление через Telegram', 'Введите ваш логин');
-        if (!username) return;
-
-        // // 👇 УДАЛИТЕ ЭТИ СТРОКИ (они в finally)
-        // document.body.classList.remove('auth-modal-open');
-        // if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
-
-        if (!App.supabase || typeof App.supabase.functions === 'undefined') {
-            App.toast('Ошибка подключения к серверу.', 'error');
-            return;
-        }
-
-        const { data, error } = await App.supabase.functions.invoke('send-telegram-recovery', {
-            body: { username: username }
-        });
-        if (error || !data || !data.success) {
-            App.toast(data?.error || 'Ошибка при отправке кода.', 'error');
-            return;
-        }
-
-        App.toast('Код отправлен в Telegram.', 'info');
-
-        const input = await App.ui.promptModalAsync('Код из Telegram', 'Введите полученный код');
-        if (!input) return;
-
-        const tokenRes = await App.supabase.rpc('verify_recovery_code', {
-            p_username: username,
-            p_code: input
-        });
-        if (tokenRes.error || !tokenRes.data) {
-            App.toast('Неверный код или срок истёк', 'error');
-            return;
-        }
-        const resetToken = tokenRes.data;
-
-        const newPassword = await App.ui.promptModalAsync('Новый пароль', 'Введите новый пароль (минимум 6 символов)');
-        if (!newPassword || newPassword.length < 6) {
-            App.toast('Пароль должен содержать не менее 6 символов', 'error');
-            return;
-        }
-
-        const fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reset_token: resetToken, newPassword: newPassword })
-        });
-
-        if (fetchRes.ok) {
-            if (typeof App.ui.alertModal === 'function') {
-                App.ui.alertModal('Пароль успешно изменён! Теперь войдите с новым паролем.');
-            } else {
-                alert('Пароль успешно изменён! Теперь войдите с новым паролем.');
+        try {
+            if (typeof App.ui.promptModalAsync !== 'function') {
+                App.toast('Функция модальных окон недоступна. Обновите страницу.', 'error');
+                return;
             }
-        } else {
-            const errText = await fetchRes.text();
-            App.toast('Ошибка при сбросе: ' + errText, 'error');
+            const username = await App.ui.promptModalAsync('Восстановление через Telegram', 'Введите ваш логин');
+            if (!username) return;
+
+            if (!App.supabase || typeof App.supabase.functions === 'undefined') {
+                App.toast('Ошибка подключения к серверу.', 'error');
+                return;
+            }
+
+            const { data, error } = await App.supabase.functions.invoke('send-telegram-recovery', {
+                body: { username: username }
+            });
+            if (error || !data || !data.success) {
+                App.toast(data?.error || 'Ошибка при отправке кода.', 'error');
+                return;
+            }
+
+            App.toast('Код отправлен в Telegram.', 'info');
+
+            const input = await App.ui.promptModalAsync('Код из Telegram', 'Введите полученный код');
+            if (!input) return;
+
+            const tokenRes = await App.supabase.rpc('verify_recovery_code', {
+                p_username: username,
+                p_code: input
+            });
+            if (tokenRes.error || !tokenRes.data) {
+                App.toast('Неверный код или срок истёк', 'error');
+                return;
+            }
+            const resetToken = tokenRes.data;
+
+            const newPassword = await App.ui.promptModalAsync('Новый пароль', 'Введите новый пароль (минимум 6 символов)');
+            if (!newPassword || newPassword.length < 6) {
+                App.toast('Пароль должен содержать не менее 6 символов', 'error');
+                return;
+            }
+
+            const fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reset_token: resetToken, newPassword: newPassword })
+            });
+
+            if (fetchRes.ok) {
+                if (typeof App.ui.alertModal === 'function') {
+                    App.ui.alertModal('Пароль успешно изменён! Теперь войдите с новым паролем.');
+                } else {
+                    alert('Пароль успешно изменён! Теперь войдите с новым паролем.');
+                }
+            } else {
+                const errText = await fetchRes.text();
+                App.toast('Ошибка при сбросе: ' + errText, 'error');
+            }
+        } catch (err) {
+            console.error('recoverViaTelegram error:', err);
+            App.toast('Произошла ошибка. Попробуйте позже.', 'error');
+        } finally {
+            if (App.ui.currentModal) App.ui.currentModal.remove();
+            document.body.style.overflow = '';
+            document.body.classList.remove('auth-modal-open');
+            if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
         }
-    } catch (err) {
-        console.error('recoverViaTelegram error:', err);
-        App.toast('Произошла ошибка. Попробуйте позже.', 'error');
-    } finally {
-        // Гарантированное закрытие модалок и разблокировка UI
-        if (App.ui.currentModal) App.ui.currentModal.remove();
-        document.body.style.overflow = '';
-        document.body.classList.remove('auth-modal-open');
-        if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
-    }
-};
+    };
 
     window.recoverViaRecoveryCode = async function() {
-    try {
-        if (typeof App.ui.promptModalAsync !== 'function') {
-            App.toast('Функция модальных окон недоступна. Обновите страницу.', 'error');
-            return;
-        }
-        const username = await App.ui.promptModalAsync('Восстановление по резервному коду', 'Введите ваш логин');
-        if (!username) return;
-
-        // // 👇 УДАЛИТЕ ЭТИ СТРОКИ
-        // document.body.classList.remove('auth-modal-open');
-        // if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
-
-        if (!App.supabase || typeof App.supabase.rpc !== 'function') {
-            App.toast('Ошибка подключения к серверу.', 'error');
-            return;
-        }
-
-        const code = await App.ui.promptModalAsync('Резервный код', 'Введите код');
-        if (!code) return;
-
-        const tokenRes = await App.supabase.rpc('verify_recovery_code', {
-            p_username: username,
-            p_code: code
-        });
-        if (tokenRes.error || !tokenRes.data) {
-            App.toast('Неверный код или срок истёк', 'error');
-            return;
-        }
-        const resetToken = tokenRes.data;
-
-        const newPassword = await App.ui.promptModalAsync('Новый пароль', 'Введите новый пароль (минимум 6 символов)');
-        if (!newPassword || newPassword.length < 6) {
-            App.toast('Пароль должен содержать не менее 6 символов', 'error');
-            return;
-        }
-
-        const fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reset_token: resetToken, newPassword: newPassword })
-        });
-
-        if (fetchRes.ok) {
-            if (typeof App.ui.alertModal === 'function') {
-                App.ui.alertModal('Пароль успешно изменён! Теперь войдите с новым паролем.');
-            } else {
-                alert('Пароль успешно изменён! Теперь войдите с новым паролем.');
+        try {
+            if (typeof App.ui.promptModalAsync !== 'function') {
+                App.toast('Функция модальных окон недоступна. Обновите страницу.', 'error');
+                return;
             }
-        } else {
-            const errText = await fetchRes.text();
-            App.toast('Ошибка при сбросе: ' + errText, 'error');
+            const username = await App.ui.promptModalAsync('Восстановление по резервному коду', 'Введите ваш логин');
+            if (!username) return;
+
+            if (!App.supabase || typeof App.supabase.rpc !== 'function') {
+                App.toast('Ошибка подключения к серверу.', 'error');
+                return;
+            }
+
+            const code = await App.ui.promptModalAsync('Резервный код', 'Введите код');
+            if (!code) return;
+
+            const tokenRes = await App.supabase.rpc('verify_recovery_code', {
+                p_username: username,
+                p_code: code
+            });
+            if (tokenRes.error || !tokenRes.data) {
+                App.toast('Неверный код или срок истёк', 'error');
+                return;
+            }
+            const resetToken = tokenRes.data;
+
+            const newPassword = await App.ui.promptModalAsync('Новый пароль', 'Введите новый пароль (минимум 6 символов)');
+            if (!newPassword || newPassword.length < 6) {
+                App.toast('Пароль должен содержать не менее 6 символов', 'error');
+                return;
+            }
+
+            const fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reset_token: resetToken, newPassword: newPassword })
+            });
+
+            if (fetchRes.ok) {
+                if (typeof App.ui.alertModal === 'function') {
+                    App.ui.alertModal('Пароль успешно изменён! Теперь войдите с новым паролем.');
+                } else {
+                    alert('Пароль успешно изменён! Теперь войдите с новым паролем.');
+                }
+            } else {
+                const errText = await fetchRes.text();
+                App.toast('Ошибка при сбросе: ' + errText, 'error');
+            }
+        } catch (err) {
+            console.error('recoverViaRecoveryCode error:', err);
+            App.toast('Произошла ошибка. Попробуйте позже.', 'error');
+        } finally {
+            if (App.ui.currentModal) App.ui.currentModal.remove();
+            document.body.style.overflow = '';
+            document.body.classList.remove('auth-modal-open');
+            if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
         }
-    } catch (err) {
-        console.error('recoverViaRecoveryCode error:', err);
-        App.toast('Произошла ошибка. Попробуйте позже.', 'error');
-    } finally {
-        if (App.ui.currentModal) App.ui.currentModal.remove();
-        document.body.style.overflow = '';
-        document.body.classList.remove('auth-modal-open');
-        if (typeof App.events.closeDrawer === 'function') App.events.closeDrawer();
-    }
-};
+    };
 
     window.generateAndShowRecoveryCodes = async function(userId, username) {
         try {
