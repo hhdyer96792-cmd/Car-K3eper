@@ -265,7 +265,7 @@
                 if (installBtn) {
                     installBtn.style.display = 'block';
                     installBtn.addEventListener('click', function() {
-                        alert('Чтобы установить приложение, откройте меню браузера и выберите "Добавить на главный экран" (или "Установить").');
+                        App.ui.alertModal('Чтобы установить приложение, откройте меню браузера и выберите "Добавить на главный экран" (или "Установить").');
                     });
                 }
             }
@@ -365,17 +365,18 @@
                     App.store.initFromLocalStorage();
 
                     if (event === 'PASSWORD_RECOVERY') {
-                        var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
-                        if (newPassword && newPassword.length >= 6) {
-                            App.supabase.auth.updateUser({ password: newPassword }).then(function(res) {
-                                if (res.error) App.toast('Ошибка при смене пароля', 'error');
-                                else {
-                                    App.toast('Пароль успешно изменён!', 'success');
-                                    window.location.hash = '';
-                                    window.location.search = '';
-                                }
-                            });
-                        }
+                        App.ui.promptModal('Смена пароля', 'Введите новый пароль (минимум 6 символов)', '', function(newPassword) {
+                            if (newPassword && newPassword.length >= 6) {
+                                App.supabase.auth.updateUser({ password: newPassword }).then(function(res) {
+                                    if (res.error) App.toast('Ошибка при смене пароля', 'error');
+                                    else {
+                                        App.toast('Пароль успешно изменён!', 'success');
+                                        window.location.hash = '';
+                                        window.location.search = '';
+                                    }
+                                });
+                            }
+                        });
                     }
 
                     App.store.loadCars().then(async function() {
@@ -677,7 +678,11 @@
 
     // ===== Функции восстановления =====
     async function recoverViaTelegram(msgEl) {
-        var username = prompt('Введите ваш логин:');
+        var username = await new Promise(function(resolve) {
+            App.ui.promptModal('Восстановление доступа', 'Введите ваш логин', '', function(value) {
+                resolve(value);
+            });
+        });
         if (!username) return;
 
         var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
@@ -697,15 +702,20 @@
         });
 
         var input = await new Promise(function(resolve) {
-    App.ui.promptModal('Код подтверждения', 'Введите код из Telegram', '', function(value) {
-        resolve(value);
-    });
-});
-if (!input) return;
+            App.ui.promptModal('Код подтверждения', 'Введите код из Telegram', '', function(value) {
+                resolve(value);
+            });
+        });
+        if (!input) return;
+
         var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: input });
         if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
 
-        var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
+        var newPassword = await new Promise(function(resolve) {
+            App.ui.promptModal('Новый пароль', 'Введите новый пароль (минимум 6 символов)', '', function(value) {
+                resolve(value);
+            });
+        });
         if (!newPassword || newPassword.length < 6) {
             msgEl.textContent = 'Пароль должен содержать не менее 6 символов';
             return;
@@ -726,20 +736,32 @@ if (!input) return;
     }
 
     async function recoverViaRecoveryCode(msgEl) {
-        var username = prompt('Введите ваш логин:');
+        var username = await new Promise(function(resolve) {
+            App.ui.promptModal('Восстановление доступа', 'Введите ваш логин', '', function(value) {
+                resolve(value);
+            });
+        });
         if (!username) return;
 
         var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
         if (res.error || !res.data || res.data.length === 0) { msgEl.textContent = 'Пользователь не найден'; return; }
         var userData = res.data[0];
 
-        var code = prompt('Введите резервный код:');
+        var code = await new Promise(function(resolve) {
+            App.ui.promptModal('Резервный код', 'Введите резервный код', '', function(value) {
+                resolve(value);
+            });
+        });
         if (!code) return;
 
         var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: code });
         if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
 
-        var newPassword = prompt('Введите новый пароль (минимум 6 символов):');
+        var newPassword = await new Promise(function(resolve) {
+            App.ui.promptModal('Новый пароль', 'Введите новый пароль (минимум 6 символов)', '', function(value) {
+                resolve(value);
+            });
+        });
         if (!newPassword || newPassword.length < 6) {
             msgEl.textContent = 'Пароль должен содержать не менее 6 символов';
             return;
@@ -767,7 +789,7 @@ if (!input) return;
             await App.supabase.from('recovery_codes').insert({ user_id: userId, code_hash: code });
         }
         var msg = 'Ваши резервные коды для восстановления доступа (сохраните их!):\n\n' + codes.join('\n');
-        alert(msg);
+        App.ui.alertModal(msg);
     }
 
     if (document.readyState === 'loading') {
