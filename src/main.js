@@ -696,9 +696,12 @@
             body: JSON.stringify({ chat_id: setRes.data.telegram_chat_id, text: `Код для сброса пароля: ${code}` })
         });
 
-        var input = prompt('Код отправлен в Telegram. Введите его:');
+        var input = await new Promise(function(resolve) {
+    App.ui.promptModal('Код подтверждения', 'Введите код из Telegram', '', function(value) {
+        resolve(value);
+    });
+});
 if (!input) return;
-
         var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: input });
         if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
 
