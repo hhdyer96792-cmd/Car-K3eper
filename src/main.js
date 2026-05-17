@@ -73,32 +73,35 @@
         var drawerLoginBtn = document.getElementById('drawer-login');
 
         function enterDemoMode() {
-            isDemoMode = true;
-            App.store.operations = [
-                { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
-                { id: 'demo2', category: 'Тормозная система', name: 'Тормозные колодки', intervalKm: 30000, lastMileage: 0 }
-            ];
-            App.store.fuelLog = [
-                { date: '2026-05-01', mileage: 1000, liters: 45, pricePerLiter: 50, fuelType: 'Бензин' }
-            ];
-            App.store.settings.currentMileage = 5000;
-            App.store.settings.currentMotohours = 100;
+    isDemoMode = true;
 
-            // Демо‑автомобиль
-            if (!App.store.cars || App.store.cars.length === 0) {
-                App.store.cars = [{
-                    id: 'demo-car',
-                    name: 'Мой автомобиль',
-                    user_id: 'demo'
-                }];
-                App.store.activeCarId = 'demo-car';
-                localStorage.setItem('vesta_active_car_id', 'demo-car');
-            }
+    // Очищаем данные и не обращаемся к Supabase
+    App.store.operations = [
+        { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
+        { id: 'demo2', category: 'Тормозная система', name: 'Тормозные колодки', intervalKm: 30000, lastMileage: 0 }
+    ];
+    App.store.fuelLog = [
+        { date: '2026-05-01', mileage: 1000, liters: 45, pricePerLiter: 50, fuelType: 'Бензин' }
+    ];
+    App.store.settings.currentMileage = 5000;
+    App.store.settings.currentMotohours = 100;
 
-            App.store.saveToLocalStorage();
-            document.getElementById('data-panel').style.display = 'block';
-            App.renderAll();
-            App.toast('Демо‑режим. Войдите, чтобы сохранить данные.', 'info');
+    // Демо‑автомобиль с UUID (валидный формат)
+    var demoCarId = '00000000-0000-0000-0000-000000000000';
+    if (!App.store.cars || App.store.cars.length === 0) {
+        App.store.cars = [{
+            id: demoCarId,
+            name: 'Мой автомобиль',
+            user_id: 'demo'
+        }];
+        App.store.activeCarId = demoCarId;
+        localStorage.setItem('vesta_active_car_id', demoCarId);
+    }
+
+    App.store.saveToLocalStorage();
+    document.getElementById('data-panel').style.display = 'block';
+    App.renderAll();
+    App.toast('Демо‑режим. Войдите, чтобы сохранить данные.', 'info');
         }
 
         function initAuthFormEvents(container) {
