@@ -56,7 +56,7 @@ App.ui.createModal = function(title, content) {
     document.addEventListener('keydown', escapeHandler);
 
     App.ui.currentModal = modal;
-    App.initIcons();
+    if (typeof App.initIcons === 'function') App.initIcons();
 
     if (window.visualViewport && window.innerWidth < 768) {
         var contentEl = modal.querySelector('.modal-content');
@@ -85,11 +85,6 @@ App.ui.createModal = function(title, content) {
     return modal;
 };
 
-/**
- * Показывает модальное окно подтверждения и вызывает callback при согласии.
- * @param {string} message - текст вопроса
- * @param {function} onConfirm - функция, вызываемая при ответе «Да»
- */
 App.ui.confirmModal = function(message, onConfirm) {
     var content = '<p style="margin-bottom:16px;">' + App.utils.escapeHtml(message) + '</p>' +
         '<div class="modal-actions" style="display:flex; gap:8px; justify-content:center;">' +
@@ -106,12 +101,7 @@ App.ui.confirmModal = function(message, onConfirm) {
     });
 };
 
-/**
- * Показывает модальное окно с полем ввода и вызывает callback с введённым значением.
- * @param {string} title - заголовок
- * @param {string} defaultValue - начальное значение
- * @param {function} onSubmit - функция, принимающая введённую строку
- */
+// Старая версия promptModal (с колбэком) – сохраняется для обратной совместимости
 App.ui.promptModal = function(title, defaultValue, onSubmit) {
     var content = '<input type="text" id="prompt-input" value="' + App.utils.escapeHtml(defaultValue || '') + '" style="margin-bottom:16px;">' +
         '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
@@ -122,24 +112,61 @@ App.ui.promptModal = function(title, defaultValue, onSubmit) {
     var input = document.getElementById('prompt-input');
     input.focus();
     input.select();
-    document.getElementById('prompt-ok-btn').addEventListener('click', function() {
-        modal.remove();
-        if (typeof onSubmit === 'function') onSubmit(input.value);
-    });
-    document.getElementById('prompt-cancel-btn').addEventListener('click', function() {
-        modal.remove();
-    });
+    var okBtn = document.getElementById('prompt-ok-btn');
+    var cancelBtn = document.getElementById('prompt-cancel-btn');
+    
+    function cleanup() {
+        if (modal && modal.remove) modal.remove();
+    }
+    
+    if (okBtn) {
+        okBtn.addEventListener('click', function() {
+            var val = input.value;
+            cleanup();
+            if (typeof onSubmit === 'function') onSubmit(val);
+        });
+    }
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            cleanup();
+            if (typeof onSubmit === 'function') onSubmit(null);
+        });
+    }
     input.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
-            document.getElementById('prompt-ok-btn').click();
+            if (okBtn) okBtn.click();
         }
     });
 };
 
-/**
- * Показывает информационное модальное окно с кнопкой «ОК».
- * @param {string} message - текст сообщения
- */
+// Новая Promise-версия promptModal, корректно обрабатывающая отмену (крестик, оверлей, Escape)
+App.ui.promptModalAsync = function(title, defaultValue) {
+    return new Promise(function(resolve) {
+        var originalCreateModal = App.ui.createModal;
+        var modalResolved = false;
+        function cleanup() {
+            if (modalResolved) return;
+            modalResolved = true;
+            App.ui.createModal = originalCreateModal;
+        }
+        // Временно подменяем createModal, чтобы перехватывать закрытие модалки
+        App.ui.createModal = function(modalTitle, modalContent) {
+            var modal = originalCreateModal(modalTitle, modalContent);
+            var originalRemove = modal.remove;
+            modal.remove = function() {
+                cleanup();
+                originalRemove.call(modal);
+            };
+            return modal;
+        };
+        // Вызываем оригинальный promptModal с колбэком
+        App.ui.promptModal(title, defaultValue || '', function(value) {
+            cleanup();
+            resolve(value);
+        });
+    });
+};
+
 App.ui.alertModal = function(message) {
     var content = '<p style="margin-bottom:16px; white-space:pre-wrap;">' + App.utils.escapeHtml(message) + '</p>' +
         '<div class="modal-actions" style="display:flex; gap:8px; justify-content:center;">' +
