@@ -3,6 +3,24 @@ window.App = window.App || {};
 App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
+// throttle для renderTOTable
+let lastRenderTime = 0;
+let renderTimer = null;
+var originalRenderTOTable = App.ui.pages.renderTOTable;
+App.ui.pages.renderTOTable = function() {
+    var now = Date.now();
+    if (now - lastRenderTime < 100) {
+        if (renderTimer) clearTimeout(renderTimer);
+        renderTimer = setTimeout(function() {
+            originalRenderTOTable();
+            lastRenderTime = Date.now();
+        }, 100);
+        return;
+    }
+    lastRenderTime = now;
+    originalRenderTOTable();
+};
+
 // 0. Карточка «Всего затрат на ТО»
 App.ui.pages.renderTotalCost = function() {
     var total = App.store.serviceRecords.reduce(function(sum, r) {
