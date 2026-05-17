@@ -156,6 +156,8 @@ App.ui.promptModalAsync = function(title, defaultValue) {
             modal.remove = function() {
                 cleanup();
                 originalRemove.call(modal);
+                // При закрытии модалки без подтверждения (крестик, оверлей) – резолвим null
+                resolve(null);
             };
             return modal;
         };
