@@ -3,6 +3,7 @@
     var isLoggedIn = false;
     var deferredPrompt = null;
     var authSubscribed = false;
+    var demoModeInitialized = false;  // флаг для защиты от повторного входа в демо-режим
 
     function setInstallButtonVisible(visible) {
         var installBtn = document.getElementById('pwa-install-btn');
@@ -52,16 +53,22 @@
 
         App.store.initFromLocalStorage();
 
+        // Глобальная функция перерисовки
         App.renderAll = function() {
             var activeTab = document.querySelector('.tab-content.active');
-            if (!activeTab) return;
+            if (!activeTab) {
+                // Если активной вкладки нет, пробуем получить из сохранённого состояния
+                var savedTab = localStorage.getItem('vesta_active_tab');
+                if (savedTab) {
+                    App.events.switchToTab(savedTab);
+                }
+                return;
+            }
             var tabId = activeTab.id.replace('tab-', '');
             if (typeof App.events.switchToTab === 'function') {
                 App.events.switchToTab(tabId);
-            } else {
-                if (tabId === 'dashboard' && typeof App.ui.pages.renderDashboard === 'function') {
-                    App.ui.pages.renderDashboard();
-                }
+            } else if (tabId === 'dashboard' && typeof App.ui.pages.renderDashboard === 'function') {
+                App.ui.pages.renderDashboard();
             }
         };
 
@@ -76,6 +83,8 @@
         var drawerLoginBtn = document.getElementById('drawer-login');
 
         function enterDemoMode() {
+            if (demoModeInitialized) return;
+            demoModeInitialized = true;
             isDemoMode = true;
             App.store.operations = [
                 { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
@@ -123,6 +132,10 @@
             App.store.saveToLocalStorage();
             var dataPanel = document.getElementById('data-panel');
             if (dataPanel) dataPanel.style.display = 'block';
+            // Гарантированное обновление дашборда
+            if (typeof App.ui.pages.renderDashboard === 'function') {
+                setTimeout(function() { App.ui.pages.renderDashboard(); }, 50);
+            }
 
             if (typeof App.ui.pages.renderCarSelector === 'function') App.ui.pages.renderCarSelector();
             if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
@@ -411,6 +424,7 @@
                         isLoggedIn = true;
                         setInstallButtonVisible(true);
                         isDemoMode = false;
+                        demoModeInitialized = false;   // разрешаем выход из демо
                         if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
                         if (drawerLoginBtn) drawerLoginBtn.style.display = 'none';
                         document.body.classList.remove('auth-modal-open');
