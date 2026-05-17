@@ -23,7 +23,6 @@ App.store = {
         telegramToken: '',
         telegramChatId: '',
         notificationMethod: 'telegram',
-        // Новые поля автомобиля
         carBrand: '',
         carModel: '',
         carYear: null,
@@ -72,7 +71,6 @@ App.store = {
         }
         this.loadPriceHistory();
         this.activeCarId = localStorage.getItem('vesta_active_car_id') || null;
-
         this.calculateOwnershipDays();
     },
 
@@ -170,8 +168,20 @@ App.store = {
         var self = this;
         return App.supa.loadCars().then(function(cars) {
             self.cars = cars;
-            if (cars.length > 0 && !self.activeCarId) {
-                self.setActiveCar(cars[0].id);
+            if (cars.length > 0) {
+                // Проверяем, существует ли текущий activeCarId в загруженном списке
+                var currentId = self.activeCarId;
+                var exists = currentId && cars.some(function(car) { return car.id == currentId; });
+                if (!exists) {
+                    // Если нет – выбираем первый автомобиль
+                    self.setActiveCar(cars[0].id);
+                } else {
+                    // Если есть – оставляем, но синхронизируем localStorage (на всякий случай)
+                    localStorage.setItem('vesta_active_car_id', currentId);
+                }
+            } else if (!self.activeCarId) {
+                self.activeCarId = null;
+                localStorage.removeItem('vesta_active_car_id');
             }
             return cars;
         });
