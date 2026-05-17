@@ -427,6 +427,12 @@ App.ui.pages.renderCarTab = function() {
                     App.ui.pages.loadCarDocuments().then(function() {
                         App.ui.pages.renderDocuments();
                     });
+                    App.ui.pages.renderExportBlock();
+    if (typeof App.ui.pages.initCsvImport === 'function') {
+        App.ui.pages.initCsvImport();
+    }
+    App.initIcons();
+};
                 });
             }
         };
