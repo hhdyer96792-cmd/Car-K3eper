@@ -2,9 +2,17 @@
 window.App = window.App || {};
 App.supa = App.supa || {};
 
+// Кэш для userId
+var cachedUserId = null;
+
+function ensureSupabase() {
+    if (!App.supabase) throw new Error('Supabase client not initialized');
+    return App.supabase;
+}
+
 // ----- Универсальные запросы -----
 App.supa.fetchTable = function(tableName) {
-    if (!App.supabase) return Promise.reject(new Error('Supabase client not initialized'));
+    ensureSupabase();
     var query = App.supabase.from(tableName).select('*');
     if (App.store.activeCarId && tableName !== 'cars' && tableName !== 'car_shares' &&
         tableName !== 'vehicle_state' && tableName !== 'user_settings') {
@@ -14,23 +22,30 @@ App.supa.fetchTable = function(tableName) {
 };
 
 App.supa.insertRow = function(tableName, record) {
-    if (!App.supabase) return Promise.reject(new Error('Supabase client not initialized'));
+    ensureSupabase();
     return App.supabase.from(tableName).insert(record).select();
 };
 
 App.supa.updateRow = function(tableName, id, record) {
-    if (!App.supabase) return Promise.reject(new Error('Supabase client not initialized'));
+    ensureSupabase();
     return App.supabase.from(tableName).update(record).eq('id', id).select();
 };
 
 App.supa.deleteRow = function(tableName, id) {
-    if (!App.supabase) return Promise.reject(new Error('Supabase client not initialized'));
-    return App.supabase.from(tableName).delete().eq('id', id);
+    ensureSupabase();
+    return App.supabase.from(tableName).delete().eq('id', id).select();
 };
 
 App.supa.getCurrentUserId = async function() {
+    if (cachedUserId) return cachedUserId;
+    ensureSupabase();
     const { data: { user } } = await App.supabase.auth.getUser();
-    return user?.id || null;
+    cachedUserId = user?.id || null;
+    return cachedUserId;
+};
+
+App.supa.clearUserIdCache = function() {
+    cachedUserId = null;
 };
 
 // ----- Загрузка данных -----
@@ -103,7 +118,7 @@ App.supa.loadParts = function() {
             comment: p.comment || '',
             inStock: parseFloat(p.in_stock) || 0,
             location: p.location || '',
-            dateAdded: p.purchase_date || ''   // ← новая строка
+            dateAdded: p.purchase_date || ''
         }));
     });
 };
@@ -132,6 +147,7 @@ App.supa.loadSettings = function() {
     if (!App.store.activeCarId) return Promise.resolve(null);
     return App.supa.getCurrentUserId().then(function(userId) {
         if (!userId) return null;
+        ensureSupabase();
         return Promise.all([
             App.supabase.from('vehicle_state').select('*').eq('car_id', App.store.activeCarId).maybeSingle(),
             App.supabase.from('user_settings').select('*').eq('user_id', userId).eq('car_id', App.store.activeCarId).maybeSingle()
@@ -145,7 +161,6 @@ App.supa.loadSettings = function() {
                 telegramChatId: us.data ? us.data.telegram_chat_id || '' : '',
                 notificationMethod: us.data ? us.data.notification_method || 'telegram' : 'telegram',
                 reminderDays: us.data ? us.data.reminder_days || '7,2' : '7,2',
-                // Новые поля автомобиля
                 carBrand: vs.data?.car_brand || '',
                 carModel: vs.data?.car_model || '',
                 carYear: vs.data?.car_year || null,
@@ -168,6 +183,7 @@ App.supa.loadMileageHistory = function() {
 };
 
 // ----- Сохранение данных -----
+// Эти методы делегируют универсальным insertRow/updateRow, которые уже содержат ensureSupabase
 App.supa.saveOperation = async function(op) {
     const userId = await App.supa.getCurrentUserId();
     const record = {
@@ -244,7 +260,7 @@ App.supa.savePart = async function(part) {
         comment: part.comment || '',
         in_stock: part.inStock || 0,
         location: part.location || '',
-        purchase_date: part.purchaseDate || null,  // ← новая строка
+        purchase_date: part.purchaseDate || null,
         user_id: userId,
         car_id: App.store.activeCarId
     };
@@ -279,14 +295,15 @@ App.supa.saveHistoryRecord = async function(record) {
     }
 };
 
+// Прямые запросы (с upsert, специфичные фильтры) — защищены ensureSupabase
 App.supa.saveVehicleState = async function(state) {
+    ensureSupabase();
     const record = {
         car_id: App.store.activeCarId,
         current_mileage: state.currentMileage,
         current_motohours: state.currentMotohours,
         avg_daily_mileage: state.avgDailyMileage,
         avg_daily_motohours: state.avgDailyMotohours,
-        // Новые поля автомобиля
         car_brand: state.carBrand,
         car_model: state.carModel,
         car_year: state.carYear,
@@ -298,6 +315,7 @@ App.supa.saveVehicleState = async function(state) {
 
 App.supa.saveUserSettings = async function(settingsObj) {
     const userId = await App.supa.getCurrentUserId();
+    ensureSupabase();
     const record = {
         user_id: userId,
         car_id: App.store.activeCarId,
@@ -313,6 +331,7 @@ App.supa.saveUserSettings = async function(settingsObj) {
 App.supa.uploadPhoto = async function(file) {
     const userId = await App.supa.getCurrentUserId();
     if (!userId) throw new Error('Not authenticated');
+    ensureSupabase();
     
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -336,6 +355,7 @@ App.supa.uploadPhoto = async function(file) {
 
 // ---------- Мульти-авто и совместный доступ ----------
 App.supa.loadCars = function() {
+    ensureSupabase();
     return App.supabase.from('cars').select('*').then(({ data, error }) => {
         if (error) throw error;
         return data || [];
@@ -344,24 +364,29 @@ App.supa.loadCars = function() {
 
 App.supa.createCar = function(name) {
     return App.supa.getCurrentUserId().then(function(userId) {
+        ensureSupabase();
         return App.supabase.from('cars').insert({ user_id: userId, name: name }).select().single();
     });
 };
 
 App.supa.deleteCar = function(carId) {
-    return App.supabase.from('cars').delete().eq('id', carId);
+    ensureSupabase();
+    return App.supabase.from('cars').delete().eq('id', carId).select();
 };
 
 App.supa.renameCar = function(carId, newName) {
+    ensureSupabase();
     return App.supabase.from('cars').update({ name: newName }).eq('id', carId).select().single();
 };
 
 App.supa.inviteUserToCar = function(carId, email) {
+    ensureSupabase();
     return App.supabase.from('car_shares').insert({ car_id: carId, invited_email: email }).select().single();
 };
 
 App.supa.getPendingInvites = function() {
     return App.supa.getCurrentUserId().then(function(userId) {
+        ensureSupabase();
         return App.supabase.from('car_shares')
             .select('*, cars(name)')
             .eq('invited_user_id', userId)
@@ -371,16 +396,20 @@ App.supa.getPendingInvites = function() {
 
 App.supa.acceptInvite = async function(inviteId) {
     const userId = await App.supa.getCurrentUserId();
+    ensureSupabase();
     return App.supabase.from('car_shares')
         .update({ accepted: true, invited_user_id: userId })
-        .eq('id', inviteId);
+        .eq('id', inviteId)
+        .select();
 };
 
 App.supa.declineInvite = function(inviteId) {
-    return App.supabase.from('car_shares').delete().eq('id', inviteId);
+    ensureSupabase();
+    return App.supabase.from('car_shares').delete().eq('id', inviteId).select();
 };
 
 App.supa.getInviteByCode = function(code) {
+    ensureSupabase();
     return App.supabase.from('car_shares')
         .select('*, cars(name)')
         .eq('invite_code', code)
@@ -388,13 +417,16 @@ App.supa.getInviteByCode = function(code) {
 };
 
 App.supa.getCarShares = function(carId) {
+    ensureSupabase();
     return App.supabase.from('car_shares')
         .select('*')
         .eq('car_id', carId);
 };
 
 App.supa.deleteCarShare = function(shareId) {
+    ensureSupabase();
     return App.supabase.from('car_shares')
         .delete()
-        .eq('id', shareId);
+        .eq('id', shareId)
+        .select();
 };
