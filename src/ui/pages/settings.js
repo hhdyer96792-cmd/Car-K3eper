@@ -385,9 +385,3 @@ App.ui.pages.initRecoveryCodesUI = function() {
 
 // Инициализация UI резервных кодов при загрузке
 App.ui.pages.initRecoveryCodesUI();
-
-// Заглушка для функции импорта CSV (чтобы не падала ошибка)
-App.ui.pages.initCsvImport = function() {};
-
-// Инициализация импорта CSV
-App.ui.pages.initCsvImport();
