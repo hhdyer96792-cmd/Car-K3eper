@@ -82,59 +82,55 @@ var sidebarLoginBtn = document.getElementById('sidebar-login');
 var drawerLoginBtn = document.getElementById('drawer-login');
 
         function enterDemoMode() {
-        	 if (demoModeInitialized) return;      // ← защита
-            isDemoMode = true;
-            App.store.operations = [
-                { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
-                { id: 'demo2', category: 'Тормозная система', name: 'Тормозные колодки', intervalKm: 30000, lastMileage: 0 }
-            ];
-            App.store.fuelLog = [
-                { date: '2026-05-01', mileage: 1000, liters: 45, pricePerLiter: 50, fuelType: 'Бензин' }
-            ];
-            // Полностью перезаписываем настройки на демо-значения
-            App.store.settings = {
-                currentMileage: 5000,
-                currentMotohours: 100,
-                avgDailyMileage: 45,
-                avgDailyMotohours: 1.8,
-                telegramToken: '',
-                telegramChatId: '',
-                notificationMethod: 'telegram',
-                carBrand: '',
-                carModel: '',
-                carYear: null,
-                plateNumber: '',
-                vin: ''
-            };
+    if (demoModeInitialized) return;
+    demoModeInitialized = true;
+    isDemoMode = true;
+    App.store.operations = [
+        { id: 'demo1', category: 'ДВС', name: 'Масло', intervalKm: 10000, intervalMonths: 12, lastMileage: 0, lastDate: null },
+        { id: 'demo2', category: 'Тормозная система', name: 'Тормозные колодки', intervalKm: 30000, lastMileage: 0 }
+    ];
+    App.store.fuelLog = [
+        { date: '2026-05-01', mileage: 1000, liters: 45, pricePerLiter: 50, fuelType: 'Бензин' }
+    ];
+    App.store.settings = {
+        currentMileage: 5000,
+        currentMotohours: 100,
+        avgDailyMileage: 45,
+        avgDailyMotohours: 1.8,
+        telegramToken: '',
+        telegramChatId: '',
+        notificationMethod: 'telegram',
+        carBrand: '',
+        carModel: '',
+        carYear: null,
+        plateNumber: '',
+        vin: ''
+    };
 
-            // Сбрасываем статус push-уведомлений для демо-режима
-            localStorage.removeItem('push_subscribed');
+    localStorage.removeItem('push_subscribed');
 
-            // Отключаем Realtime, если был активен (предотвращает бесконечную перерисовку)
-            if (App.realtime && typeof App.realtime.unsubscribeAll === 'function') {
-                App.realtime.unsubscribeAll();
-            }
+    if (App.realtime && typeof App.realtime.unsubscribeAll === 'function') {
+        App.realtime.unsubscribeAll();
+    }
 
-            var demoCarId = crypto.randomUUID();
-            if (!App.store.cars || App.store.cars.length === 0) {
-                App.store.cars = [{
-                    id: demoCarId,
-                    name: 'Мой автомобиль',
-                    user_id: 'demo'
-                }];
-                App.store.setActiveCar(demoCarId);
-            } else {
-                App.store.setActiveCar(App.store.cars[0].id);
-            }
-            
-            App.store.saveToLocalStorage();
+    var demoCarId = crypto.randomUUID();
+    if (!App.store.cars || App.store.cars.length === 0) {
+        App.store.cars = [{
+            id: demoCarId,
+            name: 'Мой автомобиль',
+            user_id: 'demo'
+        }];
+        App.store.setActiveCar(demoCarId);
+    } else {
+        App.store.setActiveCar(App.store.cars[0].id);
+    }
+
+    App.store.saveToLocalStorage();
     var dataPanel = document.getElementById('data-panel');
     if (dataPanel) dataPanel.style.display = 'block';
 
-    // Принудительно рендерим дашборд, чтобы он отобразился сразу
-    if (typeof App.events.switchToTab === 'function') {
-        App.events.switchToTab('dashboard');
-    } else if (typeof App.ui.pages.renderDashboard === 'function') {
+    // Принудительно рендерим дашборд, чтобы он отобразился сразу (один раз)
+    if (typeof App.ui.pages.renderDashboard === 'function') {
         App.ui.pages.renderDashboard();
     }
 
