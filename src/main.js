@@ -488,15 +488,20 @@
                         App.ui.pages.renderCarSelector();
                         if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
                         if (App.store.activeCarId) {
-                            if (App.realtime && App.realtime.subscribeToCar) {
-                                App.realtime.subscribeToCar(App.store.activeCarId);
-                            }
-                            App.storage.loadAllData().then(function() {
-                                App.renderAll();
-                                App.ui.pages.checkAndShowInitialParamsModal();
-                            });
-                        } else {
-                            App.renderAll();
+                        if (App.store.activeCarId) {
+    if (App.realtime && App.realtime.subscribeToCar) {
+        App.realtime.subscribeToCar(App.store.activeCarId);
+    }
+    if (!isDemoMode) {
+        App.storage.loadAllData().then(function() {
+            App.renderAll();
+            App.ui.pages.checkAndShowInitialParamsModal();
+        });
+    } else {
+        App.renderAll();
+    }
+} else {
+    App.renderAll();
                         }
                     });
                 }
