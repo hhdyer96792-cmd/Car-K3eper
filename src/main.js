@@ -215,31 +215,29 @@
     }
 
     // ----- Восстановление доступа -----
-    var forgotLink = container.querySelector('#forgot-access-link');
-    var recoveryBlock = container.querySelector('#recovery-options');
-    var recoveryMsg = container.querySelector('#recovery-message');
-    if (forgotLink) {
-        forgotLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            recoveryBlock.style.display = 'block';
+var forgotLink = container.querySelector('#forgot-access-link');
+var recoveryBlock = container.querySelector('#recovery-options');
+if (forgotLink) {
+    forgotLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        recoveryBlock.style.display = 'block';
+    });
+}
+
+var btnTelegram = container.querySelector('#recover-telegram');
+if (btnTelegram) btnTelegram.addEventListener('click', function() { recoverViaTelegram(); });
+
+var btnCode = container.querySelector('#recover-code');
+if (btnCode) btnCode.addEventListener('click', function() { recoverViaRecoveryCode(); });
+
+var btnRecoverGoogle = container.querySelector('#recover-google');
+if (btnRecoverGoogle) {
+    btnRecoverGoogle.addEventListener('click', function() {
+        App.supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.origin }
         });
-    }
-
-    var btnTelegram = container.querySelector('#recover-telegram');
-    if (btnTelegram) btnTelegram.addEventListener('click', function() { recoverViaTelegram(recoveryMsg); });
-
-    var btnCode = container.querySelector('#recover-code');
-    if (btnCode) btnCode.addEventListener('click', function() { recoverViaRecoveryCode(recoveryMsg); });
-
-    var btnRecoverGoogle = container.querySelector('#recover-google');
-    if (btnRecoverGoogle) {
-        btnRecoverGoogle.addEventListener('click', function() {
-            App.supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.origin }
-            });
-        });
-    }
+    });
 }
 
         function openAuthModal() {
@@ -704,109 +702,123 @@
     }
 
     // ===== Функции восстановления =====
-    async function recoverViaTelegram(msgEl) {
-        var username = await new Promise(function(resolve) {
-            App.ui.promptModal('Восстановление доступа', 'Введите ваш логин', '', function(value) {
-                resolve(value);
-            });
+async function recoverViaTelegram() {
+    var username = await new Promise(function(resolve) {
+        App.ui.promptModal('Восстановление доступа', 'Введите ваш логин', '', function(value) {
+            resolve(value);
         });
-        if (!username) return;
+    });
+    if (!username) return;
 
-        var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
-        if (res.error || !res.data || res.data.length === 0) { msgEl.textContent = 'Пользователь не найден'; return; }
-        var userData = res.data[0];
+    var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
+    if (res.error || !res.data || res.data.length === 0) {
+        App.toast('Пользователь не найден', 'error');
+        return;
+    }
+    var userData = res.data[0];
 
-        var setRes = await App.supabase.rpc('get_telegram_settings', { p_user_id: userData.id });
-        if (setRes.error || !setRes.data || !setRes.data.telegram_chat_id || !setRes.data.telegram_token) {
-            msgEl.textContent = 'Telegram не привязан. Используйте другой способ.'; return;
-        }
-
-        var code = Math.floor(100000 + Math.random() * 900000).toString();
-        await App.supabase.from('recovery_codes').insert({ user_id: userData.id, code_hash: code });
-        await fetch(`https://api.telegram.org/bot${setRes.data.telegram_token}/sendMessage`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ chat_id: setRes.data.telegram_chat_id, text: `Код для сброса пароля: ${code}` })
-        });
-
-        var input = await new Promise(function(resolve) {
-            App.ui.promptModal('Код подтверждения', 'Введите код из Telegram', '', function(value) {
-                resolve(value);
-            });
-        });
-        if (!input) return;
-
-        var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: input });
-        if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
-
-        var newPassword = await new Promise(function(resolve) {
-            App.ui.promptModal('Новый пароль', 'Введите новый пароль (минимум 6 символов)', '', function(value) {
-                resolve(value);
-            });
-        });
-        if (!newPassword || newPassword.length < 6) {
-            msgEl.textContent = 'Пароль должен содержать не менее 6 символов';
-            return;
-        }
-
-        var fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reset_token: tokenRes.data, newPassword: newPassword })
-        });
-
-        if (fetchRes.ok) {
-            msgEl.textContent = 'Пароль успешно изменён! Теперь войдите с новым паролем.';
-        } else {
-            var errText = await fetchRes.text();
-            msgEl.textContent = 'Ошибка при сбросе: ' + errText;
-        }
+    var setRes = await App.supabase.rpc('get_telegram_settings', { p_user_id: userData.id });
+    if (setRes.error || !setRes.data || !setRes.data.telegram_chat_id || !setRes.data.telegram_token) {
+        App.toast('Telegram не привязан. Используйте другой способ.', 'warning');
+        return;
     }
 
-    async function recoverViaRecoveryCode(msgEl) {
-        var username = await new Promise(function(resolve) {
-            App.ui.promptModal('Восстановление доступа', 'Введите ваш логин', '', function(value) {
-                resolve(value);
-            });
+    var code = Math.floor(100000 + Math.random() * 900000).toString();
+    await App.supabase.from('recovery_codes').insert({ user_id: userData.id, code_hash: code });
+    await fetch(`https://api.telegram.org/bot${setRes.data.telegram_token}/sendMessage`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ chat_id: setRes.data.telegram_chat_id, text: `Код для сброса пароля: ${code}` })
+    });
+    App.toast('Код отправлен в Telegram.', 'info');
+
+    var input = await new Promise(function(resolve) {
+        App.ui.promptModal('Код подтверждения', 'Введите код из Telegram', '', function(value) {
+            resolve(value);
         });
-        if (!username) return;
+    });
+    if (!input) return;
 
-        var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
-        if (res.error || !res.data || res.data.length === 0) { msgEl.textContent = 'Пользователь не найден'; return; }
-        var userData = res.data[0];
-
-        var code = await new Promise(function(resolve) {
-            App.ui.promptModal('Резервный код', 'Введите резервный код', '', function(value) {
-                resolve(value);
-            });
-        });
-        if (!code) return;
-
-        var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: code });
-        if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
-
-        var newPassword = await new Promise(function(resolve) {
-            App.ui.promptModal('Новый пароль', 'Введите новый пароль (минимум 6 символов)', '', function(value) {
-                resolve(value);
-            });
-        });
-        if (!newPassword || newPassword.length < 6) {
-            msgEl.textContent = 'Пароль должен содержать не менее 6 символов';
-            return;
-        }
-
-        var fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reset_token: tokenRes.data, newPassword: newPassword })
-        });
-
-        if (fetchRes.ok) {
-            msgEl.textContent = 'Пароль успешно изменён! Теперь войдите с новым паролем.';
-        } else {
-            var errText = await fetchRes.text();
-            msgEl.textContent = 'Ошибка при сбросе: ' + errText;
-        }
+    var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: input });
+    if (tokenRes.error || !tokenRes.data) {
+        App.toast('Неверный код или срок истёк', 'error');
+        return;
     }
+
+    var newPassword = await new Promise(function(resolve) {
+        App.ui.promptModal('Новый пароль', 'Введите новый пароль (минимум 6 символов)', '', function(value) {
+            resolve(value);
+        });
+    });
+    if (!newPassword || newPassword.length < 6) {
+        App.toast('Пароль должен содержать не менее 6 символов', 'error');
+        return;
+    }
+
+    var fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset_token: tokenRes.data, newPassword: newPassword })
+    });
+
+    if (fetchRes.ok) {
+        App.ui.alertModal('Пароль успешно изменён! Теперь войдите с новым паролем.');
+    } else {
+        var errText = await fetchRes.text();
+        App.toast('Ошибка при сбросе: ' + errText, 'error');
+    }
+}
+
+async function recoverViaRecoveryCode() {
+    var username = await new Promise(function(resolve) {
+        App.ui.promptModal('Восстановление доступа', 'Введите ваш логин', '', function(value) {
+            resolve(value);
+        });
+    });
+    if (!username) return;
+
+    var res = await App.supabase.rpc('get_user_by_username', { p_username: username });
+    if (res.error || !res.data || res.data.length === 0) {
+        App.toast('Пользователь не найден', 'error');
+        return;
+    }
+    var userData = res.data[0];
+
+    var code = await new Promise(function(resolve) {
+        App.ui.promptModal('Резервный код', 'Введите резервный код', '', function(value) {
+            resolve(value);
+        });
+    });
+    if (!code) return;
+
+    var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: code });
+    if (tokenRes.error || !tokenRes.data) {
+        App.toast('Неверный код или срок истёк', 'error');
+        return;
+    }
+
+    var newPassword = await new Promise(function(resolve) {
+        App.ui.promptModal('Новый пароль', 'Введите новый пароль (минимум 6 символов)', '', function(value) {
+            resolve(value);
+        });
+    });
+    if (!newPassword || newPassword.length < 6) {
+        App.toast('Пароль должен содержать не менее 6 символов', 'error');
+        return;
+    }
+
+    var fetchRes = await fetch('https://qbjlccdqaudyvedpysil.supabase.co/functions/v1/secure-reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset_token: tokenRes.data, newPassword: newPassword })
+    });
+
+    if (fetchRes.ok) {
+        App.ui.alertModal('Пароль успешно изменён! Теперь войдите с новым паролем.');
+    } else {
+        var errText = await fetchRes.text();
+        App.toast('Ошибка при сбросе: ' + errText, 'error');
+    }
+}
 
     async function generateAndShowRecoveryCodes(userId, username) {
         var codes = [];
