@@ -3,6 +3,9 @@ window.App = window.App || {};
 App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
+// Флаг для однократного закрытия аккордеонов при первом рендере
+App.ui.pages._toAccordionsInitialized = false;
+
 // throttle для renderTOTable
 let lastRenderTime = 0;
 let renderTimer = null;
@@ -81,7 +84,7 @@ App.ui.pages.renderResourceBars = function() {
 };
 
 // 3. Гистограмма затрат на ТО
- App.ui.pages.renderTOCostChart = function() {
+App.ui.pages.renderTOCostChart = function() {
     var period = document.getElementById('to-cost-period')?.value || 'month';
     var canvas = document.getElementById('toCostChart');
     if (!canvas) return;
@@ -206,22 +209,20 @@ App.ui.pages.renderTOCategoryPieChart = function() {
 
 // Карточка ресурса масла (прогресс-бар)
 App.ui.pages.renderOilResourceCard = function() {
-    // Вызываем рендер прогресс-бара из charts.js
     if (typeof App.charts.renderOilResourceBar === 'function') {
         App.charts.renderOilResourceBar();
     }
     var container = document.getElementById('oil-resource-bar');
     if (!container) return;
     var fill = container.querySelector('.oil-resource-fill');
-    // Если нет заполнения или ширина 0% — скрываем карточку
     if (!fill || fill.style.width === '0%' || fill.style.width === '') {
         container.style.display = 'none';
     } else {
-        container.style.display = ''; // показываем (убираем inline display:none)
+        container.style.display = '';
     }
 };
 
-// 5. Карточки операций (аккордеоны по категориям, Вариант Д)
+// 5. Карточки операций (аккордеоны по категориям)
 App.ui.pages.renderTOTable = function() {
     var container = document.getElementById('to-cards-container');
     if (!container) return;
@@ -259,20 +260,17 @@ App.ui.pages.renderTOTable = function() {
     };
 
     var html = '';
-    categories.forEach(function(cat, catIndex) {
+    categories.forEach(function(cat) {
         var ops = grouped[cat].sort(function(a, b) {
             return App.logic.calculatePlan(a).daysLeft - App.logic.calculatePlan(b).daysLeft;
         });
-
-        var openClass = '';
-
         html += '<div class="accordion-group">';
-        html += '<div class="accordion-header' + openClass + '">';
+        html += '<div class="accordion-header">';
         html += '<i data-lucide="' + (categoryIcons[cat] || 'folder') + '"></i>';
         html += '<span>' + App.utils.escapeHtml(cat) + ' (' + ops.length + ')</span>';
         html += '<i data-lucide="chevron-down" class="accordion-arrow" style="margin-left:auto;"></i>';
         html += '</div>';
-        html += '<div class="accordion-body' + openClass + '">';
+        html += '<div class="accordion-body">';
 
         ops.forEach(function(op) {
             var plan = App.logic.calculatePlan(op);
@@ -286,10 +284,10 @@ App.ui.pages.renderTOTable = function() {
             }
 
             var daysLeft = plan.daysLeft;
-            var statusClass = '', statusDot = '';
-            if (daysLeft < 0) { statusClass = 'overdue'; }
-            else if (daysLeft <= 10) { statusClass = 'critical'; }
-            else { statusClass = 'ok'; }
+            var statusClass = '';
+            if (daysLeft < 0) statusClass = 'overdue';
+            else if (daysLeft <= 10) statusClass = 'critical';
+            else statusClass = 'ok';
 
             var percent = 0;
             if (op.intervalKm && plan.planMileage > (op.lastMileage || 0))
@@ -316,12 +314,12 @@ App.ui.pages.renderTOTable = function() {
             if (daysLeft < 0) html += ' <span class="text-danger">просрочено на ' + Math.abs(daysLeft) + ' дн.</span>';
             else html += ' осталось ' + daysLeft + ' дн.';
             html += '</div>';
-            html += '</div>'; // card-summary
+            html += '</div>';
             html += '<div class="card-actions">';
             html += '<button class="icon-btn" data-action="add-record" data-op-id="' + op.id + '" data-op-name="' + App.utils.escapeHtml(op.name) + '"><i data-lucide="check"></i></button>';
             html += '<button class="icon-btn card-toggle-btn"><i data-lucide="more-vertical"></i></button>';
             html += '</div>';
-            html += '</div>'; // card-header
+            html += '</div>';
 
             html += '<div class="card-details">';
             html += '<div class="progress-percent">Износ: ' + percent + '%</div>';
@@ -331,22 +329,25 @@ App.ui.pages.renderTOTable = function() {
             html += '<button class="icon-btn" data-action="shopping-list" data-op-id="' + op.id + '"><i data-lucide="shopping-cart"></i></button>';
             html += '<button class="icon-btn" data-action="delete-op" data-op-id="' + op.id + '"><i data-lucide="trash-2"></i></button>';
             html += '</div>';
-            html += '</div>'; // card-details
-            html += '</div>'; // card-item
+            html += '</div>';
+            html += '</div>';
         });
 
-        html += '</div></div>'; // accordion-body, accordion-group
+        html += '</div></div>';
     });
 
     container.innerHTML = html;
 
-// Гарантированно закрываем все аккордеоны при начальном рендере
-container.querySelectorAll('.accordion-body').forEach(function(body) {
-    body.classList.remove('open');
-});
-container.querySelectorAll('.accordion-header').forEach(function(header) {
-    header.classList.remove('open');
-});
+    // При первом рендере закрываем все аккордеоны, при повторных – оставляем как есть
+    if (!App.ui.pages._toAccordionsInitialized) {
+        container.querySelectorAll('.accordion-body').forEach(function(body) {
+            body.classList.remove('open');
+        });
+        container.querySelectorAll('.accordion-header').forEach(function(header) {
+            header.classList.remove('open');
+        });
+        App.ui.pages._toAccordionsInitialized = true;
+    }
 
     // Обработчики аккордеонов
     container.querySelectorAll('.accordion-header').forEach(function(header) {
@@ -356,14 +357,11 @@ container.querySelectorAll('.accordion-header').forEach(function(header) {
                 body.classList.toggle('open');
                 header.classList.toggle('open');
                 var arrow = header.querySelector('.accordion-arrow');
-                if (arrow) {
-                    arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
-                }
+                if (arrow) arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
             }
         });
     });
 
-    // Раскрытие карточек
     container.querySelectorAll('.card-toggle-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
