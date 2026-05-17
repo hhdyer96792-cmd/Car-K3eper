@@ -96,6 +96,12 @@
             App.store.saveToLocalStorage();
             var dataPanel = document.getElementById('data-panel');
             if (dataPanel) dataPanel.style.display = 'block';
+
+            // Принудительно обновляем селектор автомобиля
+            if (typeof App.ui.pages.renderCarSelector === 'function') {
+                App.ui.pages.renderCarSelector();
+            }
+
             if (typeof App.renderAll === 'function') App.renderAll();
             if (typeof App.toast === 'function') App.toast('Демо‑режим. Войдите, чтобы сохранить данные.', 'info');
         }
