@@ -33,7 +33,7 @@ App.realtime.handleChange = function(table, payload) {
     var newData = payload.new;
     var oldData = payload.old;
 
-    var storeKey = table; // по умолчанию имя таблицы совпадает с полем в store, кроме нескольких исключений
+    var storeKey = table;
     if (table === 'fuel_log') storeKey = 'fuelLog';
     else if (table === 'mileage_log') storeKey = 'mileageHistory';
     else if (table === 'history') storeKey = 'serviceRecords';
@@ -72,14 +72,12 @@ App.realtime.handleChange = function(table, payload) {
             if (typeof App.ui.pages.renderPartsTable === 'function') App.ui.pages.renderPartsTable();
             break;
         case 'history':
-            if (typeof App.ui.pages.renderHistoryWithFilters === 'function') App.ui.pages.renderHistoryWithFilters();
+            if (typeof App.ui.pages.renderHistoryCards === 'function') App.ui.pages.renderHistoryCards();
             break;
         case 'settings':
-            // Настройки обычно не отображаются в реальном времени, но обновим дашборд, если он открыт
             if (typeof App.ui.pages.renderDashboard === 'function') App.ui.pages.renderDashboard();
             break;
         case 'mileage_log':
-            // можно обновить дашборд и статистику
             if (typeof App.ui.pages.renderDashboard === 'function') App.ui.pages.renderDashboard();
             break;
     }
