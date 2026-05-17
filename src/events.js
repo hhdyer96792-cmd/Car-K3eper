@@ -2,6 +2,9 @@
 window.App = window.App || {};
 App.events = App.events || {};
 
+// Храним текущую активную вкладку, чтобы избежать повторных рендеров
+App.events.currentActiveTab = null;
+
 App.events.init = function() {
     App.events.setupDelegation();
     App.events.initNavigation();
@@ -24,18 +27,18 @@ App.events.setupDelegation = function() {
                 if (opId && opName) App.ui.pages.openServiceModal(opId, opName);
                 break;
             case 'delete-op':
-    var delOpId = target.dataset.opId;
-    if (!delOpId) return;
-    App.ui.confirmModal('Удалить операцию? Это действие нельзя отменить.', function() {
-        App.storage.deleteOperation(delOpId).then(function() {
-            App.storage.loadAllData();
-            App.toast('Операция удалена', 'success');
-        }).catch(function(err) {
-            console.error(err);
-            App.toast('Не удалось удалить операцию (недостаточно прав)', 'error');
-        });
-    });
-    break;
+                var delOpId = target.dataset.opId;
+                if (!delOpId) return;
+                App.ui.confirmModal('Удалить операцию? Это действие нельзя отменить.', function() {
+                    App.storage.deleteOperation(delOpId).then(function() {
+                        App.storage.loadAllData();
+                        App.toast('Операция удалена', 'success');
+                    }).catch(function(err) {
+                        console.error(err);
+                        App.toast('Не удалось удалить операцию (недостаточно прав)', 'error');
+                    });
+                });
+                break;
             case 'calendar':
                 var calOpId = target.dataset.opId;
                 var calOpName = target.dataset.opName;
@@ -55,12 +58,12 @@ App.events.setupDelegation = function() {
                 if (part) App.ui.pages.openPartForm(part);
                 break;
             case 'delete-part':
-    var delPartId = target.dataset.id;
-    if (!delPartId) return;
-    App.ui.confirmModal('Удалить запчасть?', function() {
-        App.ui.pages.deletePart(delPartId);
-    });
-    break;
+                var delPartId = target.dataset.id;
+                if (!delPartId) return;
+                App.ui.confirmModal('Удалить запчасть?', function() {
+                    App.ui.pages.deletePart(delPartId);
+                });
+                break;
             case 'search-part':
                 var oem = target.dataset.oem;
                 if (oem) App.ui.pages.showCatalogMenu(target, oem);
@@ -196,6 +199,9 @@ App.events.initNavigation = function() {
 };
 
 App.events.switchToTab = function(tabId) {
+    // Если вкладка уже активна – ничего не делаем (предотвращает лишние перерисовки)
+    if (App.events.currentActiveTab === tabId) return;
+
     document.body.style.overflow = '';
     var allTabs = document.querySelectorAll('.tab-content');
     allTabs.forEach(function(tab) {
@@ -216,31 +222,34 @@ App.events.switchToTab = function(tabId) {
 
     App.events.closeDrawer();
 
+    // Запоминаем текущую вкладку
+    App.events.currentActiveTab = tabId;
+
     switch (tabId) {
         case 'dashboard':
             if (typeof App.ui.pages.renderDashboard === 'function') App.ui.pages.renderDashboard();
             break;
         case 'to':
-    (async function() {
-        if (!App.store.operations || App.store.operations.length === 0) {
-            await App.storage.loadAllData();
-        }
-        if (typeof App.ui.pages.renderTotalCost === 'function') App.ui.pages.renderTotalCost();
-        if (typeof App.ui.pages.renderTOStats === 'function') App.ui.pages.renderTOStats();
-        if (typeof App.ui.pages.renderOilResourceCard === 'function') App.ui.pages.renderOilResourceCard();
-        if (typeof App.ui.pages.renderResourceBars === 'function') App.ui.pages.renderResourceBars();
-        if (typeof App.ui.pages.renderTOCostChart === 'function') App.ui.pages.renderTOCostChart();
-        if (typeof App.ui.pages.renderTOCategoryPieChart === 'function') App.ui.pages.renderTOCategoryPieChart();
-        if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
-    })();
-    break;
+            (async function() {
+                if (!App.store.operations || App.store.operations.length === 0) {
+                    await App.storage.loadAllData();
+                }
+                if (typeof App.ui.pages.renderTotalCost === 'function') App.ui.pages.renderTotalCost();
+                if (typeof App.ui.pages.renderTOStats === 'function') App.ui.pages.renderTOStats();
+                if (typeof App.ui.pages.renderOilResourceCard === 'function') App.ui.pages.renderOilResourceCard();
+                if (typeof App.ui.pages.renderResourceBars === 'function') App.ui.pages.renderResourceBars();
+                if (typeof App.ui.pages.renderTOCostChart === 'function') App.ui.pages.renderTOCostChart();
+                if (typeof App.ui.pages.renderTOCategoryPieChart === 'function') App.ui.pages.renderTOCategoryPieChart();
+                if (typeof App.ui.pages.renderTOTable === 'function') App.ui.pages.renderTOTable();
+            })();
+            break;
         case 'stats':
             if (typeof App.ui.pages.renderFinanceTab === 'function') App.ui.pages.renderFinanceTab();
             break;
         case 'history':
-    if (typeof App.ui.pages.initHistoryFilters === 'function') App.ui.pages.initHistoryFilters();
-    if (typeof App.ui.pages.renderHistoryCards === 'function') App.ui.pages.renderHistoryCards();
-    break;
+            if (typeof App.ui.pages.initHistoryFilters === 'function') App.ui.pages.initHistoryFilters();
+            if (typeof App.ui.pages.renderHistoryCards === 'function') App.ui.pages.renderHistoryCards();
+            break;
         case 'fuel':
             if (typeof App.ui.pages.renderFuelTab === 'function') App.ui.pages.renderFuelTab();
             break;
@@ -408,7 +417,6 @@ App.events.initDirectListeners = function() {
         });
     });
 
-    // Слушатель периода гистограммы затрат на ТО
     var toCostPeriod = document.getElementById('to-cost-period');
     if (toCostPeriod) {
         toCostPeriod.addEventListener('change', function() {
@@ -418,7 +426,6 @@ App.events.initDirectListeners = function() {
         });
     }
 
-    // Кнопка темы на вкладке Настройки
     var settingsThemeToggle = document.getElementById('settings-theme-toggle');
     if (settingsThemeToggle) {
         settingsThemeToggle.addEventListener('click', function() {
@@ -497,16 +504,11 @@ App.events.handleImport = function(e) {
 };
 
 App.events.updateMileageAndAverages = function() {
-    // Пробуем получить поля из мобильного дашборда (приоритет)
     var m = document.getElementById('dash-new-mileage');
     var h = document.getElementById('dash-new-motohours');
-
-    // Если не нашли, ищем старые ID (десктоп)
     if (!m) m = document.getElementById('new-mileage');
     if (!h) h = document.getElementById('new-motohours');
-
     if (!m || !h) {
-        // Поля действительно отсутствуют – тихо выходим, ничего не делаем
         console.warn('Поля пробега/моточасов не найдены на текущей странице');
         return;
     }
@@ -515,7 +517,6 @@ App.events.updateMileageAndAverages = function() {
     var newH = App.utils.validateNumberInput(h, true);
     if (newM === null || newH === null) return;
 
-    // ВАЛИДАЦИЯ: значения не должны быть меньше базовых
     if (newM < (App.store.baseMileage || 0)) {
         App.toast('Значение пробега меньше базового. Исправьте базовое значение на вкладке Автомобиль', 'error');
         return;
