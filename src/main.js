@@ -697,7 +697,7 @@
         });
 
         var input = prompt('Код отправлен в Telegram. Введите его:');
-        if (!input) return;
+if (!input) return;
 
         var tokenRes = await App.supabase.rpc('consume_recovery_code', { p_user_id: userData.id, p_code: input });
         if (tokenRes.error || !tokenRes.data) { msgEl.textContent = 'Неверный код или срок истёк'; return; }
