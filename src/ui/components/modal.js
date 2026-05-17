@@ -101,7 +101,7 @@ App.ui.confirmModal = function(message, onConfirm) {
     });
 };
 
-// Старая версия promptModal (с колбэком) – сохраняется для обратной совместимости
+// Старая версия promptModal (с колбэком) – для обратной совместимости
 App.ui.promptModal = function(title, defaultValue, onSubmit) {
     var content = '<input type="text" id="prompt-input" value="' + App.utils.escapeHtml(defaultValue || '') + '" style="margin-bottom:16px;">' +
         '<div class="modal-actions" style="display:flex; gap:8px; justify-content:flex-end;">' +
