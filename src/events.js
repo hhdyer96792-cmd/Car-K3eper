@@ -354,9 +354,6 @@ App.events.initDirectListeners = function() {
     var exportDataBtn = document.getElementById('export-data-btn');
     if (exportDataBtn) exportDataBtn.addEventListener('click', App.ui.pages.handleExport);
 
-    var calcPredictionBtn = document.getElementById('calc-prediction-btn');
-    if (calcPredictionBtn) calcPredictionBtn.addEventListener('click', App.ui.pages.renderMileagePrediction);
-
     var generatePdfBtn = document.getElementById('generate-pdf-btn');
     if (generatePdfBtn) generatePdfBtn.addEventListener('click', App.ui.pages.generateServiceReport);
 
