@@ -2,16 +2,16 @@
 window.App = window.App || {};
 App.ui.pages = App.ui.pages || {};
 
-// ---------- Локальный кэш документов ----------
+/* ========== ЛОКАЛЬНЫЙ КЭШ ДОКУМЕНТОВ ========== */
 App.ui.pages._carDocuments = [];
 
-// Безопасное получение userId (через сессию)
+/* ========== БЕЗОПАСНОЕ ПОЛУЧЕНИЕ USER ID ========== */
 App.ui.pages._getUserIdSafe = async function() {
     const { data: { session } } = await App.supabase.auth.getSession();
     return session?.user?.id || null;
 };
 
-// ---------- Функции работы с документами через Supabase ----------
+/* ========== ФУНКЦИИ РАБОТЫ С ДОКУМЕНТАМИ (Supabase) ========== */
 App.ui.pages.loadCarDocuments = async function() {
     if (!App.store.activeCarId) return [];
     try {
@@ -105,7 +105,7 @@ App.ui.pages.deleteCarDocument = async function(docId) {
     }
 };
 
-// ---------- Рендер селектора автомобиля ----------
+/* ========== РЕНДЕР СЕЛЕКТОРА АВТОМОБИЛЯ ========== */
 App.ui.pages.renderCarSelector = function() {
     var container = document.getElementById('car-selector-container');
     if (!container) return;
@@ -135,6 +135,7 @@ App.ui.pages.renderCarSelector = function() {
         }
     });
 
+    // Дублируем в сайдбар
     var sidebarContainer = document.getElementById('sidebar-car-selector');
     if (sidebarContainer) {
         var sidebarHtml = '<select id="sidebar-car-select">' +
@@ -164,7 +165,7 @@ App.ui.pages.renderCarSelector = function() {
     App.initIcons();
 };
 
-// ---------- CRUD автомобилей ----------
+/* ========== CRUD АВТОМОБИЛЕЙ ========== */
 App.ui.pages.addCar = function() {
     App.ui.promptModal('Название автомобиля', 'Мой автомобиль', function(name) {
         if (!name) return;
@@ -250,7 +251,7 @@ App.ui.pages.deleteCar = async function() {
     });
 };
 
-// ---------- Совместный доступ и прочее ----------
+/* ========== ОСТАЛЬНЫЕ ФУНКЦИИ ========== */
 App.ui.pages.inviteUser = function() {
     var carId = App.store.activeCarId;
     if (!carId) { App.toast('Сначала выберите авто', 'warning'); return; }
@@ -353,7 +354,7 @@ App.ui.pages.checkPendingInvites = function() {
                 return;
             }
             var carName = data.cars ? data.cars.name : 'автомобиль';
-            if (confirm(`Вас пригласили в автомобиль "${carName}". Принять?`)) {
+            App.ui.confirmModal(`Вас пригласили в автомобиль "${carName}". Принять?`, function() {
                 App.supa.acceptInvite(data.id).then(function() {
                     App.toast('Приглашение принято!', 'success');
                     App.store.setActiveCar(data.car_id);
@@ -365,7 +366,7 @@ App.ui.pages.checkPendingInvites = function() {
                     console.error(err);
                     App.toast('Ошибка принятия приглашения', 'error');
                 });
-            }
+            });
         });
         return;
     }
@@ -382,7 +383,7 @@ App.ui.pages.checkPendingInvites = function() {
         if (error || !data || data.length === 0) return;
         data.forEach(function(inv) {
             var carName = inv.cars ? inv.cars.name : 'автомобиль';
-            if (confirm(`Вас пригласили в автомобиль "${carName}". Принять?`)) {
+            App.ui.confirmModal(`Вас пригласили в автомобиль "${carName}". Принять?`, function() {
                 App.supa.acceptInvite(inv.id).then(function() {
                     App.toast('Приглашение принято!', 'success');
                     App.store.setActiveCar(inv.car_id);
@@ -394,15 +395,14 @@ App.ui.pages.checkPendingInvites = function() {
                     console.error(err);
                     App.toast('Ошибка принятия приглашения', 'error');
                 });
-            } else {
+            }, function() {
                 App.supa.declineInvite(inv.id);
-            }
+            });
         });
     });
 };
 
-// ========== НОВАЯ ВКЛАДКА «АВТОМОБИЛЬ» ==========
-
+/* ========== НОВАЯ ВКЛАДКА «АВТОМОБИЛЬ» ========== */
 App.ui.pages.renderCarTab = function() {
     var selector = document.getElementById('car-page-selector');
     if (selector) {
@@ -427,12 +427,6 @@ App.ui.pages.renderCarTab = function() {
                     App.ui.pages.loadCarDocuments().then(function() {
                         App.ui.pages.renderDocuments();
                     });
-                    App.ui.pages.renderExportBlock();
-    if (typeof App.ui.pages.initCsvImport === 'function') {
-        App.ui.pages.initCsvImport();
-    }
-    App.initIcons();
-};
                 });
             }
         };
@@ -470,10 +464,17 @@ App.ui.pages.renderCarTab = function() {
 
     App.ui.pages.renderBasicParams();
     App.ui.pages.renderSharingListForCarTab();
-    App.ui.pages.renderExportBlock();
+
     App.ui.pages.loadCarDocuments().then(function() {
         App.ui.pages.renderDocuments();
     });
+
+    App.ui.pages.renderExportBlock();
+
+    if (typeof App.ui.pages.initCsvImport === 'function') {
+        App.ui.pages.initCsvImport();
+    }
+
     App.initIcons();
 };
 
@@ -486,7 +487,7 @@ App.ui.pages.loadCarDetails = function(carId) {
     document.getElementById('car-vin').value = s.vin || '';
 };
 
-// ---------- Основные параметры ----------
+/* ========== ОСНОВНЫЕ ПАРАМЕТРЫ ========== */
 App.ui.pages.renderBasicParams = async function() {
     let baseMileage = 0, baseMotohours = 0, purchaseDate = '', purchaseCost = 0;
     if (App.store.activeCarId) {
@@ -657,7 +658,7 @@ App.ui.pages.updateOwnershipCost = function() {
     document.getElementById('ownership-cost').value = displayValue;
 };
 
-// ---------- Экспорт данных ----------
+/* ========== ЭКСПОРТ ДАННЫХ ========== */
 App.ui.pages.renderExportBlock = function() {
     document.getElementById('export-data-btn-car').onclick = function() {
         var type = document.getElementById('export-type-select-car').value;
@@ -674,7 +675,7 @@ App.ui.pages.renderExportBlock = function() {
     };
 };
 
-// ---------- Документы (фото + OCR + аккордеоны) ----------
+/* ========== ДОКУМЕНТЫ (ФОТО + OCR + АККОРДЕОНЫ) ========== */
 App.ui.pages.renderDocuments = function() {
     var container = document.getElementById('documents-accordions');
     if (!container) return;
@@ -738,6 +739,7 @@ App.ui.pages.renderDocuments = function() {
         });
     });
 
+    // Кнопка "Сфотографировать" – запуск камеры
     document.getElementById('add-document-btn').onclick = function() {
         document.getElementById('doc-file-input').click();
     };
@@ -801,6 +803,7 @@ App.ui.pages.renderDocuments = function() {
         };
     };
 
+    // ----- Tesseract.js + OCR -----
     async function recognizeWithTesseract(imageUrl) {
         try {
             const TesseractLib = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
@@ -865,6 +868,7 @@ App.ui.pages.renderDocuments = function() {
         e.target.value = '';
     };
 
+    // ----- Редактирование и удаление документов -----
     container.addEventListener('click', async function(e) {
         var target = e.target.closest('.edit-doc-btn');
         if (target) {
@@ -928,7 +932,7 @@ App.ui.pages.renderDocuments = function() {
     });
 };
 
-// ---------- Модальное окно начальных параметров ----------
+/* ========== МОДАЛЬНОЕ ОКНО НАЧАЛЬНЫХ ПАРАМЕТРОВ ========== */
 App.ui.pages.showInitialParamsModal = function() {
     var todayStr = App.utils.isoToDDMMYYYY(new Date().toISOString().split('T')[0]);
 
@@ -1025,7 +1029,7 @@ App.ui.pages.checkAndShowInitialParamsModal = async function() {
     }
 };
 
-// ---------- Совместный доступ ----------
+/* ========== СОВМЕСТНЫЙ ДОСТУП ========== */
 App.ui.pages.renderSharingListForCarTab = function() {
     var container = document.getElementById('sharing-container');
     if (!container) return;
