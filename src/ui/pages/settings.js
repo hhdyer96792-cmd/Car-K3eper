@@ -43,7 +43,7 @@ App.ui.pages.saveSettings = function() {
     });
 };
 
-// Проверка статуса push-подписки на сервере (вызывается из main.js после входа)
+// Проверка статуса push-подписки на сервере (вызывается из main.js после входа и при открытии вкладки "Настройки")
 App.ui.pages.checkPushSubscriptionStatus = async function() {
     if (!App.supabase) return false;
     try {
@@ -61,7 +61,10 @@ App.ui.pages.checkPushSubscriptionStatus = async function() {
         } else {
             localStorage.removeItem('push_subscribed');
         }
-        App.ui.pages.populateSettingsFields();
+        // Обновляем UI только если вкладка настроек активна
+        if (document.getElementById('tab-settings')?.classList.contains('active')) {
+            App.ui.pages.populateSettingsFields();
+        }
         return isSubscribed;
     } catch (err) {
         console.error('Ошибка проверки push-подписки:', err);
@@ -70,63 +73,58 @@ App.ui.pages.checkPushSubscriptionStatus = async function() {
 };
 
 App.ui.pages.savePushSubscription = async function(playerId) {
-    // Пытаемся сохранить на сервер, но если не получилось – сохраняем локально
-    if (App.supabase) {
-        try {
-            const { data: { user } } = await App.supabase.auth.getUser();
-            if (user) {
-                const { error } = await App.supabase
-                    .from('push_subscriptions')
-                    .upsert({ user_id: user.id, player_id: playerId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-                if (!error) {
-                    localStorage.setItem('push_subscribed', 'true');
-                    App.ui.pages.populateSettingsFields();
-                    return true;
-                }
-            }
-        } catch (err) {
-            console.warn('Не удалось сохранить подписку на сервере, сохраняю локально:', err);
+    if (!App.supabase) return false;
+    try {
+        const { data: { user } } = await App.supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+        const { error } = await App.supabase
+            .from('push_subscriptions')
+            .upsert({ user_id: user.id, player_id: playerId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+        if (error) {
+            console.error('Supabase upsert error:', error);
+            throw error;
         }
+        localStorage.setItem('push_subscribed', 'true');
+        App.ui.pages.populateSettingsFields();
+        return true;
+    } catch (err) {
+        console.error('Ошибка сохранения push-подписки:', err);
+        // fallback – сохраняем только локально
+        localStorage.setItem('push_subscribed', 'true');
+        App.ui.pages.populateSettingsFields();
+        return false;
     }
-    // fallback локально
-    localStorage.setItem('push_subscribed', 'true');
-    App.ui.pages.populateSettingsFields();
-    return true;
 };
 
 App.ui.pages.removePushSubscription = async function() {
-    // Пытаемся удалить с сервера, если не получилось – удаляем локально
-    if (App.supabase) {
-        try {
-            const { data: { user } } = await App.supabase.auth.getUser();
-            if (user) {
-                const { error } = await App.supabase
-                    .from('push_subscriptions')
-                    .delete()
-                    .eq('user_id', user.id);
-                if (!error) {
-                    localStorage.removeItem('push_subscribed');
-                    // Безопасное удаление токена из Firebase
-                    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-                        try {
-                            const messaging = firebase.messaging();
-                            if (messaging && typeof messaging.deleteToken === 'function') {
-                                await messaging.deleteToken();
-                            }
-                        } catch(e) { console.warn('Token delete failed:', e); }
-                    }
-                    App.ui.pages.populateSettingsFields();
-                    return true;
+    if (!App.supabase) return false;
+    try {
+        const { data: { user } } = await App.supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+        const { error } = await App.supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('user_id', user.id);
+        if (error) throw error;
+        localStorage.removeItem('push_subscribed');
+        // Безопасное удаление токена из Firebase
+        if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+            try {
+                const messaging = firebase.messaging();
+                if (messaging && typeof messaging.deleteToken === 'function') {
+                    await messaging.deleteToken();
                 }
-            }
-        } catch (err) {
-            console.warn('Не удалось удалить подписку на сервере, удаляю локально:', err);
+            } catch(e) { console.warn('Token delete failed:', e); }
         }
+        App.ui.pages.populateSettingsFields();
+        return true;
+    } catch (err) {
+        console.error('Ошибка удаления push-подписки:', err);
+        // fallback – удаляем только локально
+        localStorage.removeItem('push_subscribed');
+        App.ui.pages.populateSettingsFields();
+        return false;
     }
-    // fallback локально
-    localStorage.removeItem('push_subscribed');
-    App.ui.pages.populateSettingsFields();
-    return true;
 };
 
 App.ui.pages.populateSettingsFields = function() {
@@ -186,7 +184,8 @@ App.ui.pages.populateSettingsFields = function() {
                         }
                         if (!tokenAcquired) {
                             // fallback – только локальное хранилище
-                            await App.ui.pages.savePushSubscription(null);
+                            localStorage.setItem('push_subscribed', 'true');
+                            App.ui.pages.populateSettingsFields();
                             App.toast('Подписка на push оформлена (локально)', 'success');
                         }
                     } else {
