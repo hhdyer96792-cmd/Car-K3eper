@@ -262,8 +262,12 @@ App.events.switchToTab = function(tabId) {
         case 'car':
             if (typeof App.ui.pages.renderCarTab === 'function') App.ui.pages.renderCarTab();
             break;
-        case 'settings':
+          case 'settings':
             if (typeof App.ui.pages.populateSettingsFields === 'function') App.ui.pages.populateSettingsFields();
+            // Добавляем проверку статуса подписки при открытии вкладки настроек
+            if (typeof App.ui.pages.checkPushSubscriptionStatus === 'function') {
+App.ui.pages.checkPushSubscriptionStatus();
+            }
             break;
     }
 
