@@ -98,7 +98,7 @@ App.ui.pages.removePushSubscription = async function() {
             .eq('user_id', user.id);
         if (error) throw error;
         localStorage.removeItem('push_subscribed');
-        // Безопасное удаление токена из Firebase
+        // Безопасное удаление токена из Firebase (обёрнуто в try/catch)
         if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
             try {
                 const messaging = firebase.messaging();
@@ -154,7 +154,8 @@ App.ui.pages.populateSettingsFields = function() {
                 }
                 Notification.requestPermission().then(async function(perm) {
                     if (perm === 'granted') {
-                        // Проверяем, что Firebase инициализирован
+                        // Пытаемся получить токен через Firebase, если Firebase готов
+                        let tokenAcquired = false;
                         if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
                             try {
                                 const messaging = firebase.messaging();
@@ -163,18 +164,15 @@ App.ui.pages.populateSettingsFields = function() {
                                     if (token) {
                                         await App.ui.pages.savePushSubscription(token);
                                         App.toast('Подписка на push оформлена', 'success');
-                                    } else {
-                                        App.toast('Не удалось получить токен', 'error');
+                                        tokenAcquired = true;
                                     }
-                                } else {
-                                    App.toast('Firebase не готов', 'error');
                                 }
                             } catch(err) {
-                                console.error(err);
-                                App.toast('Ошибка при получении токена', 'error');
+                                console.warn('Ошибка при получении токена через Firebase, переключаемся на локальное сохранение:', err);
                             }
-                        } else {
-                            // fallback – только локальное хранилище
+                        }
+                        // Fallback: если не удалось получить токен (Firebase не готов или ошибка) – сохраняем только локально
+                        if (!tokenAcquired) {
                             localStorage.setItem('push_subscribed', 'true');
                             App.ui.pages.populateSettingsFields();
                             App.toast('Подписка на push оформлена (локально)', 'success');
