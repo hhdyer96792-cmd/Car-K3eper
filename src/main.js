@@ -445,6 +445,10 @@ var drawerLoginBtn = document.getElementById('drawer-login');
                         if (typeof App.store !== 'undefined' && typeof App.store.initFromLocalStorage === 'function') {
                             App.store.initFromLocalStorage();
                         }
+                        
+                        if (typeof App.ui.pages.checkPushSubscriptionStatus === 'function') {
+    App.ui.pages.checkPushSubscriptionStatus();
+}
 
                         if (event === 'PASSWORD_RECOVERY') {
                             if (typeof App.ui.promptModalAsync === 'function') {
