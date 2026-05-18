@@ -77,21 +77,17 @@ App.ui.pages.savePushSubscription = async function(playerId) {
     try {
         const { data: { user } } = await App.supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
-        const { error } = await App.supabase
+        const { data, error } = await App.supabase
             .from('push_subscriptions')
             .upsert({ user_id: user.id, player_id: playerId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-        if (error) {
-            console.error('Supabase upsert error:', error);
-            throw error;
-        }
+        console.log('savePushSubscription result:', data, error); // ← лог
+        if (error) throw error;
         localStorage.setItem('push_subscribed', 'true');
         App.ui.pages.populateSettingsFields();
         return true;
     } catch (err) {
-        console.error('Ошибка сохранения push-подписки:', err);
-        // fallback – сохраняем только локально
-        localStorage.setItem('push_subscribed', 'true');
-        App.ui.pages.populateSettingsFields();
+        console.error('Ошибка сохранения push-подписки:', err); // ← лог
+        // НЕ перезаписываем localStorage, чтобы UI не вводил в заблуждение
         return false;
     }
 };
