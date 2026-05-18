@@ -77,17 +77,21 @@ App.ui.pages.savePushSubscription = async function(playerId) {
     try {
         const { data: { user } } = await App.supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
-        const { data, error } = await App.supabase
+        const { error } = await App.supabase
             .from('push_subscriptions')
             .upsert({ user_id: user.id, player_id: playerId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-        console.log('savePushSubscription result:', data, error); // ← лог
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase upsert error:', error);
+            throw error;
+        }
         localStorage.setItem('push_subscribed', 'true');
         App.ui.pages.populateSettingsFields();
         return true;
     } catch (err) {
-        console.error('Ошибка сохранения push-подписки:', err); // ← лог
-        // НЕ перезаписываем localStorage, чтобы UI не вводил в заблуждение
+        console.error('Ошибка сохранения push-подписки:', err);
+        // fallback – сохраняем только локально
+        localStorage.setItem('push_subscribed', 'true');
+        App.ui.pages.populateSettingsFields();
         return false;
     }
 };
@@ -161,34 +165,27 @@ App.ui.pages.populateSettingsFields = function() {
                     return;
                 }
                 Notification.requestPermission().then(async function(perm) {
-                    if (perm === 'granted') {
-                        let tokenAcquired = false;
-                        if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-                            try {
-                                const messaging = firebase.messaging();
-                                if (messaging && typeof messaging.getToken === 'function') {
-                                    const token = await messaging.getToken();
-                                    if (token) {
-                                        await App.ui.pages.savePushSubscription(token);
-                                        App.toast('Подписка на push оформлена', 'success');
-                                        tokenAcquired = true;
-                                    }
-                                }
-                            } catch(err) {
-                                console.warn('Ошибка при получении токена через Firebase, переключаемся на локальное сохранение:', err);
-                            }
-                        }
-                        if (!tokenAcquired) {
-                            // fallback – только локальное хранилище
-                            localStorage.setItem('push_subscribed', 'true');
-                            App.ui.pages.populateSettingsFields();
-                            App.toast('Подписка на push оформлена (локально)', 'success');
-                        }
-                    } else {
-                        App.toast('Нет разрешения на уведомления', 'warning');
+        if (perm === 'granted') {
+            let token = '';
+            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+                try {
+                    const messaging = firebase.messaging();
+                    if (messaging && typeof messaging.getToken === 'function') {
+                        const fbToken = await messaging.getToken();
+                        if (fbToken) token = fbToken;
                     }
-                });
-            });
+                } catch(err) {
+                    console.warn('Ошибка получения Firebase-токена, продолжаем без него:', err);
+                }
+            }
+            // Всегда сохраняем в Supabase (player_id может быть пустым)
+            await App.ui.pages.savePushSubscription(token);
+            App.toast('Подписка на push оформлена', 'success');
+        } else {
+            App.toast('Нет разрешения на уведомления', 'warning');
+        }
+    });
+
         }
 
         var unsubscribePushBtn = document.getElementById('unsubscribe-push-btn');
