@@ -711,13 +711,13 @@ App.ui.pages.renderDocuments = function() {
                 html += '</div>';
                 html += '</div>';
                 if (doc.photoUrl) {
-                    var isPdf = doc.photoUrl.toLowerCase().endsWith('.pdf');
-                    if (isPdf) {
-                        html += '<div class="card-meta"><i data-lucide="file-text"></i> PDF-документ</div>';
-                    } else {
-                        html += '<img src="' + doc.photoUrl + '" class="doc-preview" />';
-                    }
-                }
+    var isPdf = doc.photoUrl.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+        html += '<a href="' + doc.photoUrl + '" target="_blank" class="card-meta"><i data-lucide="file-text"></i> PDF-документ</a>';
+    } else {
+        html += '<a href="' + doc.photoUrl + '" target="_blank"><img src="' + doc.photoUrl + '" class="doc-preview" /></a>';
+    }
+}
                 if (doc.amount) html += '<div class="card-meta">Сумма: ' + doc.amount + ' ₽</div>';
                 if (doc.notes) html += '<div class="card-meta">' + App.utils.escapeHtml(doc.notes) + '</div>';
                 html += '</div>';
