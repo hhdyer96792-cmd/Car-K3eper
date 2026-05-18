@@ -106,9 +106,7 @@ var drawerLoginBtn = document.getElementById('drawer-login');
         plateNumber: '',
         vin: ''
     };
-
-    localStorage.removeItem('push_subscribed');
-
+    
     if (App.realtime && typeof App.realtime.unsubscribeAll === 'function') {
         App.realtime.unsubscribeAll();
     }
