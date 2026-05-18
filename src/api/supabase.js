@@ -386,7 +386,7 @@ App.supa.inviteUserToCar = function(carId, email) {
 
 App.supa.getPendingInvites = function() {
     return App.supa.getCurrentUserId().then(function(userId) {
-        if (!userId) return [];                    // ← если нет пользователя, возвращаем пустой массив
+    //    if (!userId) return [];                    // ← если нет пользователя, возвращаем пустой массив
         return App.supabase.from('car_shares')
             .select('*, cars(name)')
             .eq('invited_user_id', userId)
