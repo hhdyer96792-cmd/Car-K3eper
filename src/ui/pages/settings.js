@@ -35,13 +35,78 @@ App.ui.pages.saveSettings = function() {
         App.store.settings.reminderDays = settings.reminderDays;
         App.store.saveToLocalStorage();
 
-        // Убрано дублирующее сообщение
         App.toast('Настройки сохранены', 'success');
     }).catch(function(err) {
         console.error(err);
         document.getElementById('settings-result').textContent = '⚠️ Ошибка сохранения';
         App.toast('Ошибка сохранения настроек', 'error');
     });
+};
+
+// Проверка статуса push-подписки на сервере
+App.ui.pages.checkPushSubscriptionStatus = async function() {
+    try {
+        const { data: { user } } = await App.supabase.auth.getUser();
+        if (!user) return false;
+        const { data, error } = await App.supabase
+            .from('push_subscriptions')
+            .select('player_id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+        if (error) throw error;
+        const isSubscribed = !!(data && data.player_id);
+        if (isSubscribed) {
+            localStorage.setItem('push_subscribed', 'true');
+        } else {
+            localStorage.removeItem('push_subscribed');
+        }
+        // Обновляем UI
+        App.ui.pages.populateSettingsFields();
+        return isSubscribed;
+    } catch (err) {
+        console.error('Ошибка проверки push-подписки:', err);
+        return false;
+    }
+};
+
+App.ui.pages.savePushSubscription = async function(playerId) {
+    try {
+        const { data: { user } } = await App.supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+        const { error } = await App.supabase
+            .from('push_subscriptions')
+            .upsert({ user_id: user.id, player_id: playerId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+        if (error) throw error;
+        localStorage.setItem('push_subscribed', 'true');
+        App.ui.pages.populateSettingsFields();
+        return true;
+    } catch (err) {
+        console.error('Ошибка сохранения push-подписки:', err);
+        return false;
+    }
+};
+
+App.ui.pages.removePushSubscription = async function() {
+    try {
+        const { data: { user } } = await App.supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+        const { error } = await App.supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('user_id', user.id);
+        if (error) throw error;
+        localStorage.removeItem('push_subscribed');
+        if (typeof firebase !== 'undefined' && firebase.messaging) {
+            try {
+                await firebase.messaging().deleteToken();
+            } catch(e) { console.warn('Token delete failed:', e); }
+        }
+        App.ui.pages.populateSettingsFields();
+        return true;
+    } catch (err) {
+        console.error('Ошибка удаления push-подписки:', err);
+        return false;
+    }
 };
 
 App.ui.pages.populateSettingsFields = function() {
@@ -59,7 +124,7 @@ App.ui.pages.populateSettingsFields = function() {
         if (document.getElementById('reminder-days-2')) document.getElementById('reminder-days-2').value = parts[1] || 2;
     }
 
-    // Восстановление состояния push-уведомлений из localStorage
+    // Восстановление состояния push-уведомлений из localStorage (синхронно)
     const pushStatus = document.getElementById('push-status');
     const subscribeBtn = document.getElementById('subscribe-push-btn');
     const unsubscribeBtn = document.getElementById('unsubscribe-push-btn');
@@ -77,16 +142,31 @@ App.ui.pages.populateSettingsFields = function() {
 
         var subscribePushBtn = document.getElementById('subscribe-push-btn');
         if (subscribePushBtn) {
-            subscribePushBtn.addEventListener('click', function() {
+            subscribePushBtn.addEventListener('click', async function() {
                 if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                     alert('Push-уведомления не поддерживаются в этом браузере');
                     return;
                 }
-                Notification.requestPermission().then(function(perm) {
+                Notification.requestPermission().then(async function(perm) {
                     if (perm === 'granted') {
-                        localStorage.setItem('push_subscribed', 'true');
-                        App.ui.pages.populateSettingsFields(); // обновить UI
-                        App.toast('Подписка на push оформлена', 'success');
+                        if (typeof firebase !== 'undefined' && firebase.messaging) {
+                            try {
+                                const token = await firebase.messaging().getToken();
+                                if (token) {
+                                    await App.ui.pages.savePushSubscription(token);
+                                    App.toast('Подписка на push оформлена', 'success');
+                                } else {
+                                    App.toast('Не удалось получить токен', 'error');
+                                }
+                            } catch(err) {
+                                console.error(err);
+                                App.toast('Ошибка при получении токена', 'error');
+                            }
+                        } else {
+                            localStorage.setItem('push_subscribed', 'true');
+                            App.ui.pages.populateSettingsFields();
+                            App.toast('Подписка на push оформлена (локально)', 'success');
+                        }
                     } else {
                         App.toast('Нет разрешения на уведомления', 'warning');
                     }
@@ -96,9 +176,8 @@ App.ui.pages.populateSettingsFields = function() {
 
         var unsubscribePushBtn = document.getElementById('unsubscribe-push-btn');
         if (unsubscribePushBtn) {
-            unsubscribePushBtn.addEventListener('click', function() {
-                localStorage.removeItem('push_subscribed');
-                App.ui.pages.populateSettingsFields(); // обновить UI
+            unsubscribePushBtn.addEventListener('click', async function() {
+                await App.ui.pages.removePushSubscription();
                 App.toast('Подписка на push отключена', 'success');
             });
         }
@@ -136,7 +215,10 @@ App.ui.pages.populateSettingsFields = function() {
 // Заглушка для совместимости
 App.ui.pages.subscribeToPush = function() {};
 
-// Остальные методы (экспорт, уведомления, отчёты, резервные коды) остаются без изменений.
+// При загрузке модуля – проверить статус, если пользователь уже авторизован
+App.ui.pages.checkPushSubscriptionStatus();
+
+// Остальные методы (экспорт, отчёты, резервные коды) остаются без изменений
 
 App.ui.pages.openPhotoFolder = function() {
     App.toast('Фотографии теперь хранятся в Supabase Storage', 'info');
