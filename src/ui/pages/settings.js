@@ -4,6 +4,7 @@ App.ui = App.ui || {};
 App.ui.pages = App.ui.pages || {};
 
 let settingsListenersAttached = false;
+let pushStatusChecked = false; // флаг, чтобы не проверять статус многократно
 
 App.ui.pages.saveSettings = function() {
     var telegramTokenInput = document.getElementById('telegram-token');
@@ -43,8 +44,16 @@ App.ui.pages.saveSettings = function() {
     });
 };
 
-// Проверка статуса push-подписки на сервере
+// Проверка статуса push-подписки на сервере (отложенная, если Supabase ещё не готов)
 App.ui.pages.checkPushSubscriptionStatus = async function() {
+    // Защита: если Supabase ещё не инициализирован, повторим через 1 секунду
+    if (!App.supabase) {
+        console.warn('checkPushSubscriptionStatus: App.supabase not ready, will retry');
+        setTimeout(() => App.ui.pages.checkPushSubscriptionStatus(), 1000);
+        return false;
+    }
+    // Если уже проверили в этой сессии, не повторяем
+    if (pushStatusChecked) return true;
     try {
         const { data: { user } } = await App.supabase.auth.getUser();
         if (!user) return false;
@@ -60,6 +69,7 @@ App.ui.pages.checkPushSubscriptionStatus = async function() {
         } else {
             localStorage.removeItem('push_subscribed');
         }
+        pushStatusChecked = true;
         // Обновляем UI
         App.ui.pages.populateSettingsFields();
         return isSubscribed;
@@ -70,6 +80,10 @@ App.ui.pages.checkPushSubscriptionStatus = async function() {
 };
 
 App.ui.pages.savePushSubscription = async function(playerId) {
+    if (!App.supabase) {
+        console.warn('savePushSubscription: App.supabase not ready');
+        return false;
+    }
     try {
         const { data: { user } } = await App.supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
@@ -78,6 +92,7 @@ App.ui.pages.savePushSubscription = async function(playerId) {
             .upsert({ user_id: user.id, player_id: playerId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
         if (error) throw error;
         localStorage.setItem('push_subscribed', 'true');
+        pushStatusChecked = true;
         App.ui.pages.populateSettingsFields();
         return true;
     } catch (err) {
@@ -87,6 +102,10 @@ App.ui.pages.savePushSubscription = async function(playerId) {
 };
 
 App.ui.pages.removePushSubscription = async function() {
+    if (!App.supabase) {
+        console.warn('removePushSubscription: App.supabase not ready');
+        return false;
+    }
     try {
         const { data: { user } } = await App.supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
@@ -96,7 +115,8 @@ App.ui.pages.removePushSubscription = async function() {
             .eq('user_id', user.id);
         if (error) throw error;
         localStorage.removeItem('push_subscribed');
-        if (typeof firebase !== 'undefined' && firebase.messaging) {
+        pushStatusChecked = false;
+        if (typeof firebase !== 'undefined' && firebase.messaging && typeof firebase.messaging === 'function') {
             try {
                 await firebase.messaging().deleteToken();
             } catch(e) { console.warn('Token delete failed:', e); }
@@ -149,7 +169,8 @@ App.ui.pages.populateSettingsFields = function() {
                 }
                 Notification.requestPermission().then(async function(perm) {
                     if (perm === 'granted') {
-                        if (typeof firebase !== 'undefined' && firebase.messaging) {
+                        // Проверяем наличие Firebase
+                        if (typeof firebase !== 'undefined' && firebase.messaging && typeof firebase.messaging === 'function') {
                             try {
                                 const token = await firebase.messaging().getToken();
                                 if (token) {
@@ -163,7 +184,9 @@ App.ui.pages.populateSettingsFields = function() {
                                 App.toast('Ошибка при получении токена', 'error');
                             }
                         } else {
+                            // fallback – только локальное хранилище (без сервера)
                             localStorage.setItem('push_subscribed', 'true');
+                            pushStatusChecked = true;
                             App.ui.pages.populateSettingsFields();
                             App.toast('Подписка на push оформлена (локально)', 'success');
                         }
@@ -215,8 +238,12 @@ App.ui.pages.populateSettingsFields = function() {
 // Заглушка для совместимости
 App.ui.pages.subscribeToPush = function() {};
 
-// При загрузке модуля – проверить статус, если пользователь уже авторизован
-App.ui.pages.checkPushSubscriptionStatus();
+// Отложенная проверка статуса подписки – не сразу, а через секунду (чтобы Supabase успел инициализироваться)
+setTimeout(() => {
+    if (typeof App.ui.pages.checkPushSubscriptionStatus === 'function') {
+        App.ui.pages.checkPushSubscriptionStatus();
+    }
+}, 1000);
 
 // Остальные методы (экспорт, отчёты, резервные коды) остаются без изменений
 
