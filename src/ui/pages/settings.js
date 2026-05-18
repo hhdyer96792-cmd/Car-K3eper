@@ -153,51 +153,51 @@ App.ui.pages.populateSettingsFields = function() {
     }
 
     // Навешиваем обработчики только один раз
-    if (!settingsListenersAttached) {
-        var saveBtn = document.getElementById('save-settings-btn');
-        if (saveBtn) saveBtn.addEventListener('click', App.ui.pages.saveSettings);
+if (!settingsListenersAttached) {
+    var saveBtn = document.getElementById('save-settings-btn');
+    if (saveBtn) saveBtn.addEventListener('click', App.ui.pages.saveSettings);
 
-        var subscribePushBtn = document.getElementById('subscribe-push-btn');
-        if (subscribePushBtn) {
-            subscribePushBtn.addEventListener('click', async function() {
-                if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                    alert('Push-уведомления не поддерживаются в этом браузере');
-                    return;
-                }
-                Notification.requestPermission().then(async function(perm) {
-        if (perm === 'granted') {
-            let token = '';
-            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-                try {
-                    const messaging = firebase.messaging();
-                    if (messaging && typeof messaging.getToken === 'function') {
-                        const fbToken = await messaging.getToken();
-                        if (fbToken) token = fbToken;
-                    }
-                } catch(err) {
-                    console.warn('Ошибка получения Firebase-токена, продолжаем без него:', err);
-                }
+    var subscribePushBtn = document.getElementById('subscribe-push-btn');
+    if (subscribePushBtn) {
+        subscribePushBtn.addEventListener('click', async function() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                alert('Push-уведомления не поддерживаются в этом браузере');
+                return;
             }
-            // Всегда сохраняем в Supabase (player_id может быть пустым)
-            await App.ui.pages.savePushSubscription(token);
-            App.toast('Подписка на push оформлена', 'success');
-        } else {
-            App.toast('Нет разрешения на уведомления', 'warning');
-        }
-    });
-
-        }
-
-        var unsubscribePushBtn = document.getElementById('unsubscribe-push-btn');
-        if (unsubscribePushBtn) {
-            unsubscribePushBtn.addEventListener('click', async function() {
-                await App.ui.pages.removePushSubscription();
-                App.toast('Подписка на push отключена', 'success');
+            Notification.requestPermission().then(async function(perm) {
+                if (perm === 'granted') {
+                    let token = '';
+                    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+                        try {
+                            const messaging = firebase.messaging();
+                            if (messaging && typeof messaging.getToken === 'function') {
+                                const fbToken = await messaging.getToken();
+                                if (fbToken) token = fbToken;
+                            }
+                        } catch(err) {
+                            console.warn('Ошибка получения Firebase-токена, продолжаем без него:', err);
+                        }
+                    }
+                    // Всегда сохраняем в Supabase (player_id может быть пустым)
+                    await App.ui.pages.savePushSubscription(token);
+                    App.toast('Подписка на push оформлена', 'success');
+                } else {
+                    App.toast('Нет разрешения на уведомления', 'warning');
+                }
             });
-        }
-
-        settingsListenersAttached = true;
+        });
     }
+
+    var unsubscribePushBtn = document.getElementById('unsubscribe-push-btn');
+    if (unsubscribePushBtn) {
+        unsubscribePushBtn.addEventListener('click', async function() {
+            await App.ui.pages.removePushSubscription();
+            App.toast('Подписка на push отключена', 'success');
+        });
+    }
+
+    settingsListenersAttached = true;
+}
 
     var telegramInfoBtn = document.getElementById('telegram-info-btn');
     if (telegramInfoBtn && !telegramInfoBtn.hasListener) {
