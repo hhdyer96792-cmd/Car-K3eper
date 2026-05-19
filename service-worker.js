@@ -19,7 +19,7 @@ messaging.onBackgroundMessage(function(payload) {
 // =====================================================================
 
 const basePath = self.location.pathname.replace(/\/service-worker\.js$/, '');
-const CACHE_NAME = 'car-k3eeper-static-v4';
+const CACHE_NAME = 'car-logger-static-v1';
 
 // Все локальные файлы приложения (без начального basePath, он добавится при проверке)
 const localFiles = [
