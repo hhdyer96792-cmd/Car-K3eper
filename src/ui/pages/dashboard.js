@@ -584,7 +584,7 @@ App.ui.pages.renderPlannerColumn = function() {
         withDays.forEach(function(item) {
             var days = item.daysLeft;
             var statusClass = days < 0 ? 'overdue' : (days <= 7 ? 'critical' : 'normal');
-            var daysText = days < 0 ? 'просрочено на ' + Math.abs(days) + ' дн.' : 'через ' + days + ' дн.';
+            var statusText = daysLeft < 0 ? '<i data-lucide="alert-triangle" style="width:14px; height:14px; display:inline-block; vertical-align:middle;"></i> просрочено на ' + Math.abs(daysLeft) + ' дн.' : 'осталось ' + daysLeft + ' дн.';
             html += '<li class="upcoming-item ' + statusClass + '">' +
                 '<span class="upcoming-name">' + App.utils.escapeHtml(item.op.name) + '</span>' +
                 '<span class="upcoming-date">' + App.utils.isoToDDMMYYYY(item.plan.planDate) + '</span>' +
