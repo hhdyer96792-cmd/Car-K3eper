@@ -340,7 +340,7 @@ App.ui.pages.generateChartCardHtml = function(chartNumber, chartId) {
             '<i data-lucide="' + iconName + '"></i>' +
             '<h3>' + App.utils.escapeHtml(chartName) + '</h3>' +
         '</div>' +
-        '<canvas id="timeline-canvas-' + chartNumber + '" height="200"></canvas>' +
+        '<canvas id="timeline-canvas-' + chartNumber + '" width="500" height="200" style="width:100%; height:200px; display:block;"></canvas>' +
         '<div class="chart-footer">' +
             '<select class="chart-period-select" data-chart="' + chartNumber + '">' +
                 '<option value="month">Месяц</option>' +
