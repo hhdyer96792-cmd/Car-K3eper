@@ -264,7 +264,7 @@ App.ui.pages.openTireModal = function(record) {
             '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
         '</form>';
 
-    var modal = App.ui.createModal(isEdit ? 'Редактировать запись шин' : 'Сменить резину', content);
+    var modal = App.ui.createModal(isEdit ? '<i data-lucide="circle"></i> Редактировать запись шин' : '<i data-lucide="circle"></i> Сменить резину', content);
 
     // Переключатель Лето/Зима с цветом
     var typeToggle = modal.querySelector('#tire-type-toggle');
