@@ -561,51 +561,49 @@ App.ui.pages.renderPlannerColumn = function() {
     }
     
     function renderUpcomingList() {
-        // Генерируем список ближайших ТО (первые 5 операций с минимальным daysLeft)
-        var candidates = App.store.operations.filter(function(op) {
-            if (!op.intervalKm && !op.intervalMonths && !op.intervalMotohours) return false;
-            var plan = App.logic.calculatePlan(op);
-            return plan.daysLeft !== null && isFinite(plan.daysLeft) && plan.planDate;
-        });
-        
-        var withDays = candidates.map(function(op) {
-            var plan = App.logic.calculatePlan(op);
-            return { op: op, plan: plan, daysLeft: plan.daysLeft };
-        }).filter(function(item) { return item.daysLeft !== null; })
-          .sort(function(a, b) { return a.daysLeft - b.daysLeft; })
-          .slice(0, 5);
-        
-        if (withDays.length === 0) {
-            upcomingContainer.innerHTML = '<p class="hint">Нет предстоящих ТО</p>';
-            return;
-        }
-        
-        var html = '<h3><i data-lucide="alert-circle"></i> Ближайшие ТО</h3><ul class="upcoming-list">';
-        withDays.forEach(function(item) {
-            var days = item.daysLeft;
-            var statusClass = days < 0 ? 'overdue' : (days <= 7 ? 'critical' : 'normal');
-            var statusText = daysLeft < 0 ? '<i data-lucide="alert-triangle" style="width:14px; height:14px; display:inline-block; vertical-align:middle;"></i> просрочено на ' + Math.abs(daysLeft) + ' дн.' : 'осталось ' + daysLeft + ' дн.';
-            html += '<li class="upcoming-item ' + statusClass + '">' +
-                '<span class="upcoming-name">' + App.utils.escapeHtml(item.op.name) + '</span>' +
-                '<span class="upcoming-date">' + App.utils.isoToDDMMYYYY(item.plan.planDate) + '</span>' +
-                '<span class="upcoming-days">' + daysText + '</span>' +
-                '<button class="icon-btn execute-upcoming" data-op-id="' + item.op.id + '" data-op-name="' + App.utils.escapeHtml(item.op.name) + '" title="Выполнить"><i data-lucide="check-circle"></i></button>' +
-            '</li>';
-        });
-        html += '</ul>';
-        upcomingContainer.innerHTML = html;
-        
-        // Обработчики кнопок выполнения
-        upcomingContainer.querySelectorAll('.execute-upcoming').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var opId = this.dataset.opId;
-                var opName = this.dataset.opName;
-                App.ui.pages.openServiceModal(opId, opName);
-            });
-        });
-        
-        App.initIcons();
+    var candidates = App.store.operations.filter(function(op) {
+        if (!op.intervalKm && !op.intervalMonths && !op.intervalMotohours) return false;
+        var plan = App.logic.calculatePlan(op);
+        return plan.daysLeft !== null && isFinite(plan.daysLeft) && plan.planDate;
+    });
+    
+    var withDays = candidates.map(function(op) {
+        var plan = App.logic.calculatePlan(op);
+        return { op: op, plan: plan, daysLeft: plan.daysLeft };
+    }).filter(function(item) { return item.daysLeft !== null; })
+      .sort(function(a, b) { return a.daysLeft - b.daysLeft; })
+      .slice(0, 5);
+    
+    if (withDays.length === 0) {
+        upcomingContainer.innerHTML = '<p class="hint">Нет предстоящих ТО</p>';
+        return;
     }
+    
+    var html = '<h3><i data-lucide="alert-circle"></i> Ближайшие ТО</h3><ul class="upcoming-list">';
+    withDays.forEach(function(item) {
+        var days = item.daysLeft;   // ← ИСПРАВЛЕНО
+        var statusClass = days < 0 ? 'overdue' : (days <= 7 ? 'critical' : 'normal');
+        var daysText = days < 0 ? 'просрочено на ' + Math.abs(days) + ' дн.' : 'через ' + days + ' дн.';
+        html += '<li class="upcoming-item ' + statusClass + '">' +
+            '<span class="upcoming-name">' + App.utils.escapeHtml(item.op.name) + '</span>' +
+            '<span class="upcoming-date">' + App.utils.isoToDDMMYYYY(item.plan.planDate) + '</span>' +
+            '<span class="upcoming-days">' + daysText + '</span>' +
+            '<button class="icon-btn execute-upcoming" data-op-id="' + item.op.id + '" data-op-name="' + App.utils.escapeHtml(item.op.name) + '" title="Выполнить"><i data-lucide="check-circle"></i></button>' +
+        '</li>';
+    });
+    html += '</ul>';
+    upcomingContainer.innerHTML = html;
+    
+    upcomingContainer.querySelectorAll('.execute-upcoming').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var opId = this.dataset.opId;
+            var opName = this.dataset.opName;
+            App.ui.pages.openServiceModal(opId, opName);
+        });
+    });
+    
+    App.initIcons();
+}
     
     refreshCalendar();
     renderUpcomingList();
