@@ -1582,7 +1582,8 @@ body.auth-modal-open #fab-menu {
     gap: 8px;
 }
 
-/* Колонка 2 (Планировщик ТО) */
+
+/* Колонка 2 (Планировщик ТО) – дополнительные */
 .planner-calendar-container {
     margin-bottom: 20px;
 }
@@ -1736,3 +1737,49 @@ body.auth-modal-open #fab-menu {
 .search-result-item:hover {
     background: var(--bg);
 }
+
+/* Финансовая колонка */
+.finance-col-card {
+    margin-bottom: 16px;
+}
+.finance-col-card:last-child {
+    margin-bottom: 0;
+}
+.cost-display {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 12px 0;
+    padding: 8px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+.cost-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+.cost-breakdown {
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+.extreme-item {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Компактные тосты (без эмодзи) */
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.toast i {
+    width: 20px;
+    height: 20px;
+}
+.toast.success i { color: var(--success); }
+.toast.error i { color: var(--danger); }
+.toast.warning i { color: var(--warning); }
