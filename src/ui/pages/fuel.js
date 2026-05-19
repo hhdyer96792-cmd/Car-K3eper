@@ -567,7 +567,7 @@ App.ui.pages.openFuelModal = function(record) {
             '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
         '</form>';
 
-    var modal = App.ui.createModal(isEdit ? ' Редактировать заправку' : ' Добавить заправку', content);
+    var modal = App.ui.createModal(isEdit ? '<i data-lucide="fuel"></i> Редактировать заправку' : '<i data-lucide="fuel"></i> Добавить заправку', content);
     var form = modal.querySelector('#fuel-form');
 
     form.onsubmit = function(e) {
