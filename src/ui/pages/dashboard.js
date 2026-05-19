@@ -352,6 +352,96 @@ App.ui.pages.generateChartCardHtml = function(chartNumber, chartId) {
     '</div>';
 };
 
+// ===== КОЛОНКА 1: Стоимость владения =====
+App.ui.pages.renderFinanceColumn = function() {
+    var container = document.getElementById('bottom-col-finance');
+    if (!container) return;
+    
+    // Получаем общие затраты (покупка + ТО + топливо + запчасти + шины)
+    var purchaseCost = App.store.purchaseCost || 0;
+    
+    var totalMaint = App.store.serviceRecords.reduce(function(s, r) {
+        return s + (Number(r.parts_cost) || 0) + (Number(r.work_cost) || 0);
+    }, 0);
+    
+    var totalFuel = App.store.fuelLog.reduce(function(s, f) {
+        return s + (Number(f.liters) || 0) * (Number(f.pricePerLiter) || 0);
+    }, 0);
+    
+    var totalParts = App.store.parts.reduce(function(s, p) {
+        return s + (Number(p.price) || 0);
+    }, 0);
+    
+    var totalTires = App.store.tireLog.reduce(function(s, t) {
+        return s + (Number(t.purchaseCost) || 0) + (Number(t.mountCost) || 0);
+    }, 0);
+    
+    var totalCost = purchaseCost + totalMaint + totalFuel + totalParts + totalTires;
+    var currentMileage = App.store.settings.currentMileage || 1;
+    var costPerKm = totalCost / currentMileage;
+    
+    // Режим отображения (храним в localStorage)
+    var displayMode = localStorage.getItem('vesta_cost_display_mode') || 'total';
+    
+    var displayValue = (displayMode === 'perKm') 
+        ? costPerKm.toFixed(2) + ' ₽/км' 
+        : totalCost.toLocaleString() + ' ₽';
+    
+    // Самый дорогой и дешёвый месяц (на основе общих расходов)
+    var grouped = App.logic.groupTotalCostsByMonth(0);
+    var months = grouped.months;
+    var totalCosts = grouped.totalCosts;
+    
+    var maxMonth = '', maxCost = 0;
+    var minMonth = '', minCost = Infinity;
+    for (var i = 0; i < months.length; i++) {
+        var cost = totalCosts[i];
+        if (cost > maxCost) { maxCost = cost; maxMonth = months[i]; }
+        if (cost < minCost && cost > 0) { minCost = cost; minMonth = months[i]; }
+    }
+    
+    var html = 
+        '<div class="finance-col-card">' +
+            '<h3><i data-lucide="wallet"></i> Стоимость владения</h3>' +
+            '<div class="cost-display">' +
+                '<span class="cost-value" id="col-finance-value">' + displayValue + '</span>' +
+                '<button class="icon-btn" id="toggle-cost-display" title="Переключить общая/за км"><i data-lucide="refresh-cw"></i></button>' +
+            '</div>' +
+            '<div class="cost-breakdown">' +
+                '<div>Покупка: ' + purchaseCost.toLocaleString() + ' ₽</div>' +
+                '<div>ТО: ' + totalMaint.toLocaleString() + ' ₽</div>' +
+                '<div>Топливо: ' + totalFuel.toLocaleString() + ' ₽</div>' +
+                '<div>Запчасти: ' + totalParts.toLocaleString() + ' ₽</div>' +
+                '<div>Шины: ' + totalTires.toLocaleString() + ' ₽</div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="finance-col-card">' +
+            '<h3><i data-lucide="calendar"></i> Экстремумы затрат</h3>' +
+            '<div class="extreme-item">' +
+                '<i data-lucide="trending-up" style="color:var(--danger);"></i> ' +
+                '<strong>Самый дорогой месяц:</strong> ' + (maxMonth ? maxMonth + ' (' + maxCost.toLocaleString() + ' ₽)' : '—') +
+            '</div>' +
+            '<div class="extreme-item">' +
+                '<i data-lucide="trending-down" style="color:var(--success);"></i> ' +
+                '<strong>Самый дешёвый месяц:</strong> ' + (minMonth ? minMonth + ' (' + minCost.toLocaleString() + ' ₽)' : '—') +
+            '</div>' +
+        '</div>';
+    
+    container.innerHTML = html;
+    
+    // Обработчик переключения режима отображения
+    var toggleBtn = document.getElementById('toggle-cost-display');
+    if (toggleBtn) {
+        toggleBtn.onclick = function() {
+            var newMode = (localStorage.getItem('vesta_cost_display_mode') === 'total') ? 'perKm' : 'total';
+            localStorage.setItem('vesta_cost_display_mode', newMode);
+            App.ui.pages.renderFinanceColumn(); // перерисовываем
+        };
+    }
+    
+    App.initIcons();
+};
+
 // Основная функция десктопного дашборда
 App.ui.pages.renderDesktopDashboard = function() {
     var container = document.getElementById('desktop-dashboard-container');
@@ -416,6 +506,7 @@ App.ui.pages.renderDesktopDashboard = function() {
     
     // Начальная отрисовка графиков
     App.ui.pages.renderSelectedCharts();
+    App.ui.pages.renderFinanceColumn();
 };
 
 // Функция для меню графика (модальное окно)
