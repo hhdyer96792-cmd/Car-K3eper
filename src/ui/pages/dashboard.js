@@ -119,7 +119,7 @@ App.ui.pages.renderTop5Widget = function() {
         var daysLeft = plan.daysLeft;
         var mileageLeft = plan.planMileage - App.store.settings.currentMileage;
         var motoLeft = plan.recMotohours ? (plan.recMotohours - App.store.settings.currentMotohours) : null;
-        var statusText = daysLeft < 0 ? '⚠️ просрочено на ' + Math.abs(daysLeft) + ' дн.' : 'осталось ' + daysLeft + ' дн.';
+        var statusText = daysLeft < 0 ? '⚠ просрочено на ' + Math.abs(daysLeft) + ' дн.' : 'осталось ' + daysLeft + ' дн.';
         if (mileageLeft > 0 && op.intervalKm) statusText += ' / ' + mileageLeft + ' км';
         else if (motoLeft > 0 && op.intervalMotohours && motoFresh) statusText += ' / ' + motoLeft.toFixed(0) + ' м/ч';
         html += '<div class="top5-item"><div class="top5-header"><span class="top5-name">' + App.utils.escapeHtml(item.name) + '</span><span class="top5-stats">' + statusText + '</span></div><div class="top5-progress-container"><div class="top5-progress-bar" style="width:' + percent + '%;"></div></div></div>';
@@ -639,39 +639,32 @@ App.ui.pages.renderOtherColumn = function() {
     // Рендер компактного износа шин
     App.ui.pages.renderTireWearCompact();
     
-    // Рендер складской сводки (используем существующую функцию из parts.js)
-    if (typeof App.ui.pages.renderWarehouseSummary === 'function') {
-        // Временно подменяем контейнер, чтобы отрисовать в нужном месте
-        var originalContainer = document.getElementById('warehouse-summary');
-        var tempContainer = document.getElementById('col-warehouse-summary');
-        if (tempContainer) {
-            // Сохраняем оригинальный контейнер, если он есть, чтобы не сломать вкладку Запчасти
-            App.ui.pages._originalWarehouseContainer = originalContainer;
-            // Временно подменяем
-            var fakeContainer = { innerHTML: '' };
-            Object.defineProperty(fakeContainer, 'innerHTML', {
-                set: function(val) { tempContainer.innerHTML = val; }
-            });
-            var originalRender = App.ui.pages.renderWarehouseSummary;
-            // Вызываем, но она ищет #warehouse-summary – создадим временный элемент с таким id
-            var oldEl = document.getElementById('warehouse-summary');
-            if (!oldEl) {
-                var hiddenDiv = document.createElement('div');
-                hiddenDiv.id = 'warehouse-summary';
-                hiddenDiv.style.display = 'none';
-                document.body.appendChild(hiddenDiv);
-                App.ui.pages.renderWarehouseSummary();
-                var summaryHtml = hiddenDiv.innerHTML;
-                hiddenDiv.remove();
-                tempContainer.innerHTML = summaryHtml;
-            } else {
-                App.ui.pages.renderWarehouseSummary();
-                tempContainer.innerHTML = oldEl.innerHTML;
-            }
-        }
-    } else {
-        document.getElementById('col-warehouse-summary').innerHTML = '<p class="hint">Сводка недоступна</p>';
-    }
+    // Компактная складская сводка (без зависимости от parts.js)
+App.ui.pages.renderWarehouseSummaryCompact = function() {
+    var container = document.getElementById('col-warehouse-summary');
+    if (!container) return;
+    
+    var parts = App.store.parts || [];
+    var totalPositions = parts.length;
+    var totalSum = parts.reduce(function(s, p) { return s + (parseFloat(p.price) || 0); }, 0);
+    var lowStock = parts.filter(function(p) { return (p.inStock || 0) === 1; }).length;
+    var outOfStock = parts.filter(function(p) { return (p.inStock || 0) === 0; }).length;
+    
+    var html = 
+        '<div>Всего позиций: <strong>' + totalPositions + '</strong></div>' +
+        '<div>На сумму: <strong>' + totalSum.toLocaleString() + ' ₽</strong></div>' +
+        '<div>Заканчиваются (≤1): <strong style="color:var(--warning)">' + lowStock + '</strong></div>' +
+        '<div>Нет в наличии: <strong style="color:var(--danger)">' + outOfStock + '</strong></div>';
+    
+    container.innerHTML = html;
+};
+    
+    // Компактная складская сводка (без зависимости от parts.js)
+if (typeof App.ui.pages.renderWarehouseSummaryCompact === 'function') {
+    App.ui.pages.renderWarehouseSummaryCompact();
+} else {
+    document.getElementById('col-warehouse-summary').innerHTML = '<p class="hint">Сводка недоступна</p>';
+}
     
     // Обработчик поиска OEM
     var searchBtn = document.getElementById('oem-search-btn');
