@@ -611,6 +611,157 @@ App.ui.pages.renderPlannerColumn = function() {
     renderUpcomingList();
 };
 
+// ===== КОЛОНКА 3: Шины + Склад + Поиск OEM =====
+App.ui.pages.renderOtherColumn = function() {
+    var container = document.getElementById('bottom-col-other');
+    if (!container) return;
+    
+    var html = 
+        '<div class="other-col-card">' +
+            '<h3><i data-lucide="circle"></i> Состояние шин</h3>' +
+            '<div id="col-tire-wear-compact"></div>' +
+        '</div>' +
+        '<div class="other-col-card">' +
+            '<h3><i data-lucide="warehouse"></i> Складская сводка</h3>' +
+            '<div id="col-warehouse-summary"></div>' +
+        '</div>' +
+        '<div class="other-col-card">' +
+            '<h3><i data-lucide="search"></i> Поиск OEM</h3>' +
+            '<div class="oem-search">' +
+                '<input type="text" id="oem-search-input" placeholder="Введите OEM или аналог">' +
+                '<button id="oem-search-btn" class="primary-btn" style="margin-top:8px;"><i data-lucide="search"></i> Найти</button>' +
+            '</div>' +
+            '<div id="oem-search-results" style="margin-top:12px;"></div>' +
+        '</div>';
+    
+    container.innerHTML = html;
+    
+    // Рендер компактного износа шин
+    App.ui.pages.renderTireWearCompact();
+    
+    // Рендер складской сводки (используем существующую функцию из parts.js)
+    if (typeof App.ui.pages.renderWarehouseSummary === 'function') {
+        // Временно подменяем контейнер, чтобы отрисовать в нужном месте
+        var originalContainer = document.getElementById('warehouse-summary');
+        var tempContainer = document.getElementById('col-warehouse-summary');
+        if (tempContainer) {
+            // Сохраняем оригинальный контейнер, если он есть, чтобы не сломать вкладку Запчасти
+            App.ui.pages._originalWarehouseContainer = originalContainer;
+            // Временно подменяем
+            var fakeContainer = { innerHTML: '' };
+            Object.defineProperty(fakeContainer, 'innerHTML', {
+                set: function(val) { tempContainer.innerHTML = val; }
+            });
+            var originalRender = App.ui.pages.renderWarehouseSummary;
+            // Вызываем, но она ищет #warehouse-summary – создадим временный элемент с таким id
+            var oldEl = document.getElementById('warehouse-summary');
+            if (!oldEl) {
+                var hiddenDiv = document.createElement('div');
+                hiddenDiv.id = 'warehouse-summary';
+                hiddenDiv.style.display = 'none';
+                document.body.appendChild(hiddenDiv);
+                App.ui.pages.renderWarehouseSummary();
+                var summaryHtml = hiddenDiv.innerHTML;
+                hiddenDiv.remove();
+                tempContainer.innerHTML = summaryHtml;
+            } else {
+                App.ui.pages.renderWarehouseSummary();
+                tempContainer.innerHTML = oldEl.innerHTML;
+            }
+        }
+    } else {
+        document.getElementById('col-warehouse-summary').innerHTML = '<p class="hint">Сводка недоступна</p>';
+    }
+    
+    // Обработчик поиска OEM
+    var searchBtn = document.getElementById('oem-search-btn');
+    var searchInput = document.getElementById('oem-search-input');
+    if (searchBtn) {
+        searchBtn.onclick = function() {
+            var query = searchInput.value.trim().toLowerCase();
+            if (!query) {
+                App.toast('Введите OEM или аналог для поиска', 'warning');
+                return;
+            }
+            var results = App.store.parts.filter(function(p) {
+                return (p.oem && p.oem.toLowerCase().includes(query)) ||
+                       (p.analog && p.analog.toLowerCase().includes(query));
+            });
+            
+            if (results.length === 0) {
+                App.ui.alertModal('По запросу "' + App.utils.escapeHtml(query) + '" ничего не найдено.');
+                return;
+            }
+            
+            var modalContent = '<div style="max-height:400px; overflow-y:auto;">';
+            results.forEach(function(part) {
+                modalContent += 
+                    '<div class="search-result-item" data-part-id="' + part.id + '" style="padding:8px; border-bottom:1px solid var(--border); cursor:pointer;">' +
+                        '<strong>' + App.utils.escapeHtml(part.oem || part.analog || '—') + '</strong><br>' +
+                        '<span class="hint">Операция: ' + App.utils.escapeHtml(part.operation || '—') + '</span><br>' +
+                        '<span>Цена: ' + (part.price ? part.price + ' ₽' : '—') + '</span>' +
+                    '</div>';
+            });
+            modalContent += '</div>';
+            
+            var modal = App.ui.createModal('Результаты поиска: ' + App.utils.escapeHtml(query), modalContent);
+            modal.querySelectorAll('.search-result-item').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    var partId = this.dataset.partId;
+                    var part = App.store.parts.find(function(p) { return p.id == partId; });
+                    if (part && typeof App.ui.pages.openPartForm === 'function') {
+                        modal.remove();
+                        App.ui.pages.openPartForm(part);
+                    }
+                });
+            });
+            App.initIcons();
+        };
+    }
+    
+    App.initIcons();
+};
+
+// Компактный виджет износа шин (без кнопок, только прогресс-бары)
+App.ui.pages.renderTireWearCompact = function() {
+    var container = document.getElementById('col-tire-wear-compact');
+    if (!container) return;
+    
+    var summerTires = App.store.tireLog.filter(function(t) { return t.type === 'Лето'; })
+        .sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    var winterTires = App.store.tireLog.filter(function(t) { return t.type === 'Зима'; })
+        .sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    var summerLast = summerTires[0];
+    var winterLast = winterTires[0];
+    
+    function buildCompactWear(tire, type) {
+        if (!tire) return '<div class="compact-wear-item"><span class="wear-label">' + type + '</span><span class="hint">Нет данных</span></div>';
+        
+        var wearPercent = 0;
+        var wearValue = tire.wear ? parseFloat(tire.wear) : 0;
+        if (type === 'Лето') {
+            var minWear = 1.6;
+            var maxDepth = 8;
+            var currentDepth = Math.min(maxDepth, Math.max(minWear, wearValue));
+            wearPercent = ((maxDepth - currentDepth) / (maxDepth - minWear)) * 100;
+            wearPercent = Math.min(100, Math.max(0, wearPercent));
+            var statusText = wearValue.toFixed(1) + ' мм';
+        } else {
+            wearPercent = Math.min(100, Math.max(0, 100 - wearValue));
+            statusText = wearValue + '% шипов';
+        }
+        var color = wearPercent < 50 ? 'var(--success)' : (wearPercent < 80 ? 'var(--warning)' : 'var(--danger)');
+        
+        return '<div class="compact-wear-item">' +
+            '<div class="wear-label">' + type + '</div>' +
+            '<div class="wear-progress"><div class="wear-fill" style="width:' + wearPercent + '%; background:' + color + ';"></div></div>' +
+            '<div class="wear-value">' + statusText + '</div>' +
+        '</div>';
+    }
+    
+    container.innerHTML = buildCompactWear(summerLast, 'Лето') + buildCompactWear(winterLast, 'Зима');
+    App.initIcons();
+};
 
 
 // Основная функция десктопного дашборда
