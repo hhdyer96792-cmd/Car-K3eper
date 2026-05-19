@@ -128,71 +128,20 @@ App.ui.pages.renderTop5Widget = function() {
     App.initIcons();
 };
 
-// ===== Главный рендер дашборда =====
-App.ui.pages.renderDashboard = function() {
-    var dataPanel = document.getElementById('data-panel');
-    if (!dataPanel) return;
-
-    var stats = App.logic.calculateStatistics('6months');
-    var mileageEl = document.getElementById('dash-mileage');
-    var motoEl = document.getElementById('dash-motohours');
-    var avgConsEl = document.getElementById('dash-avg-consumption');
-    var costKmEl = document.getElementById('dash-cost-km');
-    if (mileageEl) mileageEl.textContent = App.store.settings.currentMileage.toLocaleString();
-    if (motoEl) motoEl.textContent = App.store.settings.currentMotohours.toLocaleString();
-    if (avgConsEl) avgConsEl.textContent = stats.avgFuelConsumption.toFixed(1);
-    if (costKmEl) costKmEl.textContent = stats.costPerKm.toFixed(2);
-
-    var mode = App.logic.getDrivingMode();
-    var modeTextEl = document.getElementById('dash-driving-mode-text');
-    var modeDotEl = document.getElementById('mode-dot');
-    if (modeTextEl) {
-        var rawMode = mode.text;
-        if (rawMode.indexOf('Городской') !== -1) modeTextEl.textContent = 'Город';
-        else if (rawMode.indexOf('Трассовый') !== -1) modeTextEl.textContent = 'Трасса';
-        else if (rawMode.indexOf('Смешанный') !== -1) modeTextEl.textContent = 'Смешанный';
-        else modeTextEl.textContent = rawMode;
-    }
-    if (modeDotEl) {
-        var modeClass = '';
-        if (mode.text.indexOf('Городской') !== -1) modeClass = 'city';
-        else if (mode.text.indexOf('Трассовый') !== -1) modeClass = 'highway';
-        else if (mode.text.indexOf('Смешанный') !== -1) modeClass = 'mixed';
-        modeDotEl.className = 'mode-dot ' + modeClass;
-    }
-
-    if (typeof App.charts.renderMiniFuelConsumptionChart === 'function') App.charts.renderMiniFuelConsumptionChart();
-    if (typeof App.charts.renderMiniCostsChart === 'function') App.charts.renderMiniCostsChart();
-    if (typeof App.charts.renderMiniExpensePieChart === 'function') App.charts.renderMiniExpensePieChart();
-    App.ui.pages.renderTireWearMini();
-    App.ui.pages.renderTop5Widget();
-    var top5Container = document.getElementById('top5-container');
-    var dashUpcoming = document.getElementById('dash-upcoming-container');
-    if (top5Container && dashUpcoming) {
-        dashUpcoming.innerHTML = top5Container.innerHTML;
-        var items = dashUpcoming.querySelectorAll('.top5-item');
-        items.forEach(function(item) {
-            var nameEl = item.querySelector('.top5-name');
-            if (!nameEl) return;
-            var opName = nameEl.textContent;
-            var op = App.store.operations.find(function(o) { return o.name === opName; });
-            if (!op) return;
-            var btn = document.createElement('button');
-            btn.className = 'icon-btn execute-dash-btn';
-            btn.innerHTML = '<i data-lucide="check-circle"></i>';
-            btn.title = 'Выполнить';
-            btn.addEventListener('click', function() { App.ui.pages.openServiceModal(op.id, op.name); });
-            item.appendChild(btn);
-        });
-    }
-
-    if (window.innerWidth <= 767) {
-        App.ui.pages.renderMobileDashboard();
-    }
-    App.initIcons();
+// ===== НОВЫЙ ДЕСКТОПНЫЙ ДАШБОРД =====
+App.ui.pages.renderDesktopDashboard = function() {
+    var container = document.getElementById('desktop-dashboard-container');
+    if (!container) return;
+    
+    // Пока заглушка – временно выводим сообщение о разработке
+    container.innerHTML = '<div class="card" style="padding:20px; text-align:center;">🚧 Десктопный дашборд в разработке (этап 1)</div>';
+    
+    // Здесь будут: три селектора графиков, горизонтальная лента с тремя графиками,
+    // нижняя область из трёх колонок (финансы, планировщик, шины+склад)
+    // TODO: реализация на следующих этапах
 };
 
-// ===== Мобильный дашборд =====
+// ===== Мобильный дашборд (без изменений) =====
 App.ui.pages.renderMobileDashboard = function() {
     // Восстанавливаем скролл
     document.body.style.overflow = '';
@@ -438,59 +387,59 @@ App.ui.pages.renderMobileDashboard = function() {
     }
 
     // 7. Последние операции
-function renderAccordionBody(id, data, fields, tab, showDate, dateField) {
-    dateField = dateField || 'date';
-    var body = document.getElementById(id);
-    if (!body) return;
-    var latest = data.slice().sort(function(a, b) {
-        var da = new Date(a[dateField]);
-        var db = new Date(b[dateField]);
-        return db - da;
-    }).slice(0, 3);
-    var html = '';
-    if (latest.length === 0) {
-        html = '<p class="hint">Нет данных</p>';
-    } else {
-        latest.forEach(function(rec) {
-            var dateHtml = (showDate !== false) ? '<span>' + (rec[dateField] || '') + '</span>' : '';
-            html += '<div class="last-row">' + dateHtml + '<span>' + fields.name(rec) + '</span><span>' + (fields.cost(rec) || '') + '</span></div>';
-        });
-        html += '<button class="secondary-btn more-btn" data-tab="' + tab + '">Больше данных</button>';
-    }
-    body.innerHTML = html;
-}
-
-renderAccordionBody('last-fuel-body', App.store.fuelLog, {
-    name: function(f) { return f.fuelType || 'Бензин'; },
-    cost: function(f) { return (f.liters * f.pricePerLiter).toFixed(0) + ' ₽'; }
-}, 'fuel');
-renderAccordionBody('last-to-body', App.store.serviceRecords, {
-    name: function(r) { var op = App.store.operations.find(function(o) { return o.id == r.operation_id; }); return op ? op.name : 'Неизвестно'; },
-    cost: function(r) { return (Number(r.parts_cost)+Number(r.work_cost)).toFixed(0) + ' ₽'; }
-}, 'to');
-renderAccordionBody('last-parts-body', App.store.parts, {
-    name: function(p) { return p.oem || p.analog || p.operation || '—'; },
-    cost: function(p) { return (p.price || '') + ' ₽'; }
-}, 'parts', true, 'dateAdded');   // ← показываем дату, поле даты — dateAdded
-renderAccordionBody('last-tires-body', App.store.tireLog, {
-    name: function(t) { return t.type || 'Шины'; },
-    cost: function(t) { return (Number(t.purchaseCost||0)+Number(t.mountCost||0)).toFixed(0) + ' ₽'; }
-}, 'tires');
-
-document.querySelectorAll('.accordion-header[data-accordion]').forEach(function(header) {
-    header.onclick = function() {
-        var body = document.getElementById('last-' + header.dataset.accordion + '-body');
+    function renderAccordionBody(id, data, fields, tab, showDate, dateField) {
+        dateField = dateField || 'date';
+        var body = document.getElementById(id);
         if (!body) return;
-        var visible = body.style.display === 'block';
-        body.style.display = visible ? 'none' : 'block';
-        var arrow = header.querySelector('.accordion-arrow');
-        if (arrow) arrow.style.transform = visible ? 'rotate(0deg)' : 'rotate(180deg)';
-    };
-});
+        var latest = data.slice().sort(function(a, b) {
+            var da = new Date(a[dateField]);
+            var db = new Date(b[dateField]);
+            return db - da;
+        }).slice(0, 3);
+        var html = '';
+        if (latest.length === 0) {
+            html = '<p class="hint">Нет данных</p>';
+        } else {
+            latest.forEach(function(rec) {
+                var dateHtml = (showDate !== false) ? '<span>' + (rec[dateField] || '') + '</span>' : '';
+                html += '<div class="last-row">' + dateHtml + '<span>' + fields.name(rec) + '</span><span>' + (fields.cost(rec) || '') + '</span></div>';
+            });
+            html += '<button class="secondary-btn more-btn" data-tab="' + tab + '">Больше данных</button>';
+        }
+        body.innerHTML = html;
+    }
 
-document.querySelectorAll('.more-btn').forEach(function(btn) {
-    btn.onclick = function() { App.events.switchToTab(btn.dataset.tab); };
-});
+    renderAccordionBody('last-fuel-body', App.store.fuelLog, {
+        name: function(f) { return f.fuelType || 'Бензин'; },
+        cost: function(f) { return (f.liters * f.pricePerLiter).toFixed(0) + ' ₽'; }
+    }, 'fuel');
+    renderAccordionBody('last-to-body', App.store.serviceRecords, {
+        name: function(r) { var op = App.store.operations.find(function(o) { return o.id == r.operation_id; }); return op ? op.name : 'Неизвестно'; },
+        cost: function(r) { return (Number(r.parts_cost)+Number(r.work_cost)).toFixed(0) + ' ₽'; }
+    }, 'to');
+    renderAccordionBody('last-parts-body', App.store.parts, {
+        name: function(p) { return p.oem || p.analog || p.operation || '—'; },
+        cost: function(p) { return (p.price || '') + ' ₽'; }
+    }, 'parts', true, 'dateAdded');
+    renderAccordionBody('last-tires-body', App.store.tireLog, {
+        name: function(t) { return t.type || 'Шины'; },
+        cost: function(t) { return (Number(t.purchaseCost||0)+Number(t.mountCost||0)).toFixed(0) + ' ₽'; }
+    }, 'tires');
+
+    document.querySelectorAll('.accordion-header[data-accordion]').forEach(function(header) {
+        header.onclick = function() {
+            var body = document.getElementById('last-' + header.dataset.accordion + '-body');
+            if (!body) return;
+            var visible = body.style.display === 'block';
+            body.style.display = visible ? 'none' : 'block';
+            var arrow = header.querySelector('.accordion-arrow');
+            if (arrow) arrow.style.transform = visible ? 'rotate(0deg)' : 'rotate(180deg)';
+        };
+    });
+
+    document.querySelectorAll('.more-btn').forEach(function(btn) {
+        btn.onclick = function() { App.events.switchToTab(btn.dataset.tab); };
+    });
 
     // 8. Прогноз
     document.getElementById('calc-prediction-btn-mobile').onclick = function() {
@@ -516,4 +465,76 @@ document.querySelectorAll('.more-btn').forEach(function(btn) {
             App.events.updateMileageAndAverages();
         };
     }
+};
+
+// ===== Главный рендер дашборда =====
+App.ui.pages.renderDashboard = function() {
+    var dataPanel = document.getElementById('data-panel');
+    if (!dataPanel) return;
+
+    // Обновляем общие элементы, которые используются и в десктопной, и в мобильной версии
+    var stats = App.logic.calculateStatistics('6months');
+    var mileageEl = document.getElementById('dash-mileage');
+    var motoEl = document.getElementById('dash-motohours');
+    var avgConsEl = document.getElementById('dash-avg-consumption');
+    var costKmEl = document.getElementById('dash-cost-km');
+    if (mileageEl) mileageEl.textContent = App.store.settings.currentMileage.toLocaleString();
+    if (motoEl) motoEl.textContent = App.store.settings.currentMotohours.toLocaleString();
+    if (avgConsEl) avgConsEl.textContent = stats.avgFuelConsumption.toFixed(1);
+    if (costKmEl) costKmEl.textContent = stats.costPerKm.toFixed(2);
+
+    var mode = App.logic.getDrivingMode();
+    var modeTextEl = document.getElementById('dash-driving-mode-text');
+    var modeDotEl = document.getElementById('mode-dot');
+    if (modeTextEl) {
+        var rawMode = mode.text;
+        if (rawMode.indexOf('Городской') !== -1) modeTextEl.textContent = 'Город';
+        else if (rawMode.indexOf('Трассовый') !== -1) modeTextEl.textContent = 'Трасса';
+        else if (rawMode.indexOf('Смешанный') !== -1) modeTextEl.textContent = 'Смешанный';
+        else modeTextEl.textContent = rawMode;
+    }
+    if (modeDotEl) {
+        var modeClass = '';
+        if (mode.text.indexOf('Городской') !== -1) modeClass = 'city';
+        else if (mode.text.indexOf('Трассовый') !== -1) modeClass = 'highway';
+        else if (mode.text.indexOf('Смешанный') !== -1) modeClass = 'mixed';
+        modeDotEl.className = 'mode-dot ' + modeClass;
+    }
+
+    // В зависимости от ширины экрана рендерим соответствующую версию дашборда
+    if (window.innerWidth >= 768) {
+        // Десктопная версия – полностью новая
+        App.ui.pages.renderDesktopDashboard();
+    } else {
+        // Мобильная версия – существующая
+        // Перед рендером мобильного дашборда вызываем необходимые функции, которые раньше были общими
+        if (typeof App.charts.renderMiniFuelConsumptionChart === 'function') App.charts.renderMiniFuelConsumptionChart();
+        if (typeof App.charts.renderMiniCostsChart === 'function') App.charts.renderMiniCostsChart();
+        if (typeof App.charts.renderMiniExpensePieChart === 'function') App.charts.renderMiniExpensePieChart();
+        App.ui.pages.renderTireWearMini();
+        App.ui.pages.renderTop5Widget();
+        var top5Container = document.getElementById('top5-container');
+        var dashUpcoming = document.getElementById('dash-upcoming-container');
+        if (top5Container && dashUpcoming) {
+            dashUpcoming.innerHTML = top5Container.innerHTML;
+            var items = dashUpcoming.querySelectorAll('.top5-item');
+            items.forEach(function(item) {
+                var nameEl = item.querySelector('.top5-name');
+                if (!nameEl) return;
+                var opName = nameEl.textContent;
+                var op = App.store.operations.find(function(o) { return o.name === opName; });
+                if (!op) return;
+                var btn = document.createElement('button');
+                btn.className = 'icon-btn execute-dash-btn';
+                btn.innerHTML = '<i data-lucide="check-circle"></i>';
+                btn.title = 'Выполнить';
+                btn.addEventListener('click', function() { App.ui.pages.openServiceModal(op.id, op.name); });
+                item.appendChild(btn);
+            });
+        }
+        // Вызов мобильного дашборда
+        App.ui.pages.renderMobileDashboard();
+    }
+    
+    App.initIcons();
 };
