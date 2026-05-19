@@ -278,11 +278,55 @@ App.ui.pages.renderChartSelectors = function() {
     App.initIcons();
 };
 
-// Заглушка для перерисовки графиков (будет реализована на этапе 3)
+// Отрисовка всех трёх выбранных графиков
 App.ui.pages.renderSelectedCharts = function() {
-    console.log('renderSelectedCharts() – будет реализовано на этапе 3');
-    // Здесь будет вызов функций рендеринга для каждого из трёх графиков
-    // и обновление заголовков карточек с иконками
+    var selection = App.ui.pages.loadChartSelection();
+    var chartIds = [selection.chart1, selection.chart2, selection.chart3];
+    
+    for (var i = 1; i <= 3; i++) {
+        var canvasId = 'timeline-canvas-' + i;
+        var chartId = chartIds[i - 1];
+        var periodSelect = document.querySelector('.chart-period-select[data-chart="' + i + '"]');
+        var period = periodSelect ? periodSelect.value : 'month';
+        
+        // Обновляем заголовок карточки
+        var card = document.querySelector('.timeline-chart-card[data-chart-num="' + i + '"]');
+        if (card) {
+            var chartType = App.ui.pages.CHART_TYPES.find(function(t) { return t.id === chartId; });
+            var chartName = chartType ? chartType.name : 'График';
+            var iconName = App.ui.pages.getChartIcon(chartId);
+            var header = card.querySelector('.chart-header');
+            if (header) {
+                header.innerHTML = '<i data-lucide="' + iconName + '"></i><h3>' + App.utils.escapeHtml(chartName) + '</h3>';
+                card.setAttribute('data-chart-id', chartId);
+            }
+        }
+        
+        // Вызов соответствующей функции рендеринга
+        if (typeof App.timelineCharts !== 'undefined') {
+            switch (chartId) {
+                case 1:
+                    if (typeof App.timelineCharts.renderTotalCostsWithForecast === 'function')
+                        App.timelineCharts.renderTotalCostsWithForecast(canvasId, period);
+                    break;
+                case 2:
+                    if (typeof App.timelineCharts.renderFuelVsTOCosts === 'function')
+                        App.timelineCharts.renderFuelVsTOCosts(canvasId, period);
+                    break;
+                case 3:
+                    if (typeof App.timelineCharts.renderAverageFuelPrice === 'function')
+                        App.timelineCharts.renderAverageFuelPrice(canvasId, period);
+                    break;
+                default:
+                    console.log('График типа ' + chartId + ' будет реализован позже');
+                    break;
+            }
+        } else {
+            console.warn('App.timelineCharts не загружен');
+        }
+    }
+    
+    App.initIcons();
 };
 
 // Генерация HTML для карточки графика (с заголовком и иконкой)
