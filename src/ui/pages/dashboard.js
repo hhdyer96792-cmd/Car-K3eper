@@ -830,6 +830,7 @@ App.ui.pages.renderDesktopDashboard = function() {
     App.ui.pages.renderSelectedCharts();
     App.ui.pages.renderFinanceColumn();
     App.ui.pages.renderPlannerColumn();
+    App.ui.pages.renderOtherColumn();
 };
 
 // Функция для меню графика (модальное окно)
