@@ -23,7 +23,7 @@ body.dark {
     --bg: #0f172a;
     --card-bg: #1e293b;
     --text: #f1f5f9;
-    --text-muted: #94a3b8;
+    --text-muted: #cbd5e1;
     --border: #334155;
     --shadow: 0 1px 3px rgba(0,0,0,0.3);
     --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4);
@@ -35,7 +35,7 @@ body.dark {
         --bg: #0f172a;
         --card-bg: #1e293b;
         --text: #f1f5f9;
-        --text-muted: #94a3b8;
+        --text-muted: #cbd5e1;
         --border: #334155;
         --shadow: 0 1px 3px rgba(0,0,0,0.3);
         --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4);
@@ -80,6 +80,16 @@ header {
 h1 { font-size: 1.5rem; font-weight: 700; }
 h2, h3, h4 { font-weight: 600; font-size: 1rem; }
 
+/* Унификация заголовков карточек */
+.card h3, .chart-card h3, .dash-widget h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 button {
     font-family: inherit;
     padding: 10px 18px;
@@ -107,6 +117,14 @@ button:active { transform: translateY(0); }
 .icon-btn { background: transparent; color: var(--text); padding: 8px; border-radius: 50%; border: none; }
 .icon-btn:hover { background: var(--bg); transform: scale(1.05); box-shadow: none; }
 .danger-btn { background: var(--danger); }
+
+/* Выравнивание иконок в кнопках */
+button i, .icon-btn i {
+    width: 18px;
+    height: 18px;
+    display: inline-block;
+    vertical-align: middle;
+}
 
 .card, .stat-card, .dash-widget, .chart-card { font-size: 0.9rem; }
 .card {
@@ -250,14 +268,13 @@ body.dark tbody tr:hover { background: rgba(255,255,255,0.02); }
     .modal-content {
         border-radius: 24px 24px 0 0;
         max-width: 100%;
-        max-height: 60vh;               /* ограничиваем высоту */
+        max-height: 60vh;
         padding: 20px 20px 30px;
         margin-bottom: 0;
         animation: slideUp 0.3s ease-out;
-        overflow-y: auto;               /* скролл внутри модалки */
+        overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
-    /* Небольшой отступ снизу, чтобы клавиатура не перекрывала */
     .modal-content {
         padding-bottom: max(30px, env(safe-area-inset-bottom));
     }
@@ -282,6 +299,7 @@ body.dark tbody tr:hover { background: rgba(255,255,255,0.02); }
 .sidebar-item {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 10px;
     padding: 10px 14px;
     border-radius: var(--radius-sm);
@@ -294,7 +312,13 @@ body.dark tbody tr:hover { background: rgba(255,255,255,0.02); }
 }
 .sidebar-item:hover { background: var(--bg); }
 .sidebar-item.active { background: var(--primary); color: #fff; }
-.sidebar-footer { padding: 12px; display: flex; gap: 8px; border-top: 1px solid var(--border); justify-content: center; }
+.sidebar-footer {
+    padding: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: space-evenly;
+    border-top: 1px solid var(--border);
+}
 
 .mobile-bottom-nav {
     position: fixed;
@@ -391,10 +415,20 @@ body.dark .mobile-bottom-nav { background: rgba(15,23,42,0.85); }
     border-left: 4px solid var(--primary);
     font-size: 0.9rem;
     max-width: 320px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.toast i {
+    width: 20px;
+    height: 20px;
 }
 .toast.success { border-left-color: var(--success); }
+.toast.success i { color: var(--success); }
 .toast.error { border-left-color: var(--danger); }
+.toast.error i { color: var(--danger); }
 .toast.warning { border-left-color: var(--warning); }
+.toast.warning i { color: var(--warning); }
 .toast.fade-out { animation: toastOut 0.3s ease forwards; }
 
 canvas { max-width: 100%; }
@@ -430,7 +464,6 @@ a { color: var(--primary); }
 .header-controls button:hover { background: rgba(0,0,0,0.05); }
 body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 
-/* Фикс для мобильных: облако возвращается в поток */
 @media (max-width: 767px) {
     #sync-indicator {
         position: static;
@@ -539,7 +572,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     .desktop-only { display: none; }
     .mobile-only { display: block; }
 
-    /* Объединённая сводка 2×2 */
     .mobile-summary-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -565,22 +597,21 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
         margin-top: 2px;
     }
 
-    /* Мобильные аккордеоны – отдельные классы */
-.accordion-card {
-    padding: 12px 16px;
-}
-.mobile-accordion-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-}
-.accordion-arrow {
-    transition: transform 0.2s;
-}
-.accordion-body {
-    margin-top: 12px;
-}
+    .accordion-card {
+        padding: 12px 16px;
+    }
+    .mobile-accordion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+    }
+    .accordion-arrow {
+        transition: transform 0.2s;
+    }
+    .accordion-body {
+        margin-top: 12px;
+    }
     .cost-row,
     .last-row {
         display: flex;
@@ -596,7 +627,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
         margin-top: 8px;
         font-size: 0.85rem;
     }
-
     .mode-card-mobile {
         margin-bottom: 16px;
     }
@@ -664,7 +694,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     height: 200px;
     max-height: 200px;
 }
-/* Аккордеоны */
 .accordion-group {
     margin-bottom: 8px;
     border: 1px solid var(--border);
@@ -697,7 +726,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     transition: transform 0.2s;
 }
 
-/* Карточки операций */
 .card-item {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -730,7 +758,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .card-item.expanded .card-details { display: block; }
 .card-detail-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
 
-/* Прогресс-бары */
 .progress-bar-container {
     height: 8px;
     background: var(--border);
@@ -743,21 +770,20 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     transition: width 0.3s ease;
 }
 
-/* Кнопка-действие панели ТО */
-..to-actions-bar {
+.to-actions-bar {
     display: flex;
     gap: 8px;
     margin: 16px 0;
-    justify-content: space-between;  /* равномерное распределение */
+    justify-content: space-between;
     width: 100%;
 }
 .to-actions-bar button {
-    flex: 1 1 0;                    /* кнопки растягиваются на равную ширину */
+    flex: 1 1 0;
     font-size: 0.9rem;
     padding: 8px 10px;
-    white-space: nowrap;            /* иконка и текст в одну строку */
+    white-space: nowrap;
     text-align: center;
-    justify-content: center;        /* центрирование содержимого кнопки */
+    justify-content: center;
 }
 @media (max-width: 767px) {
     .to-actions-bar {
@@ -774,31 +800,25 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-bottom: 4px;
 }
 
-/* Ряд "Всего затрат" + сводная */
 .to-top-row {
     display: flex;
     gap: 16px;
     margin-bottom: 16px;
     flex-wrap: wrap;
 }
-
 .to-top-row > .card {
-    flex: 1 1 0;                /* равная ширина */
-    min-width: 250px;           /* чтобы на маленьких экранах не сжимались слишком сильно */
+    flex: 1 1 0;
+    min-width: 250px;
 }
-
 .to-total-cost-card h3 {
     margin-bottom: 12px;
 }
-
 .total-cost-value {
     font-size: 2rem;
     font-weight: 700;
     text-align: center;
     color: var(--primary);
 }
-
-/* Мобильная версия: карточки в столбик и на всю ширину */
 @media (max-width: 767px) {
     .to-top-row {
         flex-direction: column;
@@ -823,8 +843,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     grid-template-columns: 1fr 1fr;
     gap: 16px;
 }
-
-/* Переключатель периода */
 .fuel-period-switch {
     display: flex;
     gap: 6px;
@@ -847,27 +865,24 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     color: #fff;
     border-color: var(--primary);
 }
-
-/* Две круговые диаграммы в ряд */
 .fuel-pie-row {
     display: flex;
     gap: 12px;
     margin-bottom: 16px;
-    flex-wrap: nowrap;          /* всегда одна строка */
+    flex-wrap: nowrap;
 }
 .fuel-pie-card {
-    flex: 1 1 50%;              /* каждой – половина ширины */
-    min-width: 0;               /* можно сжиматься */
+    flex: 1 1 50%;
+    min-width: 0;
 }
 .fuel-pie-card canvas {
-    max-height: 180px;          /* ограничение высоты */
+    max-height: 180px;
 }
 @media (max-width: 767px) {
     .fuel-pie-card canvas {
-        max-height: 140px;      /* меньше на мобильных */
+        max-height: 140px;
     }
 }
-
 .fuel-type-dot {
     display: inline-block;
     width: 12px;
@@ -876,11 +891,10 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-right: 6px;
     vertical-align: middle;
 }
-
-.fuel-type-dot.petrol   { background: #E53935; }   /* бензин */
-.fuel-type-dot.diesel   { background: #FF8C00; }   /* дизель */
-.fuel-type-dot.gas      { background: #0072CE; }   /* газ */
-.fuel-type-dot.electric { background: #A6CE39; }   /* электро */
+.fuel-type-dot.petrol   { background: #E53935; }
+.fuel-type-dot.diesel   { background: #FF8C00; }
+.fuel-type-dot.gas      { background: #0072CE; }
+.fuel-type-dot.electric { background: #A6CE39; }
 
 /* ==================== Финансы ==================== */
 .finance-period-switch {
@@ -889,8 +903,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-bottom: 16px;
     flex-wrap: wrap;
 }
-
-/* Сводная карточка метрик (2×2) */
 .finance-summary-card {
     margin-bottom: 16px;
 }
@@ -922,18 +934,12 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     font-size: 0.85rem;
     opacity: 0.8;
 }
-
-/* Прогноз */
 .forecast-card {
     margin-bottom: 16px;
 }
-
-/* Уменьшение круговой диаграммы (примерно на 40% по площади) */
 #financePieChart {
     max-height: 160px;
 }
-
-/* Блок прогноз + круговая диаграмма в одной строке */
 .finance-row {
     display: flex;
     gap: 16px;
@@ -945,10 +951,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     min-width: 250px;
 }
 .finance-pie-card canvas {
-    max-height: 180px;   /* уменьшенный размер на десктопе */
+    max-height: 180px;
 }
-
-/* Сравнение периодов */
 .comparison-selectors {
     display: flex;
     gap: 8px;
@@ -963,7 +967,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     display: flex;
     justify-content: space-between;
 }
-
 @media (max-width: 767px) {
     .finance-row {
         flex-direction: column;
@@ -973,7 +976,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     }
 }
 
-/* Карточка «Всего затрат на колёса» */
+/* ==================== Шины ==================== */
 .total-tires-card h3 {
     margin-bottom: 12px;
 }
@@ -983,8 +986,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     text-align: center;
     color: var(--primary);
 }
-
-/* Элементы прогресс-бара износа */
 .wear-item {
     background: var(--card-bg);
     padding: 16px;
@@ -1000,7 +1001,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-right: 6px;
     vertical-align: middle;
 }
-
 .tire-type-btn.summer {
     background: #A6CE39;
     color: #000;
@@ -1012,7 +1012,7 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     border-color: #00BCD4;
 }
 
-/* Прогресс-бар ресурса масла */
+/* ==================== Ресурс масла ==================== */
 .oil-resource-container {
     margin-top: 8px;
 }
@@ -1061,8 +1061,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     font-size: 0.95rem;
     margin-bottom: 0;
 }
-
-/* Компактная форма запчасти */
 .part-form-row {
     display: flex;
     gap: 8px;
@@ -1084,8 +1082,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 }
 
 /* ==================== История ==================== */
-
-/* Единая строка фильтров */
 .history-filters-bar {
     display: flex;
     flex-wrap: wrap;
@@ -1093,8 +1089,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     margin-bottom: 16px;
     align-items: center;
 }
-
-/* Десктопные подписи */
 .filter-label {
     display: flex;
     align-items: center;
@@ -1103,15 +1097,12 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     white-space: nowrap;
     margin-bottom: 0;
 }
-
 .filter-label select,
 .filter-label input {
     width: auto;
     min-width: 100px;
     margin-bottom: 0;
 }
-
-/* Мобильная версия: скрываем подписи, показываем только поля */
 @media (max-width: 767px) {
     .history-filters-bar {
         flex-wrap: nowrap;
@@ -1123,31 +1114,24 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
         width: 100%;
         max-width: 100%;
     }
-
     .filter-label {
-        display: inline-block;    /* вместо flex, чтобы скрыть текст */
-        font-size: 0;            /* скрываем текст подписи */
+        display: inline-block;
+        font-size: 0;
     }
-
     .filter-label select,
     .filter-label input {
         font-size: 0.8rem;
         padding: 6px 8px;
     }
-
-    /* Показываем placeholder вместо подписи */
     .filter-label::before {
         content: attr(data-label);
         font-size: 0;
         display: none;
     }
 }
-
 #history-cards-container {
     margin-top: 16px;
 }
-
-/* Десктопные карточки истории */
 .history-card {
     background: var(--card-bg);
     border-radius: var(--radius);
@@ -1183,8 +1167,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     display: flex;
     gap: 4px;
 }
-
-/* Мобильные карточки истории */
 .history-card-mobile {
     background: var(--card-bg);
     border-radius: var(--radius-sm);
@@ -1241,8 +1223,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .car-fields-grid input {
     margin-bottom: 0;
 }
-
-/* Параметры */
 .car-params-card .car-params-row {
     display: flex;
     gap: 12px;
@@ -1277,8 +1257,6 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     padding: 8px;
     color: var(--text);
 }
-
-/* Документы */
 .doc-add-area {
     display: flex;
     gap: 8px;
@@ -1316,8 +1294,8 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     z-index: 1100;
 }
 .fab-main {
-    width: 60px;               /* ← увеличена */
-    height: 60px;              /* ← увеличена */
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: var(--primary);
     color: #fff;
@@ -1335,20 +1313,16 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     background: var(--primary-hover);
     transform: scale(1.1);
 }
-
-/* Оверлей затемнения */
 .fab-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.4);
     z-index: 1;
 }
-
-/* Действия (вертикально вверх) */
 .fab-actions {
     position: absolute;
     bottom: 80px;
-    right: 4px;                /* центровка относительно кнопки-родителя */
+    right: 4px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1358,10 +1332,9 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
 .fab-actions.open {
     pointer-events: auto;
 }
-
 .fab-action {
-    width: 56px;               /* ← увеличена */
-    height: 56px;              /* ← увеличена */
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: var(--card-bg);
     color: var(--text);
@@ -1375,23 +1348,18 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
     transform: translateY(20px) scale(0.5);
     opacity: 0;
 }
-
 .fab-actions.open .fab-action {
     transform: translateY(0) scale(1);
     opacity: 1;
 }
-
 .fab-actions.open .fab-action:nth-child(1) { transition-delay: 0.05s; }
 .fab-actions.open .fab-action:nth-child(2) { transition-delay: 0.1s; }
 .fab-actions.open .fab-action:nth-child(3) { transition-delay: 0.15s; }
 .fab-actions.open .fab-action:nth-child(4) { transition-delay: 0.2s; }
-
 .fab-action:hover {
     background: var(--bg);
     transform: scale(1.1);
 }
-
-/* Десктоп: фиксируем в левом нижнем углу над кнопками сайдбара */
 @media (min-width: 768px) {
     #fab-menu {
         left: 20px;
@@ -1399,12 +1367,10 @@ body.dark .header-controls button:hover { background: rgba(255,255,255,0.05); }
         bottom: 80px;
     }
 }
-
 body.auth-modal-open #drawer-menu,
 body.auth-modal-open #fab-menu {
     display: none !important;
 }
-
 .card-meta i {
     margin-right: 4px;
     vertical-align: middle;
@@ -1508,7 +1474,6 @@ body.auth-modal-open #fab-menu {
         display: none;
     }
 }
-
 .chart-header {
     display: flex;
     align-items: center;
@@ -1527,7 +1492,6 @@ body.auth-modal-open #fab-menu {
     font-size: 0.95rem;
     font-weight: 600;
 }
-
 .chart-menu-options button {
     margin-bottom: 8px;
 }
@@ -1542,12 +1506,6 @@ body.auth-modal-open #fab-menu {
 }
 .data-table th {
     background: var(--primary-light);
-}
-
-.timeline-chart-card canvas {
-    width: 100% !important;
-    height: 200px !important;
-    display: block;
 }
 
 /* Колонка 1 (Финансы) */
@@ -1582,8 +1540,7 @@ body.auth-modal-open #fab-menu {
     gap: 8px;
 }
 
-
-/* Колонка 2 (Планировщик ТО) – дополнительные */
+/* Колонка 2 (Планировщик ТО) */
 .planner-calendar-container {
     margin-bottom: 20px;
 }
@@ -1646,7 +1603,6 @@ body.auth-modal-open #fab-menu {
     border-radius: 50%;
     background: var(--primary);
 }
-
 .upcoming-list {
     list-style: none;
     padding: 0;
@@ -1737,49 +1693,3 @@ body.auth-modal-open #fab-menu {
 .search-result-item:hover {
     background: var(--bg);
 }
-
-/* Финансовая колонка */
-.finance-col-card {
-    margin-bottom: 16px;
-}
-.finance-col-card:last-child {
-    margin-bottom: 0;
-}
-.cost-display {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin: 12px 0;
-    padding: 8px;
-    background: var(--bg);
-    border-radius: var(--radius-sm);
-}
-.cost-value {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--primary);
-}
-.cost-breakdown {
-    font-size: 0.85rem;
-    line-height: 1.5;
-}
-.extreme-item {
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* Компактные тосты (без эмодзи) */
-.toast {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.toast i {
-    width: 20px;
-    height: 20px;
-}
-.toast.success i { color: var(--success); }
-.toast.error i { color: var(--danger); }
-.toast.warning i { color: var(--warning); }
