@@ -412,7 +412,7 @@ App.ui.pages.openServiceModal = function(opId, opName) {
         '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
         '</form>';
 
-    var modal = App.ui.createModal('➕ Выполнить ТО', content);
+    var modal = App.ui.createModal('<i data-lucide="wrench"></i> Выполнить ТО', content);
     var dropArea = modal.querySelector('#drop-area');
     var fileInput = modal.querySelector('#photo-input');
     var previewContainer = modal.querySelector('#photo-preview');
@@ -610,7 +610,7 @@ App.ui.pages.openOperationForm = function(op) {
         '<div class="modal-actions"><button type="submit" class="primary-btn">Сохранить</button><button type="button" class="cancel-btn secondary-btn">Отмена</button></div>' +
         '</form>';
 
-    var modal = App.ui.createModal(isEdit ? '✏️ Редактировать' : '➕ Новая операция', content);
+    var modal = App.ui.createModal(isEdit ? '<i data-lucide="pencil"></i> Редактировать' : '<i data-lucide="plus"></i> Новая операция', content);
     var form = modal.querySelector('#op-form');
     form.onsubmit = function(e) {
         e.preventDefault();
