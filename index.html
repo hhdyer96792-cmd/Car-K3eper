@@ -108,59 +108,11 @@
     <div id="data-panel" style="display:none;">
         <!-- Дашборд -->
         <div id="tab-dashboard" class="tab-content active">
-            <!-- Десктопная и мобильная части дашборда (без изменений) -->
-            <div class="desktop-only">
-                <div class="dashboard-grid">
-                    <div class="dash-widget" id="widget-summary">
-                        <h3><i data-lucide="gauge"></i> Сводка</h3>
-                        <div class="summary-values">
-                            <div><span id="dash-mileage">0</span><small>км</small></div>
-                            <div><span id="dash-motohours">0</span><small>ч</small></div>
-                            <div><span id="dash-avg-consumption">0</span><small>л/100км</small></div>
-                            <div><span id="dash-cost-km">0</span><small>₽/км</small></div>
-                        </div>
-                    </div>
-                    <div class="dash-widget" id="widget-driving-mode">
-                        <h3><i data-lucide="car"></i> Режим</h3>
-                        <div class="mode-indicator-compact" id="dash-driving-mode-compact">
-                            <div class="mode-dot" id="mode-dot"></div>
-                            <span id="dash-driving-mode-text">—</span>
-                        </div>
-                    </div>
-                    <div class="dash-widget dash-widget-wide" id="widget-upcoming">
-                        <h3><i data-lucide="alert-circle"></i> Ближайшие ТО</h3>
-                        <div id="dash-upcoming-container"></div>
-                    </div>
-                    <div class="dash-widget" id="widget-prediction">
-                        <h3><i data-lucide="trending-up"></i> Прогноз</h3>
-                        <label>Целевой пробег <input type="number" id="dash-target-mileage" placeholder="100000" style="width:100%"></label>
-                        <button class="secondary-btn" id="dash-predict-btn">Рассчитать</button>
-                        <div id="dash-prediction-result" class="hint"></div>
-                    </div>
-                    <div class="dash-widget" id="widget-fuel-chart">
-                        <h3><i data-lucide="line-chart"></i> Расход топлива</h3>
-                        <canvas id="dash-fuel-consumption-chart" height="120"></canvas>
-                    </div>
-                    <div class="dash-widget" id="widget-cost-chart">
-                        <h3><i data-lucide="bar-chart-3"></i> Затраты</h3>
-                        <canvas id="dash-costs-chart" height="120"></canvas>
-                    </div>
-                    <div class="dash-widget" id="widget-pie-chart">
-                        <h3><i data-lucide="pie-chart"></i> Расходы</h3>
-                        <canvas id="dash-expense-pie-chart" height="120"></canvas>
-                    </div>
-                    <div class="dash-widget" id="widget-tire-wear">
-                        <h3><i data-lucide="circle"></i> Шины</h3>
-                        <div id="dash-tire-wear-container"></div>
-                    </div>
-                </div>
-                <div class="quick-actions">
-                    <button id="dash-update-mileage-btn" class="primary-btn" title="Обновить пробег"><i data-lucide="refresh-cw"></i></button>
-                    <button id="dash-add-fuel-btn" class="primary-btn" title="Заправка"><i data-lucide="fuel"></i></button>
-                    <button id="dash-add-service-btn" class="primary-btn" title="ТО"><i data-lucide="wrench"></i></button>
-                </div>
+            
+  <div class="desktop-only" id="desktop-dashboard-container">
+                <!-- Весь десктопный дашборд генерируется через JS -->
             </div>
-
+<!-- Мобильная часть дашборда -->
             <div class="mobile-only" id="mobile-dashboard">
                 <!-- 1. Карточка режима эксплуатации -->
                 <div class="card mode-card-mobile">
