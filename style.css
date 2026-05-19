@@ -1549,3 +1549,35 @@ body.auth-modal-open #fab-menu {
     height: 200px !important;
     display: block;
 }
+
+/* Колонка 1 (Финансы) */
+.finance-col-card {
+    margin-bottom: 16px;
+}
+.finance-col-card:last-child {
+    margin-bottom: 0;
+}
+.cost-display {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 12px 0;
+    padding: 8px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+.cost-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+.cost-breakdown {
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+.extreme-item {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
