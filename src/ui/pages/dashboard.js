@@ -442,6 +442,177 @@ App.ui.pages.renderFinanceColumn = function() {
     App.initIcons();
 };
 
+// ===== КОЛОНКА 2: Планировщик ТО =====
+App.ui.pages.renderPlannerColumn = function() {
+    var container = document.getElementById('bottom-col-planner');
+    if (!container) return;
+    
+    // Получаем текущую дату для календаря
+    var today = new Date();
+    var currentYear = today.getFullYear();
+    var currentMonth = today.getMonth();
+    
+    // Функция получения событий для месяца
+    function getEventMapForMonth(year, month) {
+        var map = {};
+        App.store.operations.forEach(function(op) {
+            var pd = App.logic.calculatePlan(op);
+            if (!pd.planDate) return;
+            var d = new Date(pd.planDate);
+            if (d.getFullYear() === year && d.getMonth() === month) {
+                var key = pd.planDate;
+                if (!map[key]) map[key] = [];
+                map[key].push({ op: op, plan: pd });
+            }
+        });
+        return map;
+    }
+    
+    // Функция рендера календаря для заданного месяца
+    function renderCalendar(year, month, containerEl) {
+        var eventMap = getEventMapForMonth(year, month);
+        var firstDay = new Date(year, month, 1).getDay();
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        var html = '<div class="planner-calendar">';
+        html += '<div class="cal-nav">';
+        html += '<button class="cal-nav-btn planner-prev-btn"><i data-lucide="chevron-left"></i></button>';
+        html += '<span class="cal-month">' + new Date(year, month).toLocaleString('ru', { month: 'long', year: 'numeric' }) + '</span>';
+        html += '<button class="cal-nav-btn planner-next-btn"><i data-lucide="chevron-right"></i></button>';
+        html += '</div><div class="cal-weekdays">';
+        ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'].forEach(function(d) { html += '<div class="cal-weekday">' + d + '</div>'; });
+        html += '</div><div class="cal-grid">';
+        
+        for (var i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+        for (var d = 1; d <= daysInMonth; d++) {
+            var dateISO = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+            var events = eventMap[dateISO] || [];
+            var hasEvents = events.length > 0;
+            var todayClass = (dateISO === new Date().toISOString().split('T')[0]) ? ' today' : '';
+            html += '<div class="cal-day' + todayClass + '" data-date="' + dateISO + '">';
+            html += '<span class="cal-day-num">' + d + '</span>';
+            if (hasEvents) {
+                html += '<div class="cal-events">';
+                events.forEach(function(ev) { 
+                    html += '<span class="cal-event-dot" title="' + App.utils.escapeHtml(ev.op.name) + '"></span>'; 
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+        html += '</div></div>';
+        
+        containerEl.innerHTML = html;
+        
+        // Привязываем обработчики кликов по дням
+        containerEl.querySelectorAll('.cal-day:not(.empty)').forEach(function(dayEl) {
+            dayEl.onclick = function() {
+                var date = dayEl.dataset.date;
+                var events = eventMap[date] || [];
+                if (events.length === 0) return;
+                var listHtml = '<ul style="margin-top:12px;">';
+                events.forEach(function(ev) {
+                    listHtml += '<li style="margin-bottom:8px;"><strong>' + App.utils.escapeHtml(ev.op.name) + '</strong> (' + App.utils.escapeHtml(ev.op.category) + ')<br>План: ' + App.utils.isoToDDMMYYYY(ev.plan.planDate) + ', ' + ev.plan.planMileage + ' км <button class="icon-btn" data-action="execute-plan" data-op-id="' + ev.op.id + '" data-op-name="' + App.utils.escapeHtml(ev.op.name) + '"><i data-lucide="check-circle"></i></button></li>';
+                });
+                listHtml += '</ul>';
+                App.ui.createModal('События на ' + App.utils.isoToDDMMYYYY(date), listHtml);
+                App.initIcons();
+            };
+        });
+        
+        App.initIcons();
+    }
+    
+    // Создаём контейнер для календаря и список ближайших ТО
+    var calendarContainer = document.createElement('div');
+    calendarContainer.className = 'planner-calendar-container';
+    var upcomingContainer = document.createElement('div');
+    upcomingContainer.className = 'planner-upcoming-container';
+    
+    container.innerHTML = '';
+    container.appendChild(calendarContainer);
+    container.appendChild(upcomingContainer);
+    
+    // Текущие год и месяц для навигации
+    var currentYear = today.getFullYear();
+    var currentMonth = today.getMonth();
+    
+    function refreshCalendar() {
+        renderCalendar(currentYear, currentMonth, calendarContainer);
+        // Перепривязываем кнопки навигации после перерисовки
+        var prevBtn = calendarContainer.querySelector('.planner-prev-btn');
+        var nextBtn = calendarContainer.querySelector('.planner-next-btn');
+        if (prevBtn) {
+            prevBtn.onclick = function() {
+                if (currentMonth === 0) { currentMonth = 11; currentYear--; }
+                else { currentMonth--; }
+                refreshCalendar();
+                renderUpcomingList();
+            };
+        }
+        if (nextBtn) {
+            nextBtn.onclick = function() {
+                if (currentMonth === 11) { currentMonth = 0; currentYear++; }
+                else { currentMonth++; }
+                refreshCalendar();
+                renderUpcomingList();
+            };
+        }
+    }
+    
+    function renderUpcomingList() {
+        // Генерируем список ближайших ТО (первые 5 операций с минимальным daysLeft)
+        var candidates = App.store.operations.filter(function(op) {
+            if (!op.intervalKm && !op.intervalMonths && !op.intervalMotohours) return false;
+            var plan = App.logic.calculatePlan(op);
+            return plan.daysLeft !== null && isFinite(plan.daysLeft) && plan.planDate;
+        });
+        
+        var withDays = candidates.map(function(op) {
+            var plan = App.logic.calculatePlan(op);
+            return { op: op, plan: plan, daysLeft: plan.daysLeft };
+        }).filter(function(item) { return item.daysLeft !== null; })
+          .sort(function(a, b) { return a.daysLeft - b.daysLeft; })
+          .slice(0, 5);
+        
+        if (withDays.length === 0) {
+            upcomingContainer.innerHTML = '<p class="hint">Нет предстоящих ТО</p>';
+            return;
+        }
+        
+        var html = '<h3><i data-lucide="alert-circle"></i> Ближайшие ТО</h3><ul class="upcoming-list">';
+        withDays.forEach(function(item) {
+            var days = item.daysLeft;
+            var statusClass = days < 0 ? 'overdue' : (days <= 7 ? 'critical' : 'normal');
+            var daysText = days < 0 ? 'просрочено на ' + Math.abs(days) + ' дн.' : 'через ' + days + ' дн.';
+            html += '<li class="upcoming-item ' + statusClass + '">' +
+                '<span class="upcoming-name">' + App.utils.escapeHtml(item.op.name) + '</span>' +
+                '<span class="upcoming-date">' + App.utils.isoToDDMMYYYY(item.plan.planDate) + '</span>' +
+                '<span class="upcoming-days">' + daysText + '</span>' +
+                '<button class="icon-btn execute-upcoming" data-op-id="' + item.op.id + '" data-op-name="' + App.utils.escapeHtml(item.op.name) + '" title="Выполнить"><i data-lucide="check-circle"></i></button>' +
+            '</li>';
+        });
+        html += '</ul>';
+        upcomingContainer.innerHTML = html;
+        
+        // Обработчики кнопок выполнения
+        upcomingContainer.querySelectorAll('.execute-upcoming').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var opId = this.dataset.opId;
+                var opName = this.dataset.opName;
+                App.ui.pages.openServiceModal(opId, opName);
+            });
+        });
+        
+        App.initIcons();
+    }
+    
+    refreshCalendar();
+    renderUpcomingList();
+};
+
+
+
 // Основная функция десктопного дашборда
 App.ui.pages.renderDesktopDashboard = function() {
     var container = document.getElementById('desktop-dashboard-container');
@@ -507,6 +678,7 @@ App.ui.pages.renderDesktopDashboard = function() {
     // Начальная отрисовка графиков
     App.ui.pages.renderSelectedCharts();
     App.ui.pages.renderFinanceColumn();
+    App.ui.pages.renderPlannerColumn();
 };
 
 // Функция для меню графика (модальное окно)
