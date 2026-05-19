@@ -13,6 +13,19 @@ App.timelineCharts.destroyChart = function(canvasId) {
 };
 
 /**
+ * Вспомогательная функция: очистить canvas и показать текст "Нет данных"
+ * @param {HTMLCanvasElement} canvas
+ * @param {string} message
+ */
+App.timelineCharts.showNoDataMessage = function(canvas, message) {
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = '14px var(--font)';
+    ctx.fillStyle = 'var(--text-muted)';
+    ctx.fillText(message || 'Нет данных за выбранный период', 20, canvas.height / 2);
+};
+
+/**
  * График 1: Общие расходы + прогноз на 3 месяца (линия)
  * @param {string} canvasId - ID элемента canvas
  * @param {string} period - 'month', 'quarter', 'year'
@@ -21,6 +34,12 @@ App.timelineCharts.renderTotalCostsWithForecast = function(canvasId, period) {
     App.timelineCharts.destroyChart(canvasId);
     var canvas = document.getElementById(canvasId);
     if (!canvas) return;
+    
+    // Убедимся, что canvas имеет видимые размеры
+    if (canvas.width === 0 || canvas.height === 0) {
+        canvas.width = canvas.clientWidth || 500;
+        canvas.height = canvas.clientHeight || 200;
+    }
     
     var monthsCount = 12;
     if (period === 'quarter') monthsCount = 3;
@@ -31,12 +50,7 @@ App.timelineCharts.renderTotalCostsWithForecast = function(canvasId, period) {
     var totalCosts = grouped.totalCosts;
     
     if (months.length === 0) {
-        var ctx = canvas.getContext('2d');
-        App.timelineCharts.activeCharts[canvasId] = new Chart(ctx, {
-            type: 'line',
-            data: { labels: [], datasets: [] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        App.timelineCharts.showNoDataMessage(canvas, 'Нет данных о расходах');
         return;
     }
     
@@ -111,6 +125,11 @@ App.timelineCharts.renderFuelVsTOCosts = function(canvasId, period) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return;
     
+    if (canvas.width === 0 || canvas.height === 0) {
+        canvas.width = canvas.clientWidth || 500;
+        canvas.height = canvas.clientHeight || 200;
+    }
+    
     var monthsCount = 12;
     if (period === 'quarter') monthsCount = 3;
     else if (period === 'month') monthsCount = 1;
@@ -121,12 +140,7 @@ App.timelineCharts.renderFuelVsTOCosts = function(canvasId, period) {
     var toCosts = grouped.toCosts;
     
     if (months.length === 0) {
-        var ctx = canvas.getContext('2d');
-        App.timelineCharts.activeCharts[canvasId] = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: [], datasets: [] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        App.timelineCharts.showNoDataMessage(canvas, 'Нет данных о затратах на топливо или ТО');
         return;
     }
     
@@ -184,14 +198,14 @@ App.timelineCharts.renderAverageFuelPrice = function(canvasId, period) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return;
     
+    if (canvas.width === 0 || canvas.height === 0) {
+        canvas.width = canvas.clientWidth || 500;
+        canvas.height = canvas.clientHeight || 200;
+    }
+    
     var fuelLog = App.store.fuelLog || [];
     if (fuelLog.length === 0) {
-        var ctx = canvas.getContext('2d');
-        App.timelineCharts.activeCharts[canvasId] = new Chart(ctx, {
-            type: 'line',
-            data: { labels: [], datasets: [] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        App.timelineCharts.showNoDataMessage(canvas, 'Нет данных о заправках');
         return;
     }
     
@@ -216,6 +230,12 @@ App.timelineCharts.renderAverageFuelPrice = function(canvasId, period) {
         var data = monthlyData[m];
         return data.totalLiters > 0 ? data.totalCost / data.totalLiters : null;
     });
+    
+    // Если после фильтрации нет данных — сообщаем
+    if (months.length === 0 || avgPrices.every(function(v) { return v === null; })) {
+        App.timelineCharts.showNoDataMessage(canvas, 'Нет данных о цене топлива за выбранный период');
+        return;
+    }
     
     var ctx = canvas.getContext('2d');
     App.timelineCharts.activeCharts[canvasId] = new Chart(ctx, {
