@@ -1581,3 +1581,106 @@ body.auth-modal-open #fab-menu {
     align-items: center;
     gap: 8px;
 }
+
+/* Колонка 2 (Планировщик ТО) */
+.planner-calendar-container {
+    margin-bottom: 20px;
+}
+.planner-calendar {
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+}
+.planner-calendar .cal-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.planner-calendar .cal-nav-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    cursor: pointer;
+}
+.planner-calendar .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 0.7rem;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+}
+.planner-calendar .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+.planner-calendar .cal-day {
+    text-align: center;
+    padding: 4px 0;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.planner-calendar .cal-day.today {
+    background: var(--primary-light);
+    font-weight: bold;
+}
+.planner-calendar .cal-day.empty {
+    cursor: default;
+}
+.planner-calendar .cal-events {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    margin-top: 2px;
+}
+.planner-calendar .cal-event-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.upcoming-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+}
+.upcoming-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.upcoming-item.overdue .upcoming-days {
+    color: var(--danger);
+}
+.upcoming-item.critical .upcoming-days {
+    color: var(--warning);
+}
+.upcoming-name {
+    flex: 2;
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+.upcoming-date {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.upcoming-days {
+    flex: 1;
+    font-size: 0.8rem;
+    text-align: right;
+}
+.execute-upcoming {
+    padding: 4px;
+}
