@@ -189,52 +189,122 @@ App.ui.pages.renderDesktopDashboard = function() {
     
     container.innerHTML = html;
     
-    // Рендерим селекторы
     App.ui.pages.renderChartSelectors();
     
-    // Инициализация переключателей периода и кнопок меню
+    // Обработчики для селекторов периода (перерисовка только выбранного графика)
     document.querySelectorAll('.chart-period-select').forEach(function(select) {
         select.addEventListener('change', function() {
-            var chartIdx = this.dataset.chart;
-            // На этапе 3 будет перерисовка только этого графика
-            console.log('Период для графика ' + chartIdx + ' изменён на ' + this.value);
+            var chartNum = parseInt(this.dataset.chart);
+            var period = this.value;
+            var selection = App.ui.pages.loadChartSelection();
+            var chartId = selection['chart' + chartNum];
+            var canvasId = 'timeline-canvas-' + chartNum;
+            
+            switch (chartId) {
+                case 1:
+                    if (typeof App.timelineCharts.renderTotalCostsWithForecast === 'function')
+                        App.timelineCharts.renderTotalCostsWithForecast(canvasId, period);
+                    break;
+                case 2:
+                    if (typeof App.timelineCharts.renderFuelVsTOCosts === 'function')
+                        App.timelineCharts.renderFuelVsTOCosts(canvasId, period);
+                    break;
+                case 3:
+                    if (typeof App.timelineCharts.renderAverageFuelPrice === 'function')
+                        App.timelineCharts.renderAverageFuelPrice(canvasId, period);
+                    break;
+            }
         });
     });
     
+    // Кнопки меню (пока заглушка)
     document.querySelectorAll('.chart-menu-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            var chartIdx = this.dataset.chart;
-            App.toast('Меню графика ' + chartIdx + ' (скачать PNG, таблица, сброс) будет реализовано на этапе 3', 'info');
+            var chartNum = this.dataset.chart;
+            App.ui.pages.showChartMenu(chartNum);
         });
     });
     
     App.initIcons();
     
-    // Начальная отрисовка графиков (этап 3)
+    // Начальная отрисовка графиков
     App.ui.pages.renderSelectedCharts();
 };
 
-// Генерация HTML для карточки графика (с заголовком и иконкой)
-App.ui.pages.generateChartCardHtml = function(chartNumber, chartId) {
-    var chartType = App.ui.pages.CHART_TYPES.find(function(t) { return t.id === chartId; });
-    var chartName = chartType ? chartType.name : 'График';
-    var iconName = App.ui.pages.getChartIcon(chartId);
+// Функция для меню графика (модальное окно)
+App.ui.pages.showChartMenu = function(chartNum) {
+    var content = 
+        '<div class="chart-menu-options">' +
+            '<button id="menu-download-png" class="secondary-btn" style="width:100%; margin-bottom:8px;"><i data-lucide="image"></i> Скачать как PNG</button>' +
+            '<button id="menu-view-data" class="secondary-btn" style="width:100%; margin-bottom:8px;"><i data-lucide="table"></i> Показать данные</button>' +
+            '<button id="menu-reset-zoom" class="secondary-btn" style="width:100%;"><i data-lucide="zoom-out"></i> Сбросить масштаб</button>' +
+        '</div>';
+    var modal = App.ui.createModal('Меню графика ' + chartNum, content);
     
-    return '<div class="timeline-chart-card" data-chart-num="' + chartNumber + '" data-chart-id="' + chartId + '">' +
-        '<div class="chart-header">' +
-            '<i data-lucide="' + iconName + '"></i>' +
-            '<h3>' + App.utils.escapeHtml(chartName) + '</h3>' +
-        '</div>' +
-        '<canvas id="timeline-canvas-' + chartNumber + '" height="200"></canvas>' +
-        '<div class="chart-footer">' +
-            '<select class="chart-period-select" data-chart="' + chartNumber + '">' +
-                '<option value="month">Месяц</option>' +
-                '<option value="quarter">Квартал</option>' +
-                '<option value="year">Год</option>' +
-            '</select>' +
-            '<button class="icon-btn chart-menu-btn" data-chart="' + chartNumber + '"><i data-lucide="more-horizontal"></i></button>' +
-        '</div>' +
-    '</div>';
+    document.getElementById('menu-download-png').onclick = function() {
+        var canvas = document.getElementById('timeline-canvas-' + chartNum);
+        if (canvas) {
+            var link = document.createElement('a');
+            link.download = 'chart-' + chartNum + '.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        modal.remove();
+    };
+    
+    document.getElementById('menu-view-data').onclick = function() {
+        // Покажем таблицу с данными текущего графика (для первых трёх типов)
+        var selection = App.ui.pages.loadChartSelection();
+        var chartId = selection['chart' + chartNum];
+        var periodSelect = document.querySelector('.chart-period-select[data-chart="' + chartNum + '"]');
+        var period = periodSelect ? periodSelect.value : 'month';
+        
+        var tableHtml = '<table class="data-table"><thead><tr><th>Период</th><th>Значение</th></tr></thead><tbody>';
+        
+        if (chartId === 1 || chartId === 2) {
+            var grouped = App.logic.groupTotalCostsByMonth(period === 'year' ? 12 : (period === 'quarter' ? 3 : 1));
+            for (var i = 0; i < grouped.months.length; i++) {
+                if (chartId === 1) {
+                    tableHtml += '<tr><td>' + grouped.months[i] + '</td><td>' + grouped.totalCosts[i].toLocaleString() + ' ₽</td></tr>';
+                } else if (chartId === 2) {
+                    tableHtml += '<tr><td>' + grouped.months[i] + '</td><td>Топливо: ' + grouped.fuelCosts[i].toLocaleString() + ' ₽<br>ТО: ' + grouped.toCosts[i].toLocaleString() + ' ₽</td></tr>';
+                }
+            }
+        } else if (chartId === 3) {
+            var fuelLog = App.store.fuelLog || [];
+            var monthlyData = {};
+            fuelLog.forEach(function(f) {
+                if (!f.date) return;
+                var d = new Date(f.date);
+                var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                if (!monthlyData[key]) monthlyData[key] = { totalCost: 0, totalLiters: 0 };
+                monthlyData[key].totalCost += (parseFloat(f.liters) || 0) * (parseFloat(f.pricePerLiter) || 0);
+                monthlyData[key].totalLiters += parseFloat(f.liters) || 0;
+            });
+            var months = Object.keys(monthlyData).sort();
+            var monthsCount = period === 'year' ? 12 : (period === 'quarter' ? 3 : 1);
+            if (months.length > monthsCount) months = months.slice(-monthsCount);
+            months.forEach(function(m) {
+                var data = monthlyData[m];
+                var avg = data.totalLiters > 0 ? (data.totalCost / data.totalLiters).toFixed(2) : '—';
+                tableHtml += '<tr><td>' + m + '</td><td>' + avg + ' ₽/л</td></tr>';
+            });
+        }
+        
+        tableHtml += '</tbody></table>';
+        var dataModal = App.ui.createModal('Данные графика', '<div style="max-height:400px; overflow-y:auto;">' + tableHtml + '</div>');
+        App.initIcons();
+    };
+    
+    document.getElementById('menu-reset-zoom').onclick = function() {
+        var chartId = 'timeline-canvas-' + chartNum;
+        if (App.timelineCharts.activeCharts[chartId] && typeof App.timelineCharts.activeCharts[chartId].resetZoom === 'function') {
+            App.timelineCharts.activeCharts[chartId].resetZoom();
+        }
+        modal.remove();
+    };
+    
+    App.initIcons();
 };
 
 
