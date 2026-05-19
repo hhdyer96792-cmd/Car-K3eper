@@ -285,6 +285,29 @@ App.ui.pages.renderSelectedCharts = function() {
     // и обновление заголовков карточек с иконками
 };
 
+// Генерация HTML для карточки графика (с заголовком и иконкой)
+App.ui.pages.generateChartCardHtml = function(chartNumber, chartId) {
+    var chartType = App.ui.pages.CHART_TYPES.find(function(t) { return t.id === chartId; });
+    var chartName = chartType ? chartType.name : 'График';
+    var iconName = App.ui.pages.getChartIcon(chartId);
+    
+    return '<div class="timeline-chart-card" data-chart-num="' + chartNumber + '" data-chart-id="' + chartId + '">' +
+        '<div class="chart-header">' +
+            '<i data-lucide="' + iconName + '"></i>' +
+            '<h3>' + App.utils.escapeHtml(chartName) + '</h3>' +
+        '</div>' +
+        '<canvas id="timeline-canvas-' + chartNumber + '" height="200"></canvas>' +
+        '<div class="chart-footer">' +
+            '<select class="chart-period-select" data-chart="' + chartNumber + '">' +
+                '<option value="month">Месяц</option>' +
+                '<option value="quarter">Квартал</option>' +
+                '<option value="year">Год</option>' +
+            '</select>' +
+            '<button class="icon-btn chart-menu-btn" data-chart="' + chartNumber + '"><i data-lucide="more-horizontal"></i></button>' +
+        '</div>' +
+    '</div>';
+};
+
 // Основная функция десктопного дашборда
 App.ui.pages.renderDesktopDashboard = function() {
     var container = document.getElementById('desktop-dashboard-container');
