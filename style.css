@@ -1543,3 +1543,9 @@ body.auth-modal-open #fab-menu {
 .data-table th {
     background: var(--primary-light);
 }
+
+.timeline-chart-card canvas {
+    width: 100% !important;
+    height: 200px !important;
+    display: block;
+}
