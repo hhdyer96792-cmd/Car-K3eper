@@ -1684,3 +1684,55 @@ body.auth-modal-open #fab-menu {
 .execute-upcoming {
     padding: 4px;
 }
+
+/* Колонка 3 (Шины + Склад + Поиск) */
+.other-col-card {
+    margin-bottom: 16px;
+}
+.other-col-card:last-child {
+    margin-bottom: 0;
+}
+.compact-wear-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+}
+.wear-label {
+    font-weight: 500;
+    width: 45px;
+}
+.wear-progress {
+    flex: 1;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    margin: 0 8px;
+    overflow: hidden;
+}
+.wear-fill {
+    height: 100%;
+    border-radius: 4px;
+}
+.wear-value {
+    font-size: 0.8rem;
+    width: 55px;
+    text-align: right;
+}
+.oem-search {
+    margin-top: 8px;
+}
+.oem-search input {
+    width: 100%;
+    padding: 8px;
+    font-size: 0.9rem;
+}
+.search-result-item {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.search-result-item:hover {
+    background: var(--bg);
+}
