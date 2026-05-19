@@ -284,7 +284,7 @@ App.ui.pages.openPartForm = function(part) {
             '</div>' +
         '</form>';
 
-    var modal = App.ui.createModal(isEdit ? '✏️ Запчасть' : '➕ Запчасть', content);
+    var modal = App.ui.createModal(isEdit ? '<i data-lucide="pencil"></i> Запчасть' : '<i data-lucide="plus"></i> Запчасть', content);
     var form = modal.querySelector('#part-form');
 
     form.onsubmit = function(e) {
